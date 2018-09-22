@@ -1,0 +1,20 @@
+{
+    "powershell.codeFormatting.preset": "Custom",
+    "powershell.codeFormatting.whitespaceBeforeOpenBrace": true,
+    "powershell.codeFormatting.whitespaceBeforeOpenParen": true,
+    "powershell.codeFormatting.whitespaceAroundOperator": true,
+    "powershell.codeFormatting.whitespaceAfterSeparator": true,
+    "powershell.codeFormatting.ignoreOneLineBlock": true,
+    "powershell.codeFormatting.newLineAfterCloseBrace": false,
+    "powershell.codeFormatting.newLineAfterOpenBrace": true,
+    "powershell.codeFormatting.openBraceOnSameLine": true,
+    "powershell.codeFolding.enable": true,
+    "powershell.codeFormatting.alignPropertyValuePairs": false,
+    "powershell.bugReporting.project": "https://github.com/tpcarman/As-Built-Report/",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.rulers": [
+        115
+    ]
+}
