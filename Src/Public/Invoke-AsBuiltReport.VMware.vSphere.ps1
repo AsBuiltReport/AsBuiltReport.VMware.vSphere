@@ -18,7 +18,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
     param (
         [string[]] $Target,
-        [pscredential] $Credential
+        [pscredential] $Credential,
+		$StyleName
     )
 
     $InfoLevel = $Global:ReportConfig.InfoLevel
