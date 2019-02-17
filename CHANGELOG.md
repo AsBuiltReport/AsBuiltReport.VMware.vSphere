@@ -1,5 +1,9 @@
 # VMware vSphere As Built Report Changelog
 
+## 0.3.1
+### What's New
+- Refactor to PowerShell module
+
 ## 0.3.0
 ### What's New
 - Improvements to code structure & readability

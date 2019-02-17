@@ -1,28 +1,43 @@
 # VMware vSphere As Built Report
 
+# Keep up to date
+- Follow the project on [Twitter](https://twitter.com/AsBuiltReport) ![](https://twitter.com/favicon.ico)
+- Visit the project [blog](https://www.timcarman.net/As-Built-Report) page
+
+
 # Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
-## Pre-requisites
+## System Requirements
+
+### PowerShell
+AsBuiltReport.VMware.vSphere requires PowerShell 3.0 or later.
+
+
+### PowerShell Modules
+
 The following PowerShell modules are required for generating a VMware vSphere As Built report.
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery 
 
+- [AsBuiltReport Module](https://www.powershellgallery.com/packages/AsBuiltReport)
 - [PScribo Module](https://www.powershellgallery.com/packages/PScribo/)
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
 
-### Module Installation
+Open a PowerShell terminal window and install each of the required modules as follows;
 
-Open a Windows PowerShell terminal window and install each of the required modules as follows;
+```powershell
+install-module AsBuiltReport
 
-    install-module PScribo
+install-module PScribo
 
-    install-module VMware.PowerCLI
+install-module VMware.PowerCLI
+```
+### User Privileges
+A user account with full administrative privileges to VMware vCenter Server is required for generating a VMware vSphere As Built report.
 
 ## Configuration
-The vSphere As Built report utilises a JSON file (vSphere.json) to allow configuration of report information, features and section detail. All report settings are configured via the JSON file.
-
-**Modification of the PowerShell script (vSphere.ps1) is not required or recommended.**
+The vSphere As Built report utilises a JSON file (AsBuiltReport.VMware.vSphere.json) to allow configuration of report information, features and section detail. All report settings are configured via the JSON file.
 
 The following provides information of how to configure each schema within the report's JSON file.
 
@@ -167,81 +182,34 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 - Generate HTML & Word reports with Timestamp
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Append timestamp to report filename. Save reports to 'C:\Users\Tim\Documents'
 
-    `.\New-AsBuiltReport.ps1 -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path 'C:\Users\Tim\Documents' -Timestamp`
+    ```powershell
+    New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report VMware.vSphere -Format Html,Word -Path 'C:\Users\Tim\Documents' -Timestamp
+    ```
 
 - Generate HTML & Text reports with Health Checks
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'
 
-    `.\New-AsBuiltReport.ps1 -Target 'vcenter-01.corp.local' -Credentials $Creds -Type vSphere -Format Html,Text -Path 'C:\Users\Tim\Documents' -Healthchecks`
+    ```powershell
+    New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credential $Creds -Report VMware.vSphere -Format Html,Text -Path 'C:\Users\Tim\Documents' -Healthchecks
+    ```
 
 - Generate report with multiple vCenter Servers using Custom Style
 Generate a single vSphere As Built report for vCenter Servers 'vcenter-01.corp.local' and 'vcenter-02.corp.local' using specified credentials. Report exports to DOC format by default. Apply custom style to the report. Reports are saved to the script folder by default.
 
-    `.\New-AsBuiltReport.ps1 -Target "vcenter-01.corp.local,vcenter-02.corp.local" -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -StyleName 'MyCustomStyle'`
+    ```powershell
+    New-AsBuiltReport -Target "vcenter-01.corp.local,vcenter-02.corp.local" -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report VMware.vSphere -StyleName 'MyCustomStyle'
+    ```
 
 - Generate HTML & Word reports, attach and send reports via e-mail
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Reports are saved to the script folder by default. Attach and send reports via e-mail.
 
-    `.\New-AsBuiltReport.ps1 -Target vcenter-01.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path C:\Users\Tim\Documents -SendEmail`
+    ```powershell
+    New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report VMware.vSphere -Format Html,Word -Path C:\Users\Tim\Documents -SendEmail
+    ```
 
-## Samples
-### Sample Report 1 - Default Style
-Sample vSphere As Built report with health checks, using default report style.
-
-![Sample vSphere Report 1](https://github.com/tpcarman/As-Built-Report/blob/dev/Reports/vSphere/Samples/Sample_vSphere_Report_1.png "Sample vSphere Report 1")
-
-
-### Sample Report 2 - Custom Style
-Sample vSphere As Built report with health checks, using custom report style.
-
-![Sample vSphere Report 2](https://github.com/tpcarman/As-Built-Report/blob/dev/Reports/vSphere/Samples/Sample_vSphere_Report_2.png "Sample vSphere Report 2")
-
-# Release Notes
-## 0.3.0
-### What's New
-- Improvements to code structure & readability
-- Improvements to output formatting
-- Improvements to vSphere HA/DRS Cluster reporting and health checks
-- Improvements to VM reporting and health checks
-- Corrected sorting of numerous table entries
-- Corrected VMHost & VM uptime calculations
-- New Get-Uptime & Get-License functions
-- Added Cluster VM Overrides section
-- Corrected display of 3rd party Multipath Policy plugins
-- Corrected vSAN type & disk count
-
-## 0.2.2
-### What's New
-- Added new VM health checks for CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
-- Improvements to VM reporting for Guest OS, CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
-- Minor updates to section paragraph text
-
-## 0.2.1
-### What's New
-- Added SDRS VM Overrides to Datastore Cluster section
-- SCSI LUN section rewritten to improve script performance
-- Fixed issues with current working directory paths
-- Changes to InfoLevel settings and definitions
-- Script formatting improvements to some sections to align with PowerShell best practice guidelines
-- vCenter Server SSL Certificate section removed temporarily 
-
-## 0.2.0
-### What's New
-- Requires PScribo module 0.7.24
-- Added regions/endregions to all sections of script
-- Formatting improvements
-- Added Resource Pool summary information
-- Added vSAN summary information
-- Added vCenter Server mail settings health check
-- Datastore Clusters now has it's own dedicated section
-- Added DSCluster health checks
-- Added VM Power State health check
-- Renamed Storage section to Datastores
-- Renamed Storage health checks section to Datastore
-- Added support for NSX-V reporting
-
-### Known Issues
-- Verbose script errors when connecting to vCenter with a Read-Only user account
+# Known Issues
+- Verbose script errors when connecting to vCenter with a Read-Only user account. 
+    - A user account with full Administrator privileges is required to generate a VMware vSphere as-built report.
 
 - In HTML documents, word-wrap of table cell contents is not working, causing the following issues;
   - Cell contents may overflow table columns
