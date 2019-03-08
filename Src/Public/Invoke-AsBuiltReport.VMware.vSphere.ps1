@@ -26,7 +26,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
     # If custom style not set, use default style
     if (!$StyleName) {
-        & "$PSScriptRoot\..\AsBuiltReport.VMware.vSphere.Style.ps1"
+        & "$PSScriptRoot\..\..\AsBuiltReport.VMware.vSphere.Style.ps1"
     }
 
     #endregion Configuration Settings
