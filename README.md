@@ -167,51 +167,46 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 - Generate HTML & Word reports with Timestamp
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Append timestamp to report filename. Save reports to 'C:\Users\Tim\Documents'
 
-    `.\New-AsBuiltReport.ps1 -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path 'C:\Users\Tim\Documents' -Timestamp`
+    `New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path 'C:\Users\Tim\Documents' -Timestamp`
 
 - Generate HTML & Text reports with Health Checks
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'
 
-    `.\New-AsBuiltReport.ps1 -Target 'vcenter-01.corp.local' -Credentials $Creds -Type vSphere -Format Html,Text -Path 'C:\Users\Tim\Documents' -Healthchecks`
+    `New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credentials $Creds -Type vSphere -Format Html,Text -Path 'C:\Users\Tim\Documents' -Healthchecks`
 
 - Generate report with multiple vCenter Servers using Custom Style
 Generate a single vSphere As Built report for vCenter Servers 'vcenter-01.corp.local' and 'vcenter-02.corp.local' using specified credentials. Report exports to DOC format by default. Apply custom style to the report. Reports are saved to the script folder by default.
 
-    `.\New-AsBuiltReport.ps1 -Target "vcenter-01.corp.local,vcenter-02.corp.local" -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -StyleName 'MyCustomStyle'`
+    `New-AsBuiltReport -Target "vcenter-01.corp.local,vcenter-02.corp.local" -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -StyleName 'MyCustomStyle'`
 
 - Generate HTML & Word reports, attach and send reports via e-mail
 Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Reports are saved to the script folder by default. Attach and send reports via e-mail.
 
-    `.\New-AsBuiltReport.ps1 -Target vcenter-01.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path C:\Users\Tim\Documents -SendEmail`
-
-## Samples
-### Sample Report 1 - Default Style
-Sample vSphere As Built report with health checks, using default report style.
-
-![Sample vSphere Report 1](https://github.com/tpcarman/As-Built-Report/blob/dev/Reports/vSphere/Samples/Sample_vSphere_Report_1.png "Sample vSphere Report 1")
-
-
-### Sample Report 2 - Custom Style
-Sample vSphere As Built report with health checks, using custom report style.
-
-![Sample vSphere Report 2](https://github.com/tpcarman/As-Built-Report/blob/dev/Reports/vSphere/Samples/Sample_vSphere_Report_2.png "Sample vSphere Report 2")
+    `New-AsBuiltReport -Target vcenter-01.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path C:\Users\Tim\Documents -SendEmail`
 
 # Release Notes
-## 0.3.0
-### What's New
+## [0.3.1] - 2019-03-08
+### Changed
+- Modified for PS module
+- Updated default VMware style sheet to include page orientation
+
+## [0.3.0] - 2019-02-01
+### Added
+- Added Cluster VM Overrides section
+
+### Changed
 - Improvements to code structure & readability
 - Improvements to output formatting
 - Improvements to vSphere HA/DRS Cluster reporting and health checks
 - Improvements to VM reporting and health checks
 - Corrected sorting of numerous table entries
 - Corrected VMHost & VM uptime calculations
-- New Get-Uptime & Get-License functions
-- Added Cluster VM Overrides section
 - Corrected display of 3rd party Multipath Policy plugins
 - Corrected vSAN type & disk count
+- Updated Get-Uptime & Get-License functions
 
-## 0.2.2
-### What's New
+## [0.2.2] - 2018-09-19
+### Added
 - Added new VM health checks for CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
 - Improvements to VM reporting for Guest OS, CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
 - Minor updates to section paragraph text
