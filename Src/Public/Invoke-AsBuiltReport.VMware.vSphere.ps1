@@ -19,13 +19,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     param (
         [string[]] $Target,
         [pscredential] $Credential,
-        $StyleName
+        $Global:StylePath
     )
 
     $InfoLevel = $Global:ReportConfig.InfoLevel
+    $Healthcheck = $Global:ReportConfig.$Healthcheck
 
     # If custom style not set, use default style
-    if (!$StyleName) {
+    if (!$StylePath) {
         & "$PSScriptRoot\..\..\AsBuiltReport.VMware.vSphere.Style.ps1"
     }
 

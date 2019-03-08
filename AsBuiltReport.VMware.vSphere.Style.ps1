@@ -1,5 +1,5 @@
 #region VMware Document Style
-DocumentOption -EnableSectionNumbering -PageSize A4 -DefaultFont Arial -MarginLeftAndRight 71 -MarginTopAndBottom 71 -Orientation $Orientation
+DocumentOption -EnableSectionNumbering -PageSize A4 -DefaultFont Arial -MarginLeftAndRight 71 -MarginTopAndBottom 71 #-Orientation $Orientation
 
 Style -Name 'Title' -Size 24 -Color '002538' -Align Center
 Style -Name 'Title 2' -Size 18 -Color '007CBB' -Align Center
@@ -25,14 +25,14 @@ TableStyle -Id 'Borderless' -BorderWidth 0
 
 # VMware Cover Page
 BlankLine -Count 11
-Paragraph -Style Title $Global:AsBuiltConfig.Report.Name
+Paragraph -Style Title $Global:ReportConfig.Report.Name
 if ($Global:AsBuiltConfig.Company.FullName) {
     Paragraph -Style Title2 $Global:AsBuiltConfig.Company.FullName
     BlankLine -Count 27
     Table -Name 'Cover Page' -List -Style Borderless -Width 0 -Hashtable ([Ordered] @{
             'Author:' = $Global:AsBuiltConfig.Report.Author
             'Date:' = Get-Date -Format 'dd MMMM yyyy'
-            'Version:' = $Global:AsBuiltConfig.Report.Version
+            'Version:' = $Global:ReportConfig.Report.Version
         })
     PageBreak
 } else {
@@ -40,7 +40,7 @@ if ($Global:AsBuiltConfig.Company.FullName) {
     Table -Name 'Cover Page' -List -Style Borderless -Width 0 -Hashtable ([Ordered] @{
             'Author:' = $Global:AsBuiltConfig.Report.Author
             'Date:' = Get-Date -Format 'dd MMMM yyyy'
-            'Version:' = $Global:AsBuiltConfig.Report.Version
+            'Version:' = $Global:ReportConfig.Report.Version
         })
     PageBreak
 }
