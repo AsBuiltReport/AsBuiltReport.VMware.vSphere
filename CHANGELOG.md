@@ -1,24 +1,27 @@
 # VMware vSphere As Built Report Changelog
 
-## 0.3.1
-### What's New
-- Refactor to PowerShell module
+## [0.3.1] - 2019-03-08
+### Changed
+- Modified for PS module
+- Updated default VMware style sheet to include page orientation
 
-## 0.3.0
-### What's New
+## [0.3.0] - 2019-02-01
+### Added
+- Added Cluster VM Overrides section
+
+### Changed
 - Improvements to code structure & readability
 - Improvements to output formatting
 - Improvements to vSphere HA/DRS Cluster reporting and health checks
 - Improvements to VM reporting and health checks
 - Corrected sorting of numerous table entries
 - Corrected VMHost & VM uptime calculations
-- New Get-Uptime & Get-License functions
-- Added Cluster VM Overrides section
 - Corrected display of 3rd party Multipath Policy plugins
 - Corrected vSAN type & disk count
+- Updated Get-Uptime & Get-License functions
 
-## 0.2.2
-### What's New
+## [0.2.2] - 2018-09-19
+### Added
 - Added new VM health checks for CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
 - Improvements to VM reporting for Guest OS, CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
 - Minor updates to section paragraph text
