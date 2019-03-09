@@ -23,7 +23,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     )
 
     $InfoLevel = $Global:ReportConfig.InfoLevel
-    $Healthcheck = $Global:ReportConfig.$Healthcheck
 
     # If custom style not set, use default style
     if (!$StylePath) {
