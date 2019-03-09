@@ -1,5 +1,5 @@
 #region VMware Document Style
-DocumentOption -EnableSectionNumbering -PageSize A4 -DefaultFont Arial -MarginLeftAndRight 71 -MarginTopAndBottom 71 #-Orientation $Orientation
+DocumentOption -EnableSectionNumbering -PageSize A4 -DefaultFont Arial -MarginLeftAndRight 71 -MarginTopAndBottom 71 -Orientation $Orientation
 
 Style -Name 'Title' -Size 24 -Color '002538' -Align Center
 Style -Name 'Title 2' -Size 18 -Color '007CBB' -Align Center

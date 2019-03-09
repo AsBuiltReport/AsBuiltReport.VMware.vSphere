@@ -17,13 +17,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     #>
 
     param (
-        [string[]] $Target,
-        [pscredential] $Credential,
-        $Global:StylePath
+        [String[]] $Target,
+        [PSCredential] $Credential,
+        [String]$StylePath
     )
 
     $InfoLevel = $Global:ReportConfig.InfoLevel
-    $Healthcheck = $Global:ReportConfig.$Healthcheck
 
     # If custom style not set, use default style
     if (!$StylePath) {

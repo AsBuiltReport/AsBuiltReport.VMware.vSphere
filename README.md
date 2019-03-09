@@ -14,15 +14,15 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 ### Module Installation
 
 Open a Windows PowerShell terminal window and install each of the required modules as follows;
+```powershell
+install-module PScribo
 
-    install-module PScribo
+install-module VMware.PowerCLI
 
-    install-module VMware.PowerCLI
-
+install-module AsBuiltReport
+```
 ## Configuration
-The vSphere As Built report utilises a JSON file (vSphere.json) to allow configuration of report information, features and section detail. All report settings are configured via the JSON file.
-
-**Modification of the PowerShell script (vSphere.ps1) is not required or recommended.**
+The vSphere As Built Report utilises a JSON file to allow configuration of report information, features and section detail. All report settings are configured via the JSON file.
 
 The following provides information of how to configure each schema within the report's JSON file.
 
@@ -31,9 +31,9 @@ The **Report** sub-schema provides configuration of the vSphere report informati
 
 | Schema | Sub-Schema | Description |
 | ------ | ---------- | ----------- |
-| Report | Name | The name of the As Built report
-| Report | Version | The document version
-| Report | Status | The document release status
+| Report | Name | The name of the As Built Report
+| Report | Version | The report version
+| Report | Status | The report release status
 
 ### Options
 The **Options** sub-schema allows certain options within the report to be toggled on or off
@@ -165,25 +165,25 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 
 ## Examples 
 - Generate HTML & Word reports with Timestamp
-Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Append timestamp to report filename. Save reports to 'C:\Users\Tim\Documents'
-
-    `New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path 'C:\Users\Tim\Documents' -Timestamp`
-
+Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Append timestamp to report filename. Save reports to 'C:\Users\Tim\Documents'
+```powershell
+New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report VMware.vSphere -Format Html,Word -OutputPath 'C:\Users\Tim\Documents' -Timestamp
+```
 - Generate HTML & Text reports with Health Checks
-Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'
-
-    `New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credentials $Creds -Type vSphere -Format Html,Text -Path 'C:\Users\Tim\Documents' -Healthchecks`
-
+Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'
+```powershell
+New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credentials $Creds -Report VMware.vSphere -Format Html,Text -OutputPath 'C:\Users\Tim\Documents' -EnableHealthCheck
+```
 - Generate report with multiple vCenter Servers using Custom Style
-Generate a single vSphere As Built report for vCenter Servers 'vcenter-01.corp.local' and 'vcenter-02.corp.local' using specified credentials. Report exports to DOC format by default. Apply custom style to the report. Reports are saved to the script folder by default.
-
-    `New-AsBuiltReport -Target "vcenter-01.corp.local,vcenter-02.corp.local" -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -StyleName 'MyCustomStyle'`
-
+Generate a single vSphere As Built Report for vCenter Servers 'vcenter-01.corp.local' and 'vcenter-02.corp.local' using specified credentials. Report exports to WORD format by default. Apply custom style to the report. Reports are saved to the user profile folder by default.
+```powershell
+New-AsBuiltReport -Target vcenter-01.corp.local,vcenter-02.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report Vmware.vSphere -StylePath C:\Scripts\Styles\MyCustomStyle.ps1
+```
 - Generate HTML & Word reports, attach and send reports via e-mail
-Generate a vSphere As Built report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Reports are saved to the script folder by default. Attach and send reports via e-mail.
-
-    `New-AsBuiltReport -Target vcenter-01.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Type vSphere -Format Html,Word -Path C:\Users\Tim\Documents -SendEmail`
-
+Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOC formats. Use default report style. Reports are saved to the user profile folder by default. Attach and send reports via e-mail.
+```powershell
+New-AsBuiltReport -Target vcenter-01.corp.local -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report Vmware.vSphere -Format Html,Word -OutputPath C:\Users\Tim\Documents -SendEmail
+```
 # Release Notes
 ## [0.3.1] - 2019-03-08
 ### Changed
