@@ -13,7 +13,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         
     .LINK
         https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere
-        https://github.com/iainbrighton/PScribo
     #>
 
     param (
@@ -569,7 +568,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             'HTTP Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpport'}).Value
                             'HTTPS Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpsport'}).Value
                             'Instance ID' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'instance.id'}).Value
-                            'Password Expiry' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'VirtualCenter.VimPasswordExpirationInDays'}).Value
                         }
                         if ($vCenter.Version -gt 6) {
                             Add-Member -InputObject $vCenterDetail -MemberType NoteProperty -Name 'Platform Services Controller' -Value (($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.sso.admin.uri'}).Value -replace "^https://|/sso-adminserver/sdk/vsphere.local")
