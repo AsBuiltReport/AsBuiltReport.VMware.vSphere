@@ -673,7 +673,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         #endregion vCenter Server Tags
 
                         #region vCenter Server Tag Categories
-                        $TagCategories = Get-TagCategory 
+                        $TagCategories = Get-TagCategory -Server $vCenter
                         if ($TagCategories) {
                             Section -Style Heading3 'Tag Categories' {
                                 $TagCategories = $TagCategories | Select-Object Name, Description, Cardinality -Unique
@@ -683,7 +683,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         #endregion vCenter Server Tag Categories
                         
                         #region vCenter Server Tag Assignments
-                        $TagAssignments = Get-TagAssignment
+                        $TagAssignments = Get-TagAssignment -Server $vCenter
                         if ($TagAssignments) {
                             Section -Style Heading3 'Tag Assignments' {
                                 $TagAssignments = $TagAssignments | Select-Object Tag, Entity
@@ -718,7 +718,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             #region Cluster Section
             if ($InfoLevel.Cluster -ge 1) {
-                $Script:Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
+                $Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
                 if ($Clusters) {
                     Section -Style Heading2 'Clusters' {
                         Paragraph ("The following section provides information on the configuration of each " +
@@ -1449,7 +1449,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             #region Resource Pool Section
             if ($InfoLevel.ResourcePool -ge 1) {
-                $Script:ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
+                $ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
                 if ($ResourcePools) {
                     Section -Style Heading2 'Resource Pools' {
                         Paragraph ("The following section provides information on the configuration of " +
@@ -2343,7 +2343,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             #region Distributed Switch Section
             if ($InfoLevel.Network -ge 1) {
                 # Create Distributed Virtual Switch Section if they exist
-                $Script:VDSwitches = Get-VDSwitch -Server $vCenter
+                $VDSwitches = Get-VDSwitch -Server $vCenter
                 if ($VDSwitches) {
                     Section -Style Heading2 'Distributed Virtual Switches' {
                         Paragraph ("The following section provides information on the Distributed Virtual " +
@@ -2427,7 +2427,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 
                                     #region Distributed Virtual Switch Security
                                     Section -Style Heading4 'Security' {
-                                        $Script:VDSecurityPolicy = $VDS | Get-VDSecurityPolicy
+                                        $VDSecurityPolicy = $VDS | Get-VDSecurityPolicy
                                         $VDSecurityPolicyDetail = [PSCustomObject]@{
                                             'VDSwitch' = $VDSecurityPolicy.VDSwitch
                                             'Allow Promiscuous' = $VDSecurityPolicy.AllowPromiscuous
@@ -2440,7 +2440,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                     #region Distributed Virtual Switch Traffic Shaping
                                     Section -Style Heading4 'Traffic Shaping' {
-                                        $Script:VDSTrafficShaping = $VDS | Get-VDTrafficShapingPolicy -Direction Out
+                                        $VDSTrafficShaping = $VDS | Get-VDTrafficShapingPolicy -Direction Out
                                         [Array]$VDSTrafficShaping += $VDS | Get-VDTrafficShapingPolicy -Direction In
                                         $VDSTrafficShapingDetail = foreach ($VDSTrafficShape in $VDSTrafficShaping) {
                                             [PSCustomObject]@{
@@ -2461,28 +2461,28 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                     #region Distributed Virtual Switch Port Groups
                                     Section -Style Heading4 'Port Groups' {
-                                        $Script:VDSPortgroups = $VDS | Get-VDPortgroup | Select-Object VDSwitch, @{L = 'Port Group'; E = {$_.Name}}, Datacenter, @{L = 'VLAN Configuration'; E = {$_.VlanConfiguration}}, @{L = 'Port Binding'; E = {$_.PortBinding}}, @{L = '# of Ports'; E = {$_.NumPorts}} | Sort-Object VDSwitch, 'Port Group'
+                                        $VDSPortgroups = $VDS | Get-VDPortgroup | Select-Object VDSwitch, @{L = 'Port Group'; E = {$_.Name}}, Datacenter, @{L = 'VLAN Configuration'; E = {$_.VlanConfiguration}}, @{L = 'Port Binding'; E = {$_.PortBinding}}, @{L = '# of Ports'; E = {$_.NumPorts}} | Sort-Object VDSwitch, 'Port Group'
                                         $VDSPortgroups | Table -Name "$VDS Port Group Information" 
                                     }
                                     #endregion Distributed Virtual Switch Port Groups
 
                                     #region Distributed Virtual Switch Port Group Security
                                     Section -Style Heading5 "Port Group Security" {
-                                        $Script:VDSPortgroupSecurity = $VDS | Get-VDPortgroup | Get-VDSecurityPolicy | Select-Object @{L = 'VDSwitch'; E = {($VDS.Name)}} , @{L = 'Port Group'; E = {$_.VDPortgroup}}, @{L = 'Allow Promiscuous'; E = {$_.AllowPromiscuous}}, @{L = 'Forged Transmits'; E = {$_.ForgedTransmits}}, @{L = 'MAC Address Changes'; E = {$_.MacChanges}} | Sort-Object VDSwitch, 'Port Group'
+                                        $VDSPortgroupSecurity = $VDS | Get-VDPortgroup | Get-VDSecurityPolicy | Select-Object @{L = 'VDSwitch'; E = {($VDS.Name)}} , @{L = 'Port Group'; E = {$_.VDPortgroup}}, @{L = 'Allow Promiscuous'; E = {$_.AllowPromiscuous}}, @{L = 'Forged Transmits'; E = {$_.ForgedTransmits}}, @{L = 'MAC Address Changes'; E = {$_.MacChanges}} | Sort-Object VDSwitch, 'Port Group'
                                         $VDSPortgroupSecurity | Table -Name "$VDS Port Group Security"
                                     }
                                     #endregion Distributed Virtual Switch Port Group Security
                 
                                     #region Distributed Virtual Switch Port Group NIC Teaming
                                     Section -Style Heading5 "Port Group NIC Teaming" {
-                                        $Script:VDSPortgroupNICTeaming = $VDS | Get-VDPortgroup | Get-VDUplinkTeamingPolicy | Select-Object @{L = 'VDSwitch'; E = {($VDS.Name)}} , @{L = 'Port Group'; E = {$_.VDPortgroup}}, @{L = 'Load Balancing'; E = {$_.LoadBalancingPolicy}}, @{L = 'Failover Detection'; E = {$_.FailoverDetectionPolicy}}, 
+                                        $VDSPortgroupNICTeaming = $VDS | Get-VDPortgroup | Get-VDUplinkTeamingPolicy | Select-Object @{L = 'VDSwitch'; E = {($VDS.Name)}} , @{L = 'Port Group'; E = {$_.VDPortgroup}}, @{L = 'Load Balancing'; E = {$_.LoadBalancingPolicy}}, @{L = 'Failover Detection'; E = {$_.FailoverDetectionPolicy}}, 
                                         @{L = 'Notify Switches'; E = {$_.NotifySwitches}}, @{L = 'Failback Enabled'; E = {$_.EnableFailback}}, @{L = 'Active Uplinks'; E = {($_.ActiveUplinkPort) -join [Environment]::NewLine}}, @{L = 'Standby Uplinks'; E = {($_.StandbyUplinkPort) -join [Environment]::NewLine}}, @{L = 'Unused Uplinks'; E = {@($_.UnusedUplinkPort) -join [Environment]::NewLine}} | Sort-Object VDSwitch, 'Port Group'
                                         $VDSPortgroupNICTeaming | Table -Name "$VDS Port Group NIC Teaming" #-ColumnWidths 12,11,11,11,11,11,11,11,11
                                     }
                                     #endregion Distributed Virtual Switch Port Group NIC Teaming
 
                                     #region Distributed Virtual Switch Private VLANs
-                                    $Script:VDSPvlan = $VDS | Get-VDSwitchPrivateVLAN | Select-Object @{L = 'Primary VLAN ID'; E = {$_.PrimaryVlanId}}, @{L = 'Private VLAN Type'; E = {$_.PrivateVlanType}}, @{L = 'Secondary VLAN ID'; E = {$_.SecondaryVlanId}}
+                                    $VDSPvlan = $VDS | Get-VDSwitchPrivateVLAN | Select-Object @{L = 'Primary VLAN ID'; E = {$_.PrimaryVlanId}}, @{L = 'Private VLAN Type'; E = {$_.PrivateVlanType}}, @{L = 'Secondary VLAN ID'; E = {$_.SecondaryVlanId}}
                                     if ($VDSPvlan) {
                                         Section -Style Heading4 'Private VLANs' {
                                             $VDSPvlan | Table -Name "$VDS Private VLANs"
@@ -2500,7 +2500,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             #region vSAN Section
             if (($InfoLevel.Vsan -ge 1) -and ($vCenter.Version -gt 6)) {
-                $Script:VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object {$_.vsanenabled -eq $true} | Sort-Object Name
+                $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object {$_.vsanenabled -eq $true} | Sort-Object Name
                 if ($VsanClusters) {
                     Section -Style Heading2 'vSAN' {
                         Paragraph ("The following section provides information on the vSAN managed " +
@@ -2540,9 +2540,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         if ($InfoLevel.Vsan -ge 3) {
                             foreach ($VsanCluster in $VsanClusters) {
                                 Section -Style Heading3 $VsanCluster.Name {
-                                    $Script:VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
+                                    $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
                                     $NumVsanDiskGroup = $VsanDiskGroup.Count
-                                    $Script:VsanDisk = Get-vSanDisk -VsanDiskGroup $VsanDiskGroup
+                                    $VsanDisk = Get-vSanDisk -VsanDiskGroup $VsanDiskGroup
                                     $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
                                     $NumVsanSsd = ($VsanDisk | Where-Object {$_.IsSsd -eq $true}).Count
                                     $NumVsanHdd = ($VsanDisk | Where-Object {$_.IsSsd -eq $false}).Count
@@ -2599,7 +2599,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             #region Datastore Section
             if ($InfoLevel.Datastore -ge 1) {
-                $Script:Datastores = Get-Datastore -Server $vCenter | Where-Object {$_.State -eq 'Available'} | Sort-Object Name
+                $Datastores = Get-Datastore -Server $vCenter | Where-Object {$_.State -eq 'Available'} | Sort-Object Name
                 if ($Datastores) {
                     Section -Style Heading2 'Datastores' {
                         Paragraph ("The following section provides information on datastores managed " +
@@ -2723,7 +2723,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     
             #region Datastore Clusters
             if ($InfoLevel.DSCluster -ge 1) {
-                $Script:DSClusters = Get-DatastoreCluster -Server $vCenter
+                $DSClusters = Get-DatastoreCluster -Server $vCenter
                 if ($DSClusters) {
                     Section -Style Heading2 'Datastore Clusters' {
                         Paragraph ("The following section provides information on datastore clusters " +
@@ -2865,7 +2865,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         #region Virtual Machine Informative Information
                         if ($InfoLevel.VM -eq 2) {
                             BlankLine
-                            $VMSummary = foreach ($VM in $VMs) {
+                            $VMInfo = foreach ($VM in $VMs) {
                                 [PSCustomObject]@{
                                     'Name' = $VM.Name
                                     'Power State' = Switch ($VM.PowerState) {
@@ -2887,19 +2887,19 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 }
                             }
                             if ($Healthcheck.VM.VMToolsOK) {
-                                $VMSummary | Where-Object {$_.'VM Tools Status' -ne 'Tools OK'} | Set-Style -Style Warning -Property 'VM Tools Status'
+                                $VMInfo | Where-Object {$_.'VM Tools Status' -ne 'Tools OK'} | Set-Style -Style Warning -Property 'VM Tools Status'
                             }
                             if ($Healthcheck.VM.PoweredOn) {
-                                $VMSummary | Where-Object {$_.'Power State' -ne 'Powered On'} | Set-Style -Style Warning -Property 'Power State'
+                                $VMInfo | Where-Object {$_.'Power State' -ne 'Powered On'} | Set-Style -Style Warning -Property 'Power State'
                             }
-                            $VMSummary | Table -Name 'VM Informative Information'
+                            $VMInfo | Table -Name 'VM Informative Information'
                         }
                         #endregion Virtual Machine Informative Information
 
                         #region Virtual Machine Detailed Information
                         if ($InfoLevel.VM -ge 3) {
                             ## TODO: More VM Details to Add
-                            $Script:VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object {$_.StoragePolicy -ne $null}
+                            $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object {$_.StoragePolicy -ne $null}
                             foreach ($VM in $VMs) {
                                 Section -Style Heading3 $VM.name {
                                     $VMUptime = Get-Uptime -VM $VM
@@ -2968,10 +2968,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'unknown' {'Unknown'}
                                         }
                                         'vNICs' = $VM.ExtensionData.Summary.Config.NumEthernetCards
-                                        'Notes' = $VM.Notes
-                                        'Boot Time' = $VM.ExtensionData.Runtime.BootTime
-                                        'Uptime Days' = $VMUptime.UptimeDays
                                     }
+                                    if ($VM.Notes) {
+                                        Add-Member -InputObject $VMDetail -MemberType NoteProperty -Name 'Notes' -Value $VM.Notes  
+                                    }
+                                    if ($VM.PowerState -eq 'PoweredOn') {
+                                        Add-Member -InputObject $VMDetail -MemberType NoteProperty -Name 'Boot Time' -Value $VM.ExtensionData.Runtime.BootTime
+                                        Add-Member -InputObject $VMDetail -MemberType NoteProperty -Name 'Uptime Days' -Value $VMUptime.UptimeDays
+                                    }  
                                 
                                     if ($Healthcheck.VM.VMToolsOK) {
                                         $VMDetail | Where-Object {$_.'VM Tools Status' -ne 'Tools OK'} | Set-Style -Style Warning -Property 'VM Tools Status'
@@ -2996,20 +3000,38 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $VMDetail | Where-Object {$_.'Storage Based Policy Compliance' -eq 'Non Compliant'} | Set-Style -Style Critical -Property 'Storage Based Policy Compliance'
                                     } 
                                     $VMDetail | Table -Name 'VM Detailed Information' -List -ColumnWidths 50, 50
+
+                                    $VMSnapshots = $VM | Get-Snapshot
+                                    if ($VMSnapshots) {
+                                        Section -Style Heading4 "Snapshots" {
+                                            $VMSnapshots = foreach ($VMSnapshot in $VMSnapshots) {
+                                                [PSCustomObject]@{
+                                                    'Snapshot Name' = $VMSnapshot.Name
+                                                    'Description' = $VMSnapshot.Description
+                                                    'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.Created).Days
+                                                } 
+                                            }
+                                            if ($Healthcheck.VM.VMSnapshots) {
+                                                $VMSnapshots | Where-Object {$_.'Days Old' -ge 7} | Set-Style -Style Warning 
+                                                $VMSnapshots | Where-Object {$_.'Days Old' -ge 14} | Set-Style -Style Critical
+                                            }
+                                            $VMSnapshots | Table -Name "$VM Snapshots"
+                                        }
+                                    }
                                 }
                             } 
                         }
                         #endregion Virtual Machine Detailed Information
 
                         #region VM Snapshot Information
-                        if ($InfoLevel.VM -ge 2) {
-                            $Script:VMSnapshots = $VMs | Get-Snapshot 
+                        if ($InfoLevel.VM -eq 2) {
+                            $VMSnapshots = $VMs | Get-Snapshot 
                             if ($VMSnapshots) {
-                                Section -Style Heading3 'VM Snapshots' {
+                                Section -Style Heading3 'Snapshots' {
                                     $VMSnapshotInfo = foreach ($VMSnapshot in $VMSnapshots) {
                                         [PSCustomObject]@{
                                             'Virtual Machine' = $VMSnapshot.VM
-                                            'Name' = $VMSnapshot.Name
+                                            'Snapshot Name' = $VMSnapshot.Name
                                             'Description' = $VMSnapshot.Description
                                             'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.Created).Days
                                         } 
@@ -3030,7 +3052,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             #region VMware Update Manager Section
             if ($InfoLevel.VUM -ge 1) {
-                $Script:VUMBaselines = Get-PatchBaseline -Server $vCenter
+                $VUMBaselines = Get-PatchBaseline -Server $vCenter
                 if ($VUMBaselines) {
                     Section -Style Heading2 'VMware Update Manager' {
                         Paragraph ("The following section provides information on VMware Update Manager " +
@@ -3055,7 +3077,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         #endregion VUM Baseline Detailed Information
                         
                         #region VUM Comprehensive Information
-                        $Script:VUMPatches = Get-Patch -Server $vCenter | Sort-Object -Descending ReleaseDate
+                        $VUMPatches = Get-Patch -Server $vCenter | Sort-Object -Descending ReleaseDate
                         if ($VUMPatches -and $InfoLevel.VUM -ge 5) {
                             BlankLine
                             Section -Style Heading3 'Patches' {
@@ -3076,28 +3098,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 }
             }
             #endregion VMware Update Manager Section
-
-            #region VMware NSX-V Section
-            if ($InfoLevel.NSX -ge 1) {
-                #Call the NSX-V report script
-                $NSXReport = "$PSScriptRoot\..\..\Reports\NSX\NSX.ps1"
-                if (Test-Path $NSXReport -ErrorAction SilentlyContinue) {
-                    .$NSXReport -VIServer $VIServer -Credentials $Credential
-                } else {
-                    Write-Error "$NSXReport report does not exist"
-                    break
-                }
-            }
-            #endregion VMware NSX-V Section
-
-            #region VMware SRM Section
-            ## TODO: VMware SRM Report
-            if ($InfoLevel.SRM -ge 1) {
-            }
-            #endregion VMware SRM Section
         }
         # Disconnect vCenter Server
         $Null = Disconnect-VIServer -Server $VIServer -Confirm:$false -ErrorAction SilentlyContinue
-    }
+    } # End of Foreach $VIServer
     #endregion Script Body
-}
+} # End Invoke-AsBuiltReport.VMware.vSphere function
