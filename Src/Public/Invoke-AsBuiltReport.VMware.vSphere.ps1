@@ -21,7 +21,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         [String]$StylePath
     )
 
-    $InfoLevel = $Global:ReportConfig.InfoLevel
+    $InfoLevel = $ReportConfig.InfoLevel
 
     # If custom style not set, use default style
     if (!$StylePath) {
