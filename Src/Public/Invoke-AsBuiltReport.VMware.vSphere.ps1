@@ -21,7 +21,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         [String]$StylePath
     )
 
+    # Import JSON Configuration for Options and InfoLevel
     $InfoLevel = $ReportConfig.InfoLevel
+    $Options = $ReportConfig.Options
 
     # If custom style not set, use default style
     if (!$StylePath) {
@@ -108,7 +110,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             $VMHostId = $VMHost.Extensiondata.Config.Host.Value
             $VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)    
             $VMHostLicense = $VMHostAssignedLicense | Where-Object {$_.EntityId -eq $VMHostId}
-            if ($Options.ShowLicenses) {
+            if ($Options.ShowLicenseKeys) {
                 $VMHostLicenseKey = $VMHostLicense.AssignedLicense.LicenseKey
             } else {
                 $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.AssignedLicense.LicenseKey.Substring(17)
@@ -121,7 +123,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         if ($vCenter) {
             $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($vCenter.InstanceUuid.AssignedLicense)
             $vCenterLicense = $vCenterAssignedLicense | Where-Object {$_.EntityId -eq $vCenter.InstanceUuid}
-            if ($vCenterLicense -and $Options.ShowLicenses) { 
+            if ($vCenterLicense -and $Options.ShowLicenseKeys) { 
                 $vCenterLicenseKey = $vCenterLicense.AssignedLicense.LicenseKey
             } elseif ($vCenterLicense) { 
                 $vCenterLicenseKey = "*****-*****-*****" + $vCenterLicense.AssignedLicense.LicenseKey.Substring(17)
@@ -135,7 +137,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         }
         if ($Licenses) {
             foreach ($License in $LicenseManager.Licenses) {
-                if ($Options.ShowLicenses) {
+                if ($Options.ShowLicenseKeys) {
                     $LicenseKey = $License.LicenseKey
                 } else {
                     $LicenseKey = "*****-*****-*****" + $License.LicenseKey.Substring(17)
@@ -3002,7 +3004,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $VMDetail | Table -Name 'VM Detailed Information' -List -ColumnWidths 50, 50
 
                                     $VMSnapshots = $VM | Get-Snapshot
-                                    if ($VMSnapshots) {
+                                    if ($VMSnapshots -and $Options.ShowVMSnapshots) {
                                         Section -Style Heading4 "Snapshots" {
                                             $VMSnapshots = foreach ($VMSnapshot in $VMSnapshots) {
                                                 [PSCustomObject]@{
@@ -3026,7 +3028,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         #region VM Snapshot Information
                         if ($InfoLevel.VM -eq 2) {
                             $VMSnapshots = $VMs | Get-Snapshot 
-                            if ($VMSnapshots) {
+                            if ($VMSnapshots -and $Options.ShowVMSnapshots) {
                                 Section -Style Heading3 'Snapshots' {
                                     $VMSnapshotInfo = foreach ($VMSnapshot in $VMSnapshots) {
                                         [PSCustomObject]@{
