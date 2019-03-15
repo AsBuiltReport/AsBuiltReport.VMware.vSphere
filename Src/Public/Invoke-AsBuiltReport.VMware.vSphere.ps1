@@ -1,4 +1,6 @@
 function Invoke-AsBuiltReport.VMware.vSphere {
+    #requires -Modules VMware.VimAutomation.Core,VMware.VumAutomation
+    
     <#
     .SYNOPSIS  
         PowerShell script to document the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats
