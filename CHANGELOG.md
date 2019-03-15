@@ -1,9 +1,12 @@
 # VMware vSphere As Built Report Changelog
 
-## [0.3.1] - 2019-03-08
+## [0.3.1] - 2019-03-15
 ### Changed
-- Modified for PS module
+- Refactored into PowerShell module
 - Updated default VMware style sheet to include page orientation
+- Changed VM Snapshot reporting to be per VM for InfoLevel 3
+### Removed
+- Removed NSX-V reporting
 
 ## [0.3.0] - 2019-02-01
 ### Added
