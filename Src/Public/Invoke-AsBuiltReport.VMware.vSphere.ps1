@@ -1,5 +1,5 @@
 function Invoke-AsBuiltReport.VMware.vSphere {
-    #requires -Modules VMware.VimAutomation.Core,VMware.VumAutomation
+    #requires -Modules @{ModuleName="PScribo";ModuleVersion="0.7.24"},AsBuiltReport,VMware.VimAutomation.Core,VMware.VumAutomation
     
     <#
     .SYNOPSIS  
