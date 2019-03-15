@@ -18,6 +18,11 @@ Open a Windows PowerShell terminal window and install each of the required modul
 install-module AsBuiltReport
 install-module VMware.PowerCLI
 ```
+
+### Required Privileges
+
+To generate a VMware vSphere report, a user account with full administrative privileges to vCenter Server is required.
+
 ## Configuration
 The vSphere As Built Report utilises a JSON file to allow configuration of report information, options, detail and healthchecks. 
 
@@ -184,64 +189,14 @@ Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' us
 ```powershell
 New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Report Vmware.vSphere -Format Html,Word -OutputPath C:\Users\Tim\Documents -SendEmail
 ```
-# Release Notes
-## [0.3.1] - 2019-03-15
-### Changed
-- Refactored into PowerShell module
-- Updated default VMware style sheet to include page orientation
-- Changed VM Snapshot reporting to be per VM for InfoLevel 3
-### Removed
-- Removed NSX-V reporting
 
-## [0.3.0] - 2019-02-01
-### Added
-- Added Cluster VM Overrides section
-
-### Changed
-- Improvements to code structure & readability
-- Improvements to output formatting
-- Improvements to vSphere HA/DRS Cluster reporting and health checks
-- Improvements to VM reporting and health checks
-- Corrected sorting of numerous table entries
-- Corrected VMHost & VM uptime calculations
-- Corrected display of 3rd party Multipath Policy plugins
-- Corrected vSAN type & disk count
-- Updated Get-Uptime & Get-License functions
-
-## [0.2.2] - 2018-09-19
-### Added
-- Added new VM health checks for CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
-- Improvements to VM reporting for Guest OS, CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
-- Minor updates to section paragraph text
-
-## 0.2.1
-### What's New
-- Added SDRS VM Overrides to Datastore Cluster section
-- SCSI LUN section rewritten to improve script performance
-- Fixed issues with current working directory paths
-- Changes to InfoLevel settings and definitions
-- Script formatting improvements to some sections to align with PowerShell best practice guidelines
-- vCenter Server SSL Certificate section removed temporarily 
-
-## 0.2.0
-### What's New
-- Requires PScribo module 0.7.24
-- Added regions/endregions to all sections of script
-- Formatting improvements
-- Added Resource Pool summary information
-- Added vSAN summary information
-- Added vCenter Server mail settings health check
-- Datastore Clusters now has it's own dedicated section
-- Added DSCluster health checks
-- Added VM Power State health check
-- Renamed Storage section to Datastores
-- Renamed Storage health checks section to Datastore
-- Added support for NSX-V reporting
-
-### Known Issues
+## Known Issues
 - Verbose script errors when connecting to vCenter with a Read-Only user account. 
-  - A user account with administrator privileges is required to generate a VMware vSphere report.
+  - A user account with administrator privileges to vCenter Server is required to generate a VMware vSphere report.
 
+- Error message _"Unable to determine the identity of the domain"_ when saving a report. 
+  - Issue relates to [Isolated Storage](http://rekiwi.blogspot.com/2008/12/unable-to-determine-identity-of-domain.html) and occurs when generating large reports. 
+  - A workaround to this issue is to run the report using PowerShell ISE.
 - In HTML documents, word-wrap of table cell contents is not working, causing the following issues;
   - Cell contents may overflow table columns
   - Tables may overflow page margin
