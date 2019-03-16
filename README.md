@@ -1,5 +1,16 @@
 # VMware vSphere As Built Report
 
+## Sample Reports
+### Sample Report 1 - Default Style
+Sample vSphere As Built report with health checks, using default report style.
+
+![Sample vSphere Report 1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/Samples/Sample_vSphere_Report_1.png "Sample vSphere Report 1")
+
+### Sample Report 2 - Custom Style
+Sample vSphere As Built report with health checks, using custom report style.
+
+![Sample vSphere Report 2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/Samples/Sample_vSphere_Report_2.png "Sample vSphere Report 2")
+
 # Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
