@@ -1,6 +1,6 @@
 @{
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
-    ModuleVersion = '0.3.1'
+    ModuleVersion = '0.4.0'
     GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
     Author = 'Tim Carman'
     Copyright = '(c) 2018 Tim Carman. All rights reserved.'

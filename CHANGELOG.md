@@ -1,6 +1,6 @@
 # VMware vSphere As Built Report Changelog
 
-## [0.3.1] - 2019-03-15
+## [0.4.0] - 2019-03-15
 ### Changed
 - Refactored into PowerShell module
 - Updated default VMware style sheet to include page orientation
