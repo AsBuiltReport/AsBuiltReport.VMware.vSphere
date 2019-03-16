@@ -1,4 +1,6 @@
 function Invoke-AsBuiltReport.VMware.vSphere {
+    #requires -Modules @{ModuleName="PScribo";ModuleVersion="0.7.24"},AsBuiltReport,VMware.VimAutomation.Core,VMware.VumAutomation
+    
     <#
     .SYNOPSIS  
         PowerShell script to document the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats
