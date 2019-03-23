@@ -1982,6 +1982,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VMHostHbaIScsi | Sort-Object Device | Table -Name "$VMHost iSCSI Storage Adapters" -List -ColumnWidths 25, 75
                                                     }
                                                 }
+                                                if ($Healthcheck.Datastore.CapacityUtilization) {
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 90} | Set-Style -Style Critical
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 75 -and $_.'% Used' -lt 90} | Set-Style -Style Warning
+                                                }
+                                                $VMHostDsSpecs | Sort-Object Name | Table -Name "$VMHost Datastores" #-ColumnWidths 20,10,10,10,10,10,10,10,10
                                             }
                                             #endregion ESXi Host Storage Adapater Information
                                         }
