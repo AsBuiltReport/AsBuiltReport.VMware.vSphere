@@ -1830,24 +1830,26 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 
                                         #region ESXi Host Datastore Specifications
                                         Section -Style Heading5 'Datastores' {
-                                            $VMHostDatastores = $VMHost | Get-Datastore          
-                                            $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
-                                                [PSCustomObject]@{
-                                                    'Name' = $VMHostDatastore.Name
-                                                    'Type' = $VMHostDatastore.Type
-                                                    'Version' = $VMHostDatastore.FileSystemVersion
-                                                    '# of VMs' = $VMHostDatastore.ExtensionData.VM.Count
-                                                    'Total Capacity GB' = [math]::Round($VMHostDatastore.CapacityGB, 2)
-                                                    'Used Capacity GB' = [math]::Round((($VMHostDatastore.CapacityGB) - ($VMHostDatastore.FreeSpaceGB)), 2)
-                                                    'Free Space GB' = [math]::Round($VMHostDatastore.FreeSpaceGB, 2)
-                                                    '% Used' = [math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)
+                                            $VMHostDatastores = $VMHost | Get-Datastore
+                                            if ($VMHostDatastores) {        
+                                                $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
+                                                    [PSCustomObject]@{
+                                                        'Name' = $VMHostDatastore.Name
+                                                        'Type' = $VMHostDatastore.Type
+                                                        'Version' = $VMHostDatastore.FileSystemVersion
+                                                        '# of VMs' = $VMHostDatastore.ExtensionData.VM.Count
+                                                        'Total Capacity GB' = [math]::Round($VMHostDatastore.CapacityGB, 2)
+                                                        'Used Capacity GB' = [math]::Round((($VMHostDatastore.CapacityGB) - ($VMHostDatastore.FreeSpaceGB)), 2)
+                                                        'Free Space GB' = [math]::Round($VMHostDatastore.FreeSpaceGB, 2)
+                                                        '% Used' = [math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)
+                                                    }
                                                 }
+                                                if ($Healthcheck.Datastore.CapacityUtilization) {
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 90} | Set-Style -Style Critical
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 75 -and $_.'% Used' -lt 90} | Set-Style -Style Warning
+                                                }
+                                                $VMHostDsSpecs | Sort-Object Name | Table -Name "$VMHost Datastores" #-ColumnWidths 20,10,10,10,10,10,10,10,10
                                             }
-                                            if ($Healthcheck.Datastore.CapacityUtilization) {
-                                                $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 90} | Set-Style -Style Critical
-                                                $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 75 -and $_.'% Used' -lt 90} | Set-Style -Style Warning
-                                            }
-                                            $VMHostDsSpecs | Sort-Object Name | Table -Name "$VMHost Datastores" #-ColumnWidths 20,10,10,10,10,10,10,10,10
                                         }
                                         #endregion ESXi Host Datastore Specifications
                 
