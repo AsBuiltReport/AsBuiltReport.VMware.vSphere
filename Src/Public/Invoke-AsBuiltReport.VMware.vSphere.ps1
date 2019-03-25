@@ -2371,7 +2371,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Version' = $VDS.Version
                                         '# of Uplinks' = $VDS.NumUplinkPorts
                                         '# of Ports' = $VDS.NumPorts 
-                                        '# of Hosts' = $VDS.ExtensionData.Summary.Host.Count
+                                        '# of Hosts' = $VDS.ExtensionData.Summary.HostMember.Count
                                         '# of VMs' = $VDS.ExtensionData.Summary.VM.Count
                                     }
                                 }    
@@ -2395,7 +2395,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Number of Uplinks' = $VDS.NumUplinkPorts 
                                                 'Number of Ports' = $VDS.NumPorts
                                                 'Number of Port Groups' = $VDS.ExtensionData.Summary.PortGroupName.Count 
-                                                'Number of Hosts' = $VDS.ExtensionData.Summary.Host.Count
+                                                'Number of Hosts' = $VDS.ExtensionData.Summary.HostMember.Count
                                                 'Number of VMs' = $VDS.ExtensionData.Summary.VM.Count 
                                                 'MTU' = $VDS.Mtu
                                                 'Network I/O Control' = Switch ($VDS.ExtensionData.Config.NetworkResourceManagementEnabled) {
