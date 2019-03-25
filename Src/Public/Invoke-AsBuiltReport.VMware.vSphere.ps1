@@ -1466,6 +1466,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                                 }
                                                             }
+                                                            $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                         }
                                                     }
                                                 }
@@ -1519,6 +1520,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $ClusterComplianceInfo | Sort-Object Name, Baseline | Table -Name "$Cluster Update Manager Compliance" -ColumnWidths 25, 50, 25
                                                         }
                                                     }
+                                                    if ($Healthcheck.Cluster.VUMCompliance) {
+                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
+                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
+                                                    }
+                                                    $ClusterComplianceInfo | Sort-Object Name, Baseline | Table -Name "$Cluster Update Manager Compliance" -ColumnWidths 25, 50, 25
                                                 }
                                                 #endregion Cluster VUM Compliance
                 
@@ -1546,6 +1552,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 #endregion Cluster Permissions
                                             }
+                                            $ClusterVIPermissions | Sort-Object 'User/Group'| Table -Name "$Cluster Permissions"
                                         }
                                     }
                                     #endregion Cluster Detailed Information
@@ -1868,6 +1875,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                         $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                     }
+                                                    $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                 }
                                             }
                                             #endregion ESXi Update Manager Baseline Information
@@ -2365,12 +2373,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'lockdownStrict' { 'Enabled (Strict)' }
                                                             default { $VMHost.ExtensionData.Config.LockdownMode }
                                                         }
+                                                        $VssPortgroupNicTeaming | Sort-Object 'vSwitch', 'Port Group' | Table -Name "$VMHost vSwitch Port Group NIC Teaming"
                                                     }
                                                     if ($Healthcheck.VMHost.LockdownMode) {
                                                         $LockdownMode | Where-Object { $_.'Lockdown Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Lockdown Mode'
                                                     }
                                                     $LockdownMode | Table -Name "$VMHost Lockdown Mode" -List -ColumnWidths 50, 50
                                                 }
+                                                #endregion ESXi Host Virtual Switch Port Group NIC Teaming                      
                                             }
                                             #endregion ESXi Host Lockdown Mode
 
@@ -2391,6 +2401,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             default { $VMHostService.Policy }
                                                         }
                                                     }
+                                                    if ($Healthcheck.VMHost.LockdownMode) {
+                                                        $LockdownMode | Where-Object {$_.'Lockdown Mode' -eq 'Disabled'} | Set-Style -Style Warning -Property 'Lockdown Mode'
+                                                    }
+                                                    $LockdownMode | Table -Name "$VMHost Lockdown Mode" -List -ColumnWidths 50, 50
                                                 }
                                                 if ($Healthcheck.VMHost.Services) {
                                                     $Services | Where-Object { $_.'Name' -eq 'SSH' -and $_.Daemon -eq 'Running' } | Set-Style -Style Warning -Property 'Daemon'
@@ -2659,6 +2673,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 $VDSTrafficShapingDetail | Sort-Object 'Direction' | Table -Name "$VDS Traffic Shaping"
                                             }
+                                            $VDSTrafficShapingDetail | Sort-Object Direction | Table -Name "$VDS Traffic Shaping"
                                         }
                                         #endregion Distributed Virtual Switch Traffic Shaping
 
