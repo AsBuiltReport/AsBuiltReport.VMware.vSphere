@@ -1,5 +1,14 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.0] - 2019-03-27
+### Added
+- Update Manager Server name added to vCenter Server detailed information
+
+### Changed 
+- Corrected VMHost count for Distributed Virtual Switches
+- Corrected vCenter Server licensing for vCenter Server 5.5/6.0
+- Fixed script termination where ESXi hosts do not have a datastore
+
 ## [0.4.0] - 2019-03-15
 ### Changed
 - Refactored into PowerShell module
