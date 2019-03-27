@@ -1875,7 +1875,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                         $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                     }
-                                                    $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                 }
                                             }
                                             #endregion ESXi Update Manager Baseline Information
