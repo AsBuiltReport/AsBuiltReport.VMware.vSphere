@@ -19,15 +19,15 @@ The following PowerShell modules are required for generating a VMware vSphere As
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery 
 
-- [AsBuiltReport Module](https://www.powershellgallery.com/packages/AsBuiltReport/)
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
+- [AsBuiltReport Core Module](https://www.powershellgallery.com/packages/AsBuiltReport.Core/)
 
 ### Module Installation
 
 Open a Windows PowerShell terminal window and install each of the required modules as follows;
 ```powershell
-install-module AsBuiltReport
 install-module VMware.PowerCLI
+install-module AsBuiltReport.VMware.vSphere
 ```
 
 ### Required Privileges

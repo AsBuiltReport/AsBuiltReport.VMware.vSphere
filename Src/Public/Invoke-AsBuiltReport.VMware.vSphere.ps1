@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        0.4.1
+        Version:        1.0.0
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -70,7 +70,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
     Function to retrieve vSphere product licensing information.
     .NOTES
-    Version:        0.1.0
+    Version:        0.1.1
     Author:         Tim Carman
     Twitter:        @tpcarman
     Github:         tpcarman
@@ -97,41 +97,40 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         (
             [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
             [ValidateNotNullOrEmpty()]
-            [PSObject]$vCenter, [PSObject]$VMHost,
+            [PSObject]$vCenter, 
+            [PSObject]$VMHost,
             [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
             [Switch]$Licenses
         ) 
 
         $LicenseObject = @()
         $ServiceInstance = Get-View ServiceInstance -Server $vCenter
-        $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager
-        $LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager 
+        $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager -Server $vCenter
+        $LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager -Server $vCenter
         if ($VMHost) {
             $VMHostId = $VMHost.Extensiondata.Config.Host.Value
             $VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)    
-            $VMHostLicense = $VMHostAssignedLicense | Where-Object {$_.EntityId -eq $VMHostId}
-            if ($Options.ShowLicenseKeys) {
-                $VMHostLicenseKey = $VMHostLicense.AssignedLicense.LicenseKey
+            $VMHostLicense = $VMHostAssignedLicense.AssignedLicense
+            if ($VMHostLicense.LicenseKey -and $Options.ShowLicenseKeys) {
+                $VMHostLicenseKey = $VMHostLicense.LicenseKey
             } else {
-                $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.AssignedLicense.LicenseKey.Substring(17)
+                $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.LicenseKey.Substring(17)
             }
             $LicenseObject = [PSCustomObject]@{                               
-                Product = $VMHostLicense.AssignedLicense.Name 
+                Product = $VMHostLicense.Name 
                 LicenseKey = $VMHostLicenseKey                   
             }
         }
         if ($vCenter) {
-            $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($vCenter.InstanceUuid.AssignedLicense)
-            $vCenterLicense = $vCenterAssignedLicense | Where-Object {$_.EntityId -eq $vCenter.InstanceUuid}
-            if ($vCenterLicense -and $Options.ShowLicenseKeys) { 
-                $vCenterLicenseKey = $vCenterLicense.AssignedLicense.LicenseKey
-            } elseif ($vCenterLicense) { 
-                $vCenterLicenseKey = "*****-*****-*****" + $vCenterLicense.AssignedLicense.LicenseKey.Substring(17)
+            $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($vCenter.InstanceUuid)
+            $vCenterLicense = $vCenterAssignedLicense.AssignedLicense
+            if ($vCenterLicense.LicenseKey -and $Options.ShowLicenseKeys) { 
+                $vCenterLicenseKey = $vCenterLicense.LicenseKey
             } else {
-                $vCenterLicenseKey = 'No License Key'
+                $vCenterLicenseKey = "*****-*****-*****" + $vCenterLicense.LicenseKey.Substring(17)
             }
             $LicenseObject = [PSCustomObject]@{                               
-                Product = $vCenterLicense.AssignedLicense.Name
+                Product = $vCenterLicense.Name
                 LicenseKey = $vCenterLicenseKey                    
             }
         }
@@ -539,6 +538,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 $VMHostLookup.($VMHost.Id) = $VMHost.Name
             }
 
+            # Get VMware Update Manager Server Name
+            $si = Get-View ServiceInstance -Server $vCenter
+            $extMgr = Get-View -Id $si.Content.ExtensionManager -Server $vCenter
+            $VumServer = $extMgr.ExtensionList | Where-Object {$_.Key -eq 'com.vmware.vcIntegrity'} | 
+                Select-Object @{
+                N = 'Name'; 
+                E = {($_.Server | Where-Object {$_.Type -eq 'SOAP' -and $_.Company -eq 'VMware, Inc.'} |
+                            Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0]}
+            } 
+
+            # Get vCenter Advanced Settings
             $vCenterAdvSettings = Get-AdvancedSetting -Entity $vCenter
             $vCenterLicense = Get-License -vCenter $vCenter
             $vCenterServerName = ($vCenterAdvSettings | Where-Object {$_.name -eq 'VirtualCenter.FQDN'}).Value
@@ -574,19 +584,21 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 'OS Type' = $vCenter.ExtensionData.Content.About.OsType
                                 'Product' = $vCenterLicense.Product
                                 'License Key' = $vCenterLicense.LicenseKey
-                                'HTTP Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpport'}).Value
-                                'HTTPS Port' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpsport'}).Value
                                 'Instance ID' = ($vCenterAdvSettings | Where-Object {$_.name -eq 'instance.id'}).Value
                             }
                             if ($vCenter.Version -gt 6) {
+                                Add-Member -InputObject $vCenterDetail -MemberType NoteProperty -Name 'HTTP Port' -Value ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpport'}).Value
+                                Add-Member -InputObject $vCenterDetail -MemberType NoteProperty -Name 'HTTPS Port' -Value ($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.rhttpproxy.httpsport'}).Value
                                 Add-Member -InputObject $vCenterDetail -MemberType NoteProperty -Name 'Platform Services Controller' -Value (($vCenterAdvSettings | Where-Object {$_.name -eq 'config.vpxd.sso.admin.uri'}).Value -replace "^https://|/sso-adminserver/sdk/vsphere.local")
-                            }   
+                            }
+                            if ($VumServer.Name) {
+                                Add-Member -InputObject $vCenterDetail -MemberType NoteProperty -Name 'Update Manager Server' -Value $VumServer.Name
+                            }  
 
                             if ($Healthcheck.vCenter.Licensing) {
                                 $vCenterDetail | Where-Object {$_.'Product' -like '*Evaluation*'} | Set-Style -Style Warning -Property 'Product'
                                 $vCenterDetail | Where-Object {$_.'Product' -eq $null} | Set-Style -Style Warning -Property 'Product'
                                 $vCenterDetail | Where-Object {$_.'License Key' -like '*-00000-00000'} | Set-Style -Style Warning -Property 'License Key'
-                                $vCenterDetail | Where-Object {$_.'License Key' -eq 'No License Key'} | Set-Style -Style Warning -Property 'License Key'
                             }
                             $vCenterDetail | Table -Name "$vCenterServerName vCenter Server Detailed Information" -List -ColumnWidths 50, 50
 
@@ -1389,18 +1401,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #endregion Cluster VM Overrides
                                 
                                         #region Cluster VUM Baselines
-                                        $ClusterBaselines = $Cluster | Get-PatchBaseline
-                                        if ($ClusterBaselines) {
-                                            Section -Style Heading4 'Update Manager Baselines' {
-                                                $ClusterBaselines = $ClusterBaselines | Select-Object Name, Description, @{L = 'Type'; E = {$_.BaselineType}}, @{L = 'Target Type'; E = {$_.TargetType}}, @{L = 'Last Update Time'; E = {$_.LastUpdateTime}}, @{L = '# of Patches'; E = {$_.CurrentPatches.Count}}
-                                                $ClusterBaselines | Sort-Object Name | Table -Name "$Cluster Update Manager Baselines"
+                                        if ($VUMConnection) {
+                                            $ClusterBaselines = $Cluster | Get-PatchBaseline
+                                            if ($ClusterBaselines) {
+                                                Section -Style Heading4 'Update Manager Baselines' {
+                                                    $ClusterBaselines = $ClusterBaselines | Select-Object Name, Description, @{L = 'Type'; E = {$_.BaselineType}}, @{L = 'Target Type'; E = {$_.TargetType}}, @{L = 'Last Update Time'; E = {$_.LastUpdateTime}}, @{L = '# of Patches'; E = {$_.CurrentPatches.Count}}
+                                                    $ClusterBaselines | Sort-Object Name | Table -Name "$Cluster Update Manager Baselines"
+                                                }
                                             }
                                         }
                                         #endregion Cluster VUM Baselines
 
                                         #region Cluster VUM Compliance
-                                        if ($InfoLevel.Cluster -ge 4) {
-                                            $ClusterCompliances = $Cluster | Get-Compliance 
+                                        if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
+                                            $ClusterCompliances = $Cluster | Get-Compliance
                                             if ($ClusterCompliances) {
                                                 Section -Style Heading4 'Update Manager Compliance' {
                                                     $ClusterComplianceInfo = foreach ($ClusterCompliance in $ClusterCompliances) {
@@ -1578,7 +1592,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             if ($InfoLevel.VMHost -ge 3) {       
                                 foreach ($VMHost in ($VMHosts | Where-Object {$_.ConnectionState -eq 'Connected' -or $_.ConnectionState -eq 'Maintenance'})) {        
                                     Section -Style Heading3 $VMHost {
-
                                         ### TODO: Host Certificate, Swap File Location
                                         #region ESXi Host Hardware Section
                                         Section -Style Heading4 'Hardware' {
@@ -1760,42 +1773,46 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Syslog Configuration
 
                                             #region ESXi Update Manager Baseline Information
-                                            $VMHostBaselines = $VMHost | Get-PatchBaseline
-                                            if ($VMHostBaselines) {
-                                                Section -Style Heading5 'Update Manager Baselines' {
-                                                    $VMHostBaselines = foreach ($VMHostBaseline in $VMHostBaselines) {
-                                                        [PSCustomObject]@{
-                                                            'Name' = $VMHostBaseline.Name
-                                                            'Description' = $VMHostBaseline.Description
-                                                            'Type' = $VMHostBaseline.BaselineType
-                                                            'Target Type' = $VMHostBaseline.TargetType
-                                                            'Last Update Time' = $VMHostBaseline.LastUpdateTime
-                                                            '# of Patches' = $VMHostBaseline.CurrentPatches.Count
+                                            if ($VumServer.Name) {
+                                                $VMHostBaselines = $VMHost | Get-PatchBaseline
+                                                if ($VMHostBaselines) {
+                                                    Section -Style Heading5 'Update Manager Baselines' {
+                                                        $VMHostBaselines = foreach ($VMHostBaseline in $VMHostBaselines) {
+                                                            [PSCustomObject]@{
+                                                                'Name' = $VMHostBaseline.Name
+                                                                'Description' = $VMHostBaseline.Description
+                                                                'Type' = $VMHostBaseline.BaselineType
+                                                                'Target Type' = $VMHostBaseline.TargetType
+                                                                'Last Update Time' = $VMHostBaseline.LastUpdateTime
+                                                                '# of Patches' = $VMHostBaseline.CurrentPatches.Count
+                                                            }
                                                         }
+                                                        $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                     }
-                                                    $VMHostBaselines | Sort-Object Name | Table -Name "$VMHost Update Manager Baselines"
                                                 }
                                             }
                                             #endregion ESXi Update Manager Baseline Information
 
                                             #region ESXi Update Manager Compliance Information
-                                            $VMHostCompliances = $VMHost | Get-Compliance 
-                                            if ($VMHostCompliances) {
-                                                Section -Style Heading5 'Update Manager Compliance' {
-                                                    $VMHostComplianceInfo = foreach ($VMHostCompliance in $VMHostCompliances) {
-                                                        [PSCustomObject]@{
-                                                            'Baseline' = $VMHostCompliance.Baseline.Name
-                                                            'Status' = Switch ($VMHostCompliance.Status) {
-                                                                'NotCompliant' {'Not Compliant'}
-                                                                default {$VMHostCompliance.Status}
+                                            if ($VumServer.Name) {
+                                                $VMHostCompliances = $VMHost | Get-Compliance
+                                                if ($VMHostCompliances) {
+                                                    Section -Style Heading5 'Update Manager Compliance' {
+                                                        $VMHostComplianceInfo = foreach ($VMHostCompliance in $VMHostCompliances) {
+                                                            [PSCustomObject]@{
+                                                                'Baseline' = $VMHostCompliance.Baseline.Name
+                                                                'Status' = Switch ($VMHostCompliance.Status) {
+                                                                    'NotCompliant' {'Not Compliant'}
+                                                                    default {$VMHostCompliance.Status}
+                                                                }
                                                             }
+                                                        } 
+                                                        if ($Healthcheck.VMHost.VUMCompliance) {
+                                                            $VMHostComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
+                                                            $VMHostComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
                                                         }
-                                                    } 
-                                                    if ($Healthcheck.VMHost.VUMCompliance) {
-                                                        $VMHostComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
-                                                        $VMHostComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
+                                                        $VMHostComplianceInfo | Sort-Object Baseline | Table -Name "$VMHost Update Manager Compliance" -ColumnWidths 75, 25
                                                     }
-                                                    $VMHostComplianceInfo | Sort-Object Baseline | Table -Name "$VMHost Update Manager Compliance" -ColumnWidths 75, 25
                                                 }
                                             }
                                             #endregion ESXi Update Manager Compliance Information
@@ -3062,7 +3079,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #endregion Virtual Machine Section
 
                 #region VMware Update Manager Section
-                if ($InfoLevel.VUM -ge 1) {
+                if ($InfoLevel.VUM -ge 1 -and $VumServer.Name) {
                     $VUMBaselines = Get-PatchBaseline -Server $vCenter
                     if ($VUMBaselines) {
                         Section -Style Heading2 'VMware Update Manager' {
