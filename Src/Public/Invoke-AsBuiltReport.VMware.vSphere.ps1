@@ -512,7 +512,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     # Connect to vCenter Server using supplied credentials
     foreach ($VIServer in $Target) { 
         #region vCenter Server Section
-        $vCenter = @()       
         try {
             $vCenter = Connect-VIServer $VIServer -Credential $Credential -ErrorAction Stop
         } catch {
@@ -3130,6 +3129,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             # Disconnect vCenter Server
             $Null = Disconnect-VIServer -Server $VIServer -Confirm:$false -ErrorAction SilentlyContinue
         } # End of If $vCenter
+
+        #region Variable cleanup
+        Clear-Variable $vCenter
+        #endregion Variable cleanup
+         
     } # End of Foreach $VIServer
     #endregion Script Body
 } # End Invoke-AsBuiltReport.VMware.vSphere function

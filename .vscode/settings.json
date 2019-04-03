@@ -10,7 +10,7 @@
     "powershell.codeFormatting.openBraceOnSameLine": true,
     "powershell.codeFolding.enable": true,
     "powershell.codeFormatting.alignPropertyValuePairs": false,
-    "powershell.bugReporting.project": "https://github.com/tpcarman/As-Built-Report/",
+    "powershell.bugReporting.project": "https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/",
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
     "editor.detectIndentation": false,
