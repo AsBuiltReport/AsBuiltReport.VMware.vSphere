@@ -1,6 +1,23 @@
-https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg
-https://img.shields.io/github/last-commit/AsBuiltReport/AsBuiltReport.VMware.vSphere/master.svg
-https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg
+<p align="center">
+    <a alt="PowerShell Gallery Version">
+        <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg" /></a>
+    <a alt="PS Gallery Downloads">
+        <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg" /></a>
+    <a alt="PS Platform">
+        <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg" /></a>
+</p>
+<p align="center">
+    <a alt="GitHub Last Commit">
+        <img src="https://img.shields.io/github/last-commit/AsBuiltReport/AsBuiltReport.VMware.vSphere/master.svg" /></a>
+    <a alt="GitHub License">
+        <img src="https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg" /></a>
+    <a alt="GitHub Contributors">
+        <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg"/></a>
+</p>
+<p align="center">
+    <a alt="Twitter">
+            <img src="https://img.shields.io/twitter/follow/AsBuiltReport.svg?style=social"/></a>
+</p>
 
 # VMware vSphere As Built Report
 
