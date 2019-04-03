@@ -1,3 +1,7 @@
+https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg
+https://img.shields.io/github/last-commit/AsBuiltReport/AsBuiltReport.VMware.vSphere/master.svg
+https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg
+
 # VMware vSphere As Built Report
 
 ## Sample Reports

@@ -92,7 +92,7 @@
     PrivateData = @{
 
         PSData = @{
-            Tags = @('AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo')
+            Tags = @('AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo', 'PSEdition_Desktop')
             LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE'
             ProjectUri = 'https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere'
             # IconUri = ''
