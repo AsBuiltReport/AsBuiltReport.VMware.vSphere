@@ -3131,7 +3131,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         } # End of If $vCenter
 
         #region Variable cleanup
-        Clear-Variable $vCenter
+        Clear-Variable -Name vCenter
         #endregion Variable cleanup
          
     } # End of Foreach $VIServer
