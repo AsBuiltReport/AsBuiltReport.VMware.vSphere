@@ -1,21 +1,21 @@
 <p align="center">
-    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" target="_blank" alt="PowerShell Gallery Version">
+    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PowerShell Gallery Version">
         <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg" /></a>
-    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" target="_blank" alt="PS Gallery Downloads">
+    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Gallery Downloads">
         <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg" /></a>
-    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" target="_blank" alt="PS Platform">
+    <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Platform">
         <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg" /></a>
 </p>
 <p align="center">
-    <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/commit-activity" target="_blank" alt="GitHub Last Commit">
+    <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/commit-activity" alt="GitHub Last Commit">
         <img src="https://img.shields.io/github/last-commit/AsBuiltReport/AsBuiltReport.VMware.vSphere/master.svg" /></a>
-    <a href="https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE" target="_blank" alt="GitHub License">
+    <a href="https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE" alt="GitHub License">
         <img src="https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg" /></a>
-    <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/contributors" target="_blank" alt="GitHub Contributors">
+    <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/contributors" alt="GitHub Contributors">
         <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg"/></a>
 </p>
 <p align="center">
-    <a href="https://twitter.com/AsBuiltReport" target="_blank" alt="Twitter">
+    <a href="https://twitter.com/AsBuiltReport" alt="Twitter">
             <img src="https://img.shields.io/twitter/follow/AsBuiltReport.svg?style=social"/></a>
 </p>
 
