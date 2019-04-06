@@ -1,5 +1,14 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.0] - 2019-03-27
+### Added
+- Update Manager Server name added to vCenter Server detailed information
+
+### Changed 
+- Corrected VMHost count for Distributed Virtual Switches
+- Corrected vCenter Server licensing for vCenter Server 5.5/6.0
+- Fixed script termination where ESXi hosts do not have a datastore
+
 ## [0.4.0] - 2019-03-15
 ### Changed
 - Refactored into PowerShell module
@@ -52,15 +61,3 @@
 - Renamed Storage section to Datastores
 - Renamed Storage health checks section to Datastore
 - Added support for NSX-V reporting
-
-### Known Issues
-- Verbose script errors when connecting to vCenter with a Read-Only user account
-
-- In HTML documents, word-wrap of table cell contents is not working, causing the following issues;
-  - Cell contents may overflow table columns
-  - Tables may overflow page margin
-  - [PScribo Issue #83](https://github.com/iainbrighton/PScribo/issues/83)
-
-- In Word documents, some tables are not sized proportionately. To prevent cell overflow issues in HTML documents, most tables are auto-sized, this causes some tables to be out of proportion.
-    
-    - [PScribo Issue #83](https://github.com/iainbrighton/PScribo/issues/83)
