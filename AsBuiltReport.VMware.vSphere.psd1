@@ -7,8 +7,6 @@
 #
 
 @{
-    # Script module or binary module file associated with this manifest.
-    RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
     ModuleVersion = '1.0.5'
@@ -19,79 +17,74 @@
     # ID used to uniquely identify this module
     GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
 
-    # Author of this module
-    Author = 'Tim Carman'
-    
-    # Company or vendor of this module
-    # CompanyName = ''
+# Version number of this module.
+ModuleVersion = '1.0.0'
 
-    # Copyright statement for this module
-    Copyright = '(c) 2018 Tim Carman. All rights reserved.'
+# Supported PSEditions
+CompatiblePSEditions = 'Desktop'
 
-    # Description of the functionality provided by this module
-    Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
+# ID used to uniquely identify this module
+GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
 
     # Minimum version of the Windows PowerShell engine required by this module
     PowerShellVersion = '5.1'
 
-    # Name of the Windows PowerShell host required by this module
-    # PowerShellHostName = ''
+# Company or vendor of this module
+CompanyName = ''
 
-    # Minimum version of the Windows PowerShell host required by this module
-    # PowerShellHostVersion = ''
+# Copyright statement for this module
+Copyright = '(c) 2018 Tim Carman. All rights reserved.'
 
-    # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    DotNetFrameworkVersion = '4.5'
+# Description of the functionality provided by this module
+Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
 
-    # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    # CLRVersion = ''
+# Minimum version of the Windows PowerShell engine required by this module
+PowerShellVersion = '5.1'
 
-    # Processor architecture (None, X86, Amd64) required by this module
-    # ProcessorArchitecture = ''
+# Name of the Windows PowerShell host required by this module
+# PowerShellHostName = ''
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules = @('AsBuiltReport.Core')
 
-    # Assemblies that must be loaded prior to importing this module
-    # RequiredAssemblies = @()
+# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+DotNetFrameworkVersion = '4.5'
 
-    # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-    # ScriptsToProcess = @()
+# Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+# CLRVersion = ''
 
-    # Type files (.ps1xml) to be loaded when importing this module
-    # TypesToProcess = @()
+# Processor architecture (None, X86, Amd64) required by this module
+# ProcessorArchitecture = ''
 
-    # Format files (.ps1xml) to be loaded when importing this module
-    # FormatsToProcess = @()
+# Modules that must be imported into the global environment prior to importing this module
+RequiredModules = @('AsBuiltReport.Core')
 
-    # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    # NestedModules = @()
+# Assemblies that must be loaded prior to importing this module
+# RequiredAssemblies = @()
 
-    # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @(
-        'Invoke-AsBuiltReport.VMware.vSphere'
-    )
+# Script files (.ps1) that are run in the caller's environment prior to importing this module.
+# ScriptsToProcess = @()
 
-    # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    # CmdletsToExport = @()
+# Type files (.ps1xml) to be loaded when importing this module
+# TypesToProcess = @()
 
-    # Variables to export from this module
-    # VariablesToExport = '*'
+# Format files (.ps1xml) to be loaded when importing this module
+# FormatsToProcess = @()
 
-    # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    # AliasesToExport = @()
+# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
+# NestedModules = @()
 
-    # DSC resources to export from this module
-    # DscResourcesToExport = @()
+# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
+FunctionsToExport = 'Invoke-AsBuiltReport.VMware.vSphere'
 
-    # List of all modules packaged with this module
-    # ModuleList = @()
+# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
+CmdletsToExport = @()
 
-    # List of all files packaged with this module
-    # FileList = @()
+# Variables to export from this module
+# VariablesToExport = @()
 
-    # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
-    PrivateData = @{
+# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
+AliasesToExport = @()
 
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
@@ -120,10 +113,11 @@
 
         } # End of PSData hashtable
 
-    } # End of PrivateData hashtable
+# List of all modules packaged with this module
+# ModuleList = @()
 
-    # HelpInfo URI of this module
-    # HelpInfoURI = ''
+# List of all files packaged with this module
+# FileList = @()
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
