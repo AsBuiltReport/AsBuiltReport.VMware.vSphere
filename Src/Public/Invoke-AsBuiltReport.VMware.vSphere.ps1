@@ -1521,8 +1521,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Cluster.VUMCompliance) {
-                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
-                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
+                                                        $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Unknown' } | Set-Style -Style Warning
+                                                        $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
                                                     }
                                                     $ClusterComplianceInfo | Sort-Object Name, Baseline | Table -Name "$Cluster Update Manager Compliance" -ColumnWidths 25, 50, 25
                                                 }
@@ -1552,7 +1552,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 #endregion Cluster Permissions
                                             }
-                                            $ClusterVIPermissions | Sort-Object 'User/Group'| Table -Name "$Cluster Permissions"
+                                            $ClusterVIPermissions | Sort-Object 'User/Group' | Table -Name "$Cluster Permissions"
                                         }
                                     }
                                     #endregion Cluster Detailed Information
