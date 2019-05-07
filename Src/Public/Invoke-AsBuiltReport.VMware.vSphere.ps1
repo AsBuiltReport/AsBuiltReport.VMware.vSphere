@@ -122,7 +122,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             }
         }
         if ($vCenter) {
-            $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($vCenter.InstanceUuid)
+            $vCenterAssignedLicense = $LicenseManagerAssign.GetType().GetMethod("QueryAssignedLicenses").Invoke($LicenseManagerAssign, @($_.MoRef.Value)) | Where-Object { $_.EntityID -eq $vCenter.InstanceUuid }
             $vCenterLicense = $vCenterAssignedLicense.AssignedLicense
             if ($vCenterLicense.LicenseKey -and $Options.ShowLicenseKeys) { 
                 $vCenterLicenseKey = $vCenterLicense.LicenseKey
@@ -2768,9 +2768,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'I/O Latency Threshold' = "$($DSCluster.IOLatencyThresholdMillisecond) ms"
                                         'Capacity GB' = [math]::Round($DSCluster.CapacityGB, 2)
                                         'FreeSpace GB' = [math]::Round($DSCluster.FreeSpaceGB, 2)
-                                        '% Used' = [math]::Round(
-                                            (100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2
-                                        )
+                                        '% Used' = Switch ($DSCluster.CapacityGB -gt 0) {
+                                            $true { [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2) }
+                                            $false { '0' }
+                                        }
                                     }
                                 }
                                 if ($Healthcheck.DSCluster.CapacityUtilization) {
@@ -2808,9 +2809,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'I/O Latency Threshold' = "$($DSCluster.IOLatencyThresholdMillisecond) ms"
                                             'Capacity' = "$([math]::Round($DSCluster.CapacityGB, 2)) GB"
                                             'FreeSpace' = "$([math]::Round($DSCluster.FreeSpaceGB, 2)) GB"
-                                            '% Used' = [math]::Round(
-                                                (100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2
-                                            )
+                                            '% Used' = Switch ($DSCluster.CapacityGB -gt 0) {
+                                                $true { [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2) }
+                                                $false { '0' }
+                                            }
                                         }
                             
                                         if ($Healthcheck.DSCluster.CapacityUtilization) {
