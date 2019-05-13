@@ -1,5 +1,12 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.1] - 2019-05-13
+### Changed
+- Improvements to code and report readability
+- Fixed bug in vCenter Server licensing reporting
+- Fixed Datastore reporting when an empty datastore cluster exists
+- Fixed VMHost reporting to exclude HCX Cloud Gateway host
+
 ## [1.0.0] - 2019-03-27
 ### Added
 - Update Manager Server name added to vCenter Server detailed information

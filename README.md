@@ -209,7 +209,7 @@ New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphe
 - Generate HTML & Text reports with Health Checks
 Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'
 ```powershell
-New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credentials $Creds -Report VMware.vSphere -Format Html,Text -OutputPath 'C:\Users\Tim\Documents' -EnableHealthCheck
+New-AsBuiltReport -Target 'vcenter-01.corp.local' -Credential $Creds -Report VMware.vSphere -Format Html,Text -OutputPath 'C:\Users\Tim\Documents' -EnableHealthCheck
 ```
 - Generate report with multiple vCenter Servers using Custom Style
 Generate a single vSphere As Built Report for vCenter Servers 'vcenter-01.corp.local' and 'vcenter-02.corp.local' using specified credentials. Report exports to WORD format by default. Apply custom style to the report. Reports are saved to the user profile folder by default.
