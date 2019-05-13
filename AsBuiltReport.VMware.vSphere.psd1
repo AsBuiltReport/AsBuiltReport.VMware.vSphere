@@ -20,71 +20,71 @@
 # Version number of this module.
 ModuleVersion = '1.0.0'
 
-# Supported PSEditions
-CompatiblePSEditions = 'Desktop'
+    # Supported PSEditions
+    CompatiblePSEditions = 'Desktop'
 
-# ID used to uniquely identify this module
-GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
+    # ID used to uniquely identify this module
+    GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
 
     # Minimum version of the Windows PowerShell engine required by this module
     PowerShellVersion = '5.1'
 
-# Company or vendor of this module
-CompanyName = ''
+    # Company or vendor of this module
+    CompanyName = ''
 
-# Copyright statement for this module
-Copyright = '(c) 2018 Tim Carman. All rights reserved.'
+    # Copyright statement for this module
+    Copyright = '(c) 2018 Tim Carman. All rights reserved.'
 
-# Description of the functionality provided by this module
-Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
+    # Description of the functionality provided by this module
+    Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
 
-# Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '5.1'
+    # Minimum version of the Windows PowerShell engine required by this module
+    PowerShellVersion = '5.1'
 
-# Name of the Windows PowerShell host required by this module
-# PowerShellHostName = ''
+    # Name of the Windows PowerShell host required by this module
+    # PowerShellHostName = ''
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules = @('AsBuiltReport.Core')
 
-# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-DotNetFrameworkVersion = '4.5'
+    # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+    DotNetFrameworkVersion = '4.5'
 
-# Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-# CLRVersion = ''
+    # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
+    # CLRVersion = ''
 
-# Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = ''
+    # Processor architecture (None, X86, Amd64) required by this module
+    # ProcessorArchitecture = ''
 
-# Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('AsBuiltReport.Core')
+    # Modules that must be imported into the global environment prior to importing this module
+    RequiredModules = @('AsBuiltReport.Core')
 
-# Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+    # Assemblies that must be loaded prior to importing this module
+    # RequiredAssemblies = @()
 
-# Script files (.ps1) that are run in the caller's environment prior to importing this module.
-# ScriptsToProcess = @()
+    # Script files (.ps1) that are run in the caller's environment prior to importing this module.
+    # ScriptsToProcess = @()
 
-# Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
+    # Type files (.ps1xml) to be loaded when importing this module
+    # TypesToProcess = @()
 
-# Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+    # Format files (.ps1xml) to be loaded when importing this module
+    # FormatsToProcess = @()
 
-# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-# NestedModules = @()
+    # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
+    # NestedModules = @()
 
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Invoke-AsBuiltReport.VMware.vSphere'
+    # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
+    FunctionsToExport = 'Invoke-AsBuiltReport.VMware.vSphere'
 
-# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+    # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
+    CmdletsToExport = @()
 
-# Variables to export from this module
-# VariablesToExport = @()
+    # Variables to export from this module
+    # VariablesToExport = @()
 
-# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+    # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
+    AliasesToExport = @()
 
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
