@@ -1052,8 +1052,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 #endregion vSphere HA Cluster Advanced Options
-
-                                        
                                             }
                                         }
                                         #endregion vSphere HA Cluster Configuration
@@ -1457,6 +1455,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                                 }
                                                             }
+                                                            $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                         }
                                                     }
                                                 }
@@ -1480,6 +1479,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $ClusterBaselines | Sort-Object 'Name' | Table -Name "$Cluster Update Manager Baselines"
                                                         }
                                                     }
+                                                    if ($Healthcheck.Cluster.VUMCompliance) {
+                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
+                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
+                                                    }
+                                                    $ClusterComplianceInfo | Sort-Object Name, Baseline | Table -Name "$Cluster Update Manager Compliance" -ColumnWidths 25, 50, 25
                                                 }
                                                 #endregion Cluster VUM Baselines
 
@@ -1532,6 +1536,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 #endregion Cluster Permissions
                                             }
+                                            $ClusterVIPermissions | Sort-Object 'User/Group'| Table -Name "$Cluster Permissions"
                                         }
                                     }
                                     #endregion Cluster Detailed Information
@@ -1635,7 +1640,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'Hosts' {
                             Paragraph ("The following section provides information on the configuration of VMware " +
                                 "ESXi hosts managed by vCenter Server $vCenterServerName.")
-
                             #region ESXi Host Informative Information
                             if ($InfoLevel.VMHost -eq 2) {
                                 BlankLine
@@ -1760,6 +1764,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $true { 'Yes' }
                                                         $false { 'No' }
                                                     }
+                                                    'NTP Server(s)' = (Get-VMHostNtpServer -VMHost $VMHost | Sort-Object) -join ', '
                                                 }
                                                 $VMHostBootDevice | Table -Name "$VMHost Boot Device" -List -ColumnWidths 50, 50 
                                             }
@@ -2249,7 +2254,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 #endregion ESXi Host Virtual Switch NIC Teaming                       
-                
+
                                                 #region ESXi Host Virtual Switch Port Groups
                                                 $VssPortgroups = $VSSwitches | Get-VirtualPortGroup -Standard 
                                                 if ($VssPortgroups) {
@@ -2266,7 +2271,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 #endregion ESXi Host Virtual Switch Port Groups                
-                
+
                                                 #region ESXi Host Virtual Switch Port Group Security Poilicy
                                                 $VssPortgroupSecurity = $VSSwitches | Get-VirtualPortGroup | Get-SecurityPolicy 
                                                 if ($VssPortgroupSecurity) {
@@ -2338,7 +2343,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         Section -Style Heading4 'Security' {
                                             Paragraph ("The following section provides information on the host " +
                                                 "security configuration of $VMHost.")
-                            
+
                                             #region ESXi Host Lockdown Mode
                                             if ($VMHost.ExtensionData.Config.LockdownMode -ne $null) {
                                                 Section -Style Heading5 'Lockdown Mode' {
@@ -2636,6 +2641,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 $VDSTrafficShapingDetail | Sort-Object 'Direction' | Table -Name "$VDS Traffic Shaping"
                                             }
+                                            $VDSTrafficShapingDetail | Sort-Object Direction | Table -Name "$VDS Traffic Shaping"
                                         }
                                         #endregion Distributed Virtual Switch Traffic Shaping
 
@@ -2752,7 +2758,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'vSAN' {
                             Paragraph ("The following section provides information on the vSAN managed " +
                                 "by vCenter Server $vCenterServerName.")
-        
+
                             #region vSAN Cluster Informative Information
                             if ($InfoLevel.Vsan -eq 2) {
                                 BlankLine
@@ -2877,7 +2883,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $DatastoreInfo | Sort-Object Name | Table -Name 'Datastore Information'
                             }
                             #endregion Datastore Informative Information
-        
+
                             #region Datastore Detailed Information
                             if ($InfoLevel.Datastore -ge 3) {
                                 foreach ($Datastore in $Datastores) {
@@ -2897,8 +2903,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             }
                                             'Congestion Threshold' = "$($Datastore.CongestionThresholdMillisecond) ms"
                                             'Total Capacity' = "$([math]::Round($Datastore.CapacityGB, 2)) GB"
-                                            'Used Capacity' = "$([math]::Round((($Datastore.CapacityGB) - 
-                                                            ($Datastore.FreeSpaceGB)), 2)) GB"
+                                            'Used Capacity' = "$([math]::Round((($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)), 2)) GB"
                                             'Free Space' = "$([math]::Round($Datastore.FreeSpaceGB, 2)) GB"
                                             '% Used' = [math]::Round(
                                                 (100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2
@@ -2960,7 +2965,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     }
                 }
                 #endregion Datastore Section
-        
+
                 #region Datastore Clusters
                 if ($InfoLevel.DSCluster -ge 1) {
                     $DSClusters = Get-DatastoreCluster -Server $vCenter
@@ -3066,7 +3071,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     ($_.IntraVmAffinity -eq $null)
                                                 )
                                             }
+                                            Section -Style Heading4 'SDRS VM Overrides' {
+                                                $VMOverrideDetails | Sort-Object 'Virtual Machine' | Table -Name 'SDRS VM Overrides'
+                                            }
                                         }
+
                                         if ($VMOverrides) {
                                             $VMOverrideDetails = foreach ($Override in $VMOverrides) {
                                                 [PSCustomObject]@{
@@ -3302,7 +3311,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'VMware Update Manager' {
                             Paragraph ("The following section provides information on VMware Update Manager " +
                                 "managed by vCenter Server $vCenterServerName.")
-            
+
                             #region VUM Baseline Detailed Information
                             if ($InfoLevel.VUM -ge 2) {
                                 Section -Style Heading3 'Baselines' {
@@ -3320,7 +3329,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 }
                             }
                             #endregion VUM Baseline Detailed Information
-            
+
                             #region VUM Comprehensive Information
                             $VUMPatches = Get-Patch -Server $vCenter | Sort-Object -Descending ReleaseDate
                             if ($VUMPatches -and $InfoLevel.VUM -ge 5) {

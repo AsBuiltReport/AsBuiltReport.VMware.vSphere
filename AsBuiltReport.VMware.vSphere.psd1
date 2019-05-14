@@ -7,7 +7,6 @@
 #
 
 @{
-
     # Script module or binary module file associated with this manifest.
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
@@ -22,9 +21,9 @@
 
     # Author of this module
     Author = 'Tim Carman'
-
+    
     # Company or vendor of this module
-    CompanyName = ''
+    # CompanyName = ''
 
     # Copyright statement for this module
     Copyright = '(c) 2018 Tim Carman. All rights reserved.'
@@ -69,16 +68,18 @@
     # NestedModules = @()
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = 'Invoke-AsBuiltReport.VMware.vSphere'
+    FunctionsToExport = @(
+        'Invoke-AsBuiltReport.VMware.vSphere'
+    )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    CmdletsToExport = @()
+    # CmdletsToExport = @()
 
     # Variables to export from this module
-    # VariablesToExport = @()
+    # VariablesToExport = '*'
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport = @()
+    # AliasesToExport = @()
 
     # DSC resources to export from this module
     # DscResourcesToExport = @()
@@ -93,7 +94,6 @@
     PrivateData = @{
 
         PSData = @{
-
             # Tags applied to this module. These help with module discovery in online galleries.
             Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo', 'PSEdition_Desktop'
 
