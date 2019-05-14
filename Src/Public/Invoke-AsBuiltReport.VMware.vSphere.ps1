@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.0.2
+        Version:        1.0.3
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
