@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.0.3
+        Version:        1.0.4
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -1245,14 +1245,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $DrsGroups = foreach ($DrsClusterGroup in $DrsClusterGroups) {
                                                             [PSCustomObject]@{
                                                                 'Name' = $DrsClusterGroup.Name
-                                                                'Group Type' = $DrsClusterGroup.GroupType
+                                                                'Type' = Switch ($DrsClusterGroup.GroupType) {
+                                                                    'VMGroup' { 'VM Group' }
+                                                                    'VMHostGroup' { 'Host Group' }
+                                                                }
                                                                 'Members' = Switch (($DrsClusterGroup.Member).Count -gt 0) {
                                                                     $true { ($DrsClusterGroup.Member | Sort-Object) -join ', ' }
                                                                     $false { "None" }
                                                                 }
                                                             }
                                                         }
-                                                        $DrsGroups | Sort-Object 'Name', 'Group Type' | Table -Name "$Cluster DRS Cluster Groups"
+                                                        $DrsGroups | Sort-Object 'Name', 'Type' | Table -Name "$Cluster DRS Cluster Groups"
                                                     }
                                                     #endregion vSphere DRS Cluster Group  
 
@@ -1263,13 +1266,18 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $DrsVMHostRuleDetail = foreach ($DrsVMHostRule in $DrsVMHostRules) {
                                                                 [PSCustomObject]@{
                                                                     'Name' = $DrsVMHostRule.Name
-                                                                    'Type' = $DrsVMHostRule.Type
+                                                                    'Type' = Switch ($DrsVMHostRule.Type) {
+                                                                        'MustRunOn' { 'Must run on hosts in group' }
+                                                                        'ShouldRunOn' { 'Should run on hosts in group' }
+                                                                        'MustNotRunOn' { 'Must not run on hosts in group' }
+                                                                        'ShouldNotRunOn' { 'Should not run on hosts in group' }
+                                                                    }
                                                                     'Enabled' = Switch ($DrsVMHostRule.Enabled) {
                                                                         $true { 'Yes' }
                                                                         $False { 'No' }
                                                                     }
                                                                     'VM Group' = $DrsVMHostRule.VMGroup
-                                                                    'VMHost Group' = $DrsVMHostRule.VMHostGroup
+                                                                    'Host Group' = $DrsVMHostRule.VMHostGroup
                                                                 }
                                                             }
                                                             if ($Healthcheck.Cluster.DrsVMHostRules) {
@@ -1287,7 +1295,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $DrsRuleDetail = foreach ($DrsRule in $DrsRules) {
                                                                 [PSCustomObject]@{
                                                                     'Name' = $DrsRule.Name
-                                                                    'Type' = $DrsRule.Type
+                                                                    'Type' = Switch ($DrsRule.Type) {
+                                                                        'VMAffinity' { 'Keep Vitrual Machines Together' }
+                                                                        'VMAntiAffinity' { 'Separate Virtual Machines' }
+                                                                    }
                                                                     'Enabled' = Switch ($DrsRule.Enabled) {
                                                                         $true { 'Yes' }
                                                                         $False { 'No' }
@@ -1480,8 +1491,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Cluster.VUMCompliance) {
-                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Unknown'} | Set-Style -Style Warning
-                                                        $ClusterComplianceInfo | Where-Object {$_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible'} | Set-Style -Style Critical
+                                                        $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Unknown' } | Set-Style -Style Warning
+                                                        $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
                                                     }
                                                     $ClusterComplianceInfo | Sort-Object Name, Baseline | Table -Name "$Cluster Update Manager Compliance" -ColumnWidths 25, 50, 25
                                                 }
@@ -1536,7 +1547,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 #endregion Cluster Permissions
                                             }
-                                            $ClusterVIPermissions | Sort-Object 'User/Group'| Table -Name "$Cluster Permissions"
                                         }
                                     }
                                     #endregion Cluster Detailed Information
@@ -2385,7 +2395,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $Services | Where-Object { $_.'Name' -eq 'NTP Daemon' -and $_.Daemon -eq 'Stopped' } | Set-Style -Style Critical -Property 'Daemon'
                                                     $Services | Where-Object { $_.'Name' -eq 'NTP Daemon' -and $_.'Startup Policy' -ne 'Start and stop with host' } | Set-Style -Style Critical -Property 'Startup Policy'
                                                 }
-                                                $Services | Sort-Object Name | Table -Name "$VMHost Services" 
+                                                $Services | Sort-Object 'Name' | Table -Name "$VMHost Services" 
                                             }
                                             #endregion ESXi Host Services
 
@@ -2396,21 +2406,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     Section -Style Heading5 'Firewall' {
                                                         $VMHostFirewall = foreach ($VMHostFirewallException in $VMHostFirewallExceptions) {
                                                             [PScustomObject]@{
-                                                                'Name' = $VMHostFirewallException.Name
-                                                                'Enabled' = Switch ($VMHostFirewallException.Enabled) {
-                                                                    $true { 'Yes' }
-                                                                    $false { 'No' }
+                                                                'Service Name' = $VMHostFirewallException.Name
+                                                                'Service' = Switch ($VMHostFirewallException.Enabled) {
+                                                                    $true { 'Enabled' }
+                                                                    $false { 'Disabled' }
                                                                 }
                                                                 'Incoming Ports' = $VMHostFirewallException.IncomingPorts
                                                                 'Outgoing Ports' = $VMHostFirewallException.OutgoingPorts
                                                                 'Protocols' = $VMHostFirewallException.Protocols
-                                                                'Service Running' = Switch ($VMHostFirewallException.ServiceRunning) {
-                                                                    $true { 'Yes' }
-                                                                    $false { 'No' }
+                                                                'Daemon' = Switch ($VMHostFirewallException.ServiceRunning) {
+                                                                    $true { 'Running' }
+                                                                    $false { 'Stopped' }
+                                                                    $null { 'N/A' }
                                                                 }
                                                             }
                                                         }
-                                                        $VMHostFirewall | Sort-Object 'Name' | Table -Name "$VMHost Firewall Configuration" 
+                                                        $VMHostFirewall | Sort-Object 'Service Name' | Table -Name "$VMHost Firewall Configuration" 
                                                     }
                                                 }
                                                 #endregion ESXi Host Firewall
@@ -2641,7 +2652,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 $VDSTrafficShapingDetail | Sort-Object 'Direction' | Table -Name "$VDS Traffic Shaping"
                                             }
-                                            $VDSTrafficShapingDetail | Sort-Object Direction | Table -Name "$VDS Traffic Shaping"
                                         }
                                         #endregion Distributed Virtual Switch Traffic Shaping
 
