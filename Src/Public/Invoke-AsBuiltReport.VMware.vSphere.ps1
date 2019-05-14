@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.0.1
+        Version:        1.0.2
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -531,7 +531,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             }
 
             # Create a lookup hashtable to quickly link Host MoRefs to Names
-            $VMHosts = Get-VMHost -Server $vCenter | Sort-Object Name
+            # Exclude VMware HCX hosts from VMHost lookup
+            $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" } | Sort-Object Name
             $VMHostLookup = @{ }
             foreach ($VMHost in $VMHosts) {
                 $VMHostLookup.($VMHost.Id) = $VMHost.Name
@@ -1247,9 +1248,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             [PSCustomObject]@{
                                                                 'Name' = $DrsClusterGroup.Name
                                                                 'Group Type' = $DrsClusterGroup.GroupType
-                                                                'Members' = ($DrsClusterGroup.Member | Sort-Object) -join ', '
+                                                                'Members' = Switch (($DrsClusterGroup.Member).Count -gt 0) {
+                                                                    $true { ($DrsClusterGroup.Member | Sort-Object) -join ', ' }
+                                                                    $false { "None" }
+                                                                }
                                                             }
-                                                            $DrsGroups | Sort-Object GroupType, Name | Table -Name "$Cluster DRS Cluster Groups"
+                                                            $DrsGroups | Sort-Object 'Name', 'Group Type' | Table -Name "$Cluster DRS Cluster Groups"
                                                         }
                                                     }
                                                     #endregion vSphere DRS Cluster Group  
