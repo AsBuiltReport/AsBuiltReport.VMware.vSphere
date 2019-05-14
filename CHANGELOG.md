@@ -1,6 +1,6 @@
 # VMware vSphere As Built Report Changelog
 
-## [1.0.2] - 2019-05-14
+## [1.0.3] - 2019-05-14
 ### Changed
 - Fixed DRS Cluster Group reporting when group does not contain any members
 - Fixed DRS Cluster Group sorting
