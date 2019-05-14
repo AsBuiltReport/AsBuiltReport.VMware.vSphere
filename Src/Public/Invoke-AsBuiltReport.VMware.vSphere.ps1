@@ -1253,8 +1253,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     $false { "None" }
                                                                 }
                                                             }
-                                                            $DrsGroups | Sort-Object 'Name', 'Group Type' | Table -Name "$Cluster DRS Cluster Groups"
                                                         }
+                                                        $DrsGroups | Sort-Object 'Name', 'Group Type' | Table -Name "$Cluster DRS Cluster Groups"
                                                     }
                                                     #endregion vSphere DRS Cluster Group  
 
