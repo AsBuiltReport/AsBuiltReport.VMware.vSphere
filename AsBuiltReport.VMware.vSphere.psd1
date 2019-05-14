@@ -11,7 +11,7 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.3'
+    ModuleVersion = '1.0.4'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop'

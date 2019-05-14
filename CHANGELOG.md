@@ -1,5 +1,12 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.4] - 2019-05-15
+### Changed
+- Fixed error in Cluster permissions code
+- Fixed error in VDS Traffic Shaping code
+- Improved report readability for ESXi firewall reporting
+- Improved report readability for DRS Groups & DRS Rules reporting
+
 ## [1.0.3] - 2019-05-14
 ### Changed
 - Improvements to code and report readability
