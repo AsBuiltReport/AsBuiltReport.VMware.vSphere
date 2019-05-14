@@ -1,11 +1,16 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.2] - 2019-05-14
+### Changed
+- Fixed DRS Cluster Group reporting when group does not contain any members
+- Fixed DRS Cluster Group sorting
+- Fixed VMHost reporting to exclude HCX Cloud Gateway host
+
 ## [1.0.1] - 2019-05-13
 ### Changed
 - Improvements to code and report readability
 - Fixed bug in vCenter Server licensing reporting
 - Fixed Datastore reporting when an empty datastore cluster exists
-- Fixed VMHost reporting to exclude HCX Cloud Gateway host
 
 ## [1.0.0] - 2019-03-27
 ### Added
