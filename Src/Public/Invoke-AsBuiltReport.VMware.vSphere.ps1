@@ -1999,7 +1999,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'VMKernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
                                                 'Physical Adapters' = ($VMHostNetwork.Pnic.Device | Sort-Object) -join ', '
                                                 'VMKernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
-                                                'IPv6 Enabled' = $VMHostNetwork.IPv6Enabled
+                                                'IPv6 Enabled' = Switch ($VMHostNetwork.IPv6Enabled) {
+                                                    $true { 'Yes' }
+                                                    $false { 'No' }
+                                                }
                                                 'VMKernel IPv6 Gateway' = $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway
                                                 'DNS Servers' = ($VMHostNetwork.DnsConfig.Address | Sort-Object) -join ', ' 
                                                 'Host Name' = $VMHostNetwork.DnsConfig.HostName
