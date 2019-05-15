@@ -1309,8 +1309,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 if ($Healthcheck.Cluster.DrsRules) {
                                                                     $DrsRuleDetail | Where-Object { $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
                                                                 }
-                                                                $DrsRuleDetail | Sort-Object Type | Table -Name "$Cluster DRS Rules"
                                                             }
+                                                            $DrsRuleDetail | Sort-Object Type | Table -Name "$Cluster DRS Rules"
                                                         }
                                                         #endregion vSphere DRS Cluster Rules                                
                                                     }
@@ -1466,7 +1466,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                                 }
                                                             }
-                                                            $DasVmOverrideVmMonitoring | Sort-Object 'Virtual Machine' | Table -Name "$Cluster HA VM Overrides VM Monitoring"
                                                         }
                                                     }
                                                 }
@@ -1762,18 +1761,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'Vendor' = $ESXiBootDevice.Vendor
                                                     'Model' = $ESXiBootDevice.Model
                                                     'Size' = "$([math]::Round($ESXiBootDevice.SizeMB / 1024), 2) GB"
-                                                    'Is SAS' = Switch ($ESXiBootDevice.IsSAS) {
-                                                        $true { 'Yes' }
-                                                        $false { 'No' }
-                                                    }
-                                                    'Is SSD' = Switch ($ESXiBootDevice.IsSSD) {
-                                                        $true { 'Yes' }
-                                                        $false { 'No' }
-                                                    }
-                                                    'Is USB' = Switch ($ESXiBootDevice.IsUSB) {
-                                                        $true { 'Yes' }
-                                                        $false { 'No' }
-                                                    }
+                                                    'Is SAS' = $ESXiBootDevice.IsSAS
+                                                    'Is SSD' = $ESXiBootDevice.IsSSD
+                                                    'Is USB' = $ESXiBootDevice.IsUSB
                                                     'NTP Server(s)' = (Get-VMHostNtpServer -VMHost $VMHost | Sort-Object) -join ', '
                                                 }
                                                 $VMHostBootDevice | Table -Name "$VMHost Boot Device" -List -ColumnWidths 50, 50 
@@ -2009,10 +1999,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'VMKernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
                                                 'Physical Adapters' = ($VMHostNetwork.Pnic.Device | Sort-Object) -join ', '
                                                 'VMKernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
-                                                'IPv6 Enabled' = Switch ($VMHostNetwork.IPv6Enabled) {
-                                                    $true { 'Yes' }
-                                                    $false { 'No' }
-                                                }
+                                                'IPv6 Enabled' = $VMHostNetwork.IPv6Enabled
                                                 'VMKernel IPv6 Gateway' = $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway
                                                 'DNS Servers' = ($VMHostNetwork.DnsConfig.Address | Sort-Object) -join ', ' 
                                                 'Host Name' = $VMHostNetwork.DnsConfig.HostName
@@ -2182,10 +2169,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 'LoadbalanceSrcMac' { 'Route based on source MAC hash' }
                                                                 'LoadbalanceIP' { 'Route based on IP hash' }
                                                                 'ExplicitFailover' { 'Explicit Failover' }
+                                                                default { $VSSwitchNicTeam.LoadBalancingPolicy }
                                                             }
                                                             'Failover Detection' = Switch ($VSSwitchNicTeam.NetworkFailoverDetectionPolicy) {
                                                                 'LinkStatus' { 'Link Status' }
                                                                 'BeaconProbing' { 'Beacon Probing' }
+                                                                default { $VSSwitchNicTeam.NetworkFailoverDetectionPolicy }
                                                             } 
                                                             'Notify Switches' = Switch ($VSSwitchNicTeam.NotifySwitches) {
                                                                 $true { 'Enabled' }
@@ -2242,10 +2231,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'LoadbalanceSrcMac' { 'Route based on source MAC hash' }
                                                                     'LoadbalanceIP' { 'Route based on IP hash' }
                                                                     'ExplicitFailover' { 'Explicit Failover' }
+                                                                    default { $VssPortgroupNicTeam.LoadBalancingPolicy }
                                                                 }
                                                                 'Failover Detection' = Switch ($VssPortgroupNicTeam.NetworkFailoverDetectionPolicy) {
                                                                     'LinkStatus' { 'Link Status' }
                                                                     'BeaconProbing' { 'Beacon Probing' }
+                                                                    default { $VssPortgroupNicTeam.NetworkFailoverDetectionPolicy }
                                                                 } 
                                                                 'Notify Switches' = Switch ($VssPortgroupNicTeam.NotifySwitches) {
                                                                     $true { 'Enabled' }
@@ -2322,10 +2313,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'LoadbalanceSrcMac' { 'Route based on source MAC hash' }
                                                                     'LoadbalanceIP' { 'Route based on IP hash' }
                                                                     'ExplicitFailover' { 'Explicit Failover' }
+                                                                    default { $VssPortgroupNicTeam.LoadBalancingPolicy }
                                                                 }
                                                                 'Failover Detection' = Switch ($VssPortgroupNicTeam.NetworkFailoverDetectionPolicy) {
                                                                     'LinkStatus' { 'Link Status' }
                                                                     'BeaconProbing' { 'Beacon Probing' }
+                                                                    default { $VssPortgroupNicTeam.NetworkFailoverDetectionPolicy }
                                                                 }  
                                                                 'Notify Switches' = Switch ($VssPortgroupNicTeam.NotifySwitches) {
                                                                     $true { 'Enabled' }
@@ -2362,6 +2355,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'lockdownDisabled' { 'Disabled' }
                                                             'lockdownNormal' { 'Enabled (Normal)' }
                                                             'lockdownStrict' { 'Enabled (Strict)' }
+                                                            default { $VMHost.ExtensionData.Config.LockdownMode }
                                                         }
                                                     }
                                                     if ($Healthcheck.VMHost.LockdownMode) {
@@ -2386,6 +2380,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'automatic' { 'Start and stop with port usage' }
                                                             'on' { 'Start and stop with host' }
                                                             'off' { 'Start and stop manually' }
+                                                            default { $VMHostService.Policy }
                                                         }
                                                     }
                                                 }
@@ -2418,6 +2413,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     $true { 'Running' }
                                                                     $false { 'Stopped' }
                                                                     $null { 'N/A' }
+                                                                    default { $VMHostFirewallException.ServiceRunning }
                                                                 }
                                                             }
                                                         }
@@ -2455,6 +2451,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'Power State' = Switch ($VMHostVM.PowerState) {
                                                                 'PoweredOn' { 'Powered On' }
                                                                 'PoweredOff' { 'Powered Off' }
+                                                                default { $VMHostVM.PowerState }
                                                             }
                                                             'CPUs' = $VMHostVM.NumCpu
                                                             'Cores per Socket' = $VMHostVM.CoresPerSocket
@@ -2467,6 +2464,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 'toolsOk' { 'Tools OK' }
                                                                 'toolsNotRunning' { 'Tools Not Running' }
                                                                 'toolsNotInstalled' { 'Tools Not Installed' }
+                                                                default { $VMHostVM.ExtensionData.Guest.ToolsStatus }
                                                             }
                                                         }
                                                     }
@@ -2490,6 +2488,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'Startup' = Switch ($VMStartPol.StartAction) {
                                                                         'PowerOn' { 'Enabled' }
                                                                         'None' { 'Disabled' }
+                                                                        default { $VMStartPol.StartAction }
                                                                     }
                                                                     'Startup Delay' = "$($VMStartPol.StartDelay) seconds"
                                                                     'VMware Tools' = Switch ($VMStartPol.WaitForHeartbeat) {
@@ -2714,10 +2713,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'LoadbalanceSrcMac' { 'Route based on source MAC hash' }
                                                             'LoadbalanceIP' { 'Route based on IP hash' }
                                                             'ExplicitFailover' { 'Explicit Failover' }
+                                                            default { $VDUplink.LoadBalancingPolicy }
                                                         }
                                                         'Failover Detection' = Switch ($VDUplink.FailoverDetectionPolicy) {
                                                             'LinkStatus' { 'Link Status' }
                                                             'BeaconProbing' { 'Beacon Probing' }
+                                                            default { $VDUplink.FailoverDetectionPolicy }
                                                         }
                                                         'Notify Switches' = Switch ($VDUplink.NotifySwitches) {
                                                             $true { 'Enabled' }
@@ -2993,6 +2994,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'SDRS Automation Level' = Switch ($DSCluster.SdrsAutomationLevel) {
                                             'FullyAutomated' { 'Fully Automated' }
                                             'Manual' { 'Manual' }
+                                            default {$DSCluster.SdrsAutomationLevel}
                                         }
                                         'Space Utilization Threshold' = "$($DSCluster.SpaceUtilizationThresholdPercent)%"
                                         'I/O Load Balance' = Switch ($DSCluster.IOLoadBalanceEnabled) {
@@ -3034,6 +3036,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'SDRS Automation Level' = Switch ($DSCluster.SdrsAutomationLevel) {
                                                 'FullyAutomated' { 'Fully Automated' }
                                                 'Manual' { 'Manual' }
+                                                default { $DSCluster.SdrsAutomationLevel }
                                             }
                                             'Space Utilization Threshold' = "$($DSCluster.SpaceUtilizationThresholdPercent)%"
                                             'I/O Load Balance' = Switch ($DSCluster.IOLoadBalanceEnabled) {
@@ -3132,6 +3135,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Power State' = Switch ($VM.PowerState) {
                                             'PoweredOn' { 'Powered On' }
                                             'PoweredOff' { 'Powered Off' }
+                                            default { $VM.PowerState }
                                         }
                                         'vCPUs' = $VM.NumCpu
                                         'Cores per Socket' = $VM.CoresPerSocket
@@ -3144,6 +3148,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'toolsOk' { 'Tools OK' }
                                             'toolsNotRunning' { 'Tools Not Running' }
                                             'toolsNotInstalled' { 'Tools Not Installed' }
+                                            default { $VM.ExtensionData.Guest.ToolsStatus }
                                         }         
                                     }
                                 }
@@ -3173,12 +3178,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'Power State' = Switch ($VM.PowerState) {
                                                 'PoweredOn' { 'Powered On' }
                                                 'PoweredOff' { 'Powered Off' }
+                                                default { $VM.PowerState }
                                             }
                                             'VM Tools Status' = Switch ($VM.ExtensionData.Guest.ToolsStatus) {
                                                 'toolsOld' { 'Tools Old' }
                                                 'toolsOk' { 'Tools OK' }
                                                 'toolsNotRunning' { 'Tools Not Running' }
                                                 'toolsNotInstalled' { 'Tools Not Installed' }
+                                                default { $VM.ExtensionData.Guest.ToolsStatus }
                                             }
                                             'Fault Tolerance State' = Switch ($VM.ExtensionData.Runtime.FaultToleranceState) {
                                                 'notConfigured' { 'Not Configured' }
@@ -3187,6 +3194,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'disabled' { 'Disabled' }
                                                 'starting' { 'Starting' }
                                                 'enabled' { 'Enabled' }
+                                                default { $VM.ExtensionData.Runtime.FaultToleranceState }
                                             } 
                                             'Host' = $VM.VMHost.Name
                                             'Parent' = $VM.VMHost.Parent.Name
@@ -3227,6 +3235,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'compliant' { 'Compliant' } 
                                                 'nonCompliant' { 'Non Compliant' }
                                                 'unknown' { 'Unknown' }
+                                                default { $VMSpbmPolicy.ComplianceStatus }
                                             }
                                             'vNICs' = $VM.ExtensionData.Summary.Config.NumEthernetCards
                                         }
