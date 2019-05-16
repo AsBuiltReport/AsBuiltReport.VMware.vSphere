@@ -8,8 +8,11 @@
 
 @{
 
+    # Script module or binary module file associated with this manifest.
+    RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
+
     # Version number of this module.
-    ModuleVersion = '1.0.5'
+    ModuleVersion = '1.0.6'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop'
@@ -17,20 +20,11 @@
     # ID used to uniquely identify this module
     GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
 
-# Version number of this module.
-ModuleVersion = '1.0.0'
-
-    # Supported PSEditions
-    CompatiblePSEditions = 'Desktop'
-
-    # ID used to uniquely identify this module
-    GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
-
-    # Minimum version of the Windows PowerShell engine required by this module
-    PowerShellVersion = '5.1'
+    # Author of this module
+    Author = 'Tim Carman'
 
     # Company or vendor of this module
-    CompanyName = ''
+    # CompanyName = ''
 
     # Copyright statement for this module
     Copyright = '(c) 2018 Tim Carman. All rights reserved.'
@@ -43,9 +37,6 @@ ModuleVersion = '1.0.0'
 
     # Name of the Windows PowerShell host required by this module
     # PowerShellHostName = ''
-
-    # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules = @('AsBuiltReport.Core')
 
     # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
     DotNetFrameworkVersion = '4.5'
@@ -75,20 +66,32 @@ ModuleVersion = '1.0.0'
     # NestedModules = @()
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = 'Invoke-AsBuiltReport.VMware.vSphere'
+    FunctionsToExport = @('Invoke-AsBuiltReport.VMware.vSphere')
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    CmdletsToExport = @()
+    # CmdletsToExport = @()
 
     # Variables to export from this module
     # VariablesToExport = @()
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport = @()
+    # AliasesToExport = @()
+
+    # DSC resources to export from this module
+    # DscResourcesToExport = @()
+
+    # List of all modules packaged with this module
+    # ModuleList = @()
+
+    # List of all files packaged with this module
+    # FileList = @()
+
+    # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
+    PrivateData = @{
 
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo', 'PSEdition_Desktop'
+            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo', 'PSEdition_Desktop', 'Windows'
 
             # A URL to the license for this module.
             LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE'
@@ -113,11 +116,10 @@ ModuleVersion = '1.0.0'
 
         } # End of PSData hashtable
 
-# List of all modules packaged with this module
-# ModuleList = @()
+    } # End of PrivateData hashtable
 
-# List of all files packaged with this module
-# FileList = @()
+    # HelpInfo URI of this module
+    # HelpInfoURI = ''
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
