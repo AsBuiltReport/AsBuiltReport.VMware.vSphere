@@ -1982,6 +1982,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VMHostHbaIScsi | Sort-Object Device | Table -Name "$VMHost iSCSI Storage Adapters" -List -ColumnWidths 25, 75
                                                     }
                                                 }
+                                                if ($Healthcheck.Datastore.CapacityUtilization) {
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 90} | Set-Style -Style Critical
+                                                    $VMHostDsSpecs | Where-Object {$_.'% Used' -ge 75 -and $_.'% Used' -lt 90} | Set-Style -Style Warning
+                                                }
+                                                $VMHostDsSpecs | Sort-Object Name | Table -Name "$VMHost Datastores" #-ColumnWidths 20,10,10,10,10,10,10,10,10
                                             }
                                             #endregion ESXi Host Storage Adapater Information
                                         }
@@ -1999,10 +2004,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'VMKernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
                                                 'Physical Adapters' = ($VMHostNetwork.Pnic.Device | Sort-Object) -join ', '
                                                 'VMKernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
-                                                'IPv6 Enabled' = Switch ($VMHostNetwork.IPv6Enabled) {
-                                                    $true { 'Yes' }
-                                                    $false { 'No' }
-                                                }
+                                                'IPv6 Enabled' = $VMHostNetwork.IPv6Enabled
                                                 'VMKernel IPv6 Gateway' = $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway
                                                 'DNS Servers' = ($VMHostNetwork.DnsConfig.Address | Sort-Object) -join ', ' 
                                                 'Host Name' = $VMHostNetwork.DnsConfig.HostName
@@ -2360,12 +2362,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'lockdownStrict' { 'Enabled (Strict)' }
                                                             default { $VMHost.ExtensionData.Config.LockdownMode }
                                                         }
+                                                        $VssPortgroupNicTeaming | Sort-Object 'vSwitch', 'Port Group' | Table -Name "$VMHost vSwitch Port Group NIC Teaming"
                                                     }
                                                     if ($Healthcheck.VMHost.LockdownMode) {
                                                         $LockdownMode | Where-Object { $_.'Lockdown Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Lockdown Mode'
                                                     }
                                                     $LockdownMode | Table -Name "$VMHost Lockdown Mode" -List -ColumnWidths 50, 50
                                                 }
+                                                #endregion ESXi Host Virtual Switch Port Group NIC Teaming                      
                                             }
                                             #endregion ESXi Host Lockdown Mode
 
@@ -2386,6 +2390,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             default { $VMHostService.Policy }
                                                         }
                                                     }
+                                                    if ($Healthcheck.VMHost.LockdownMode) {
+                                                        $LockdownMode | Where-Object {$_.'Lockdown Mode' -eq 'Disabled'} | Set-Style -Style Warning -Property 'Lockdown Mode'
+                                                    }
+                                                    $LockdownMode | Table -Name "$VMHost Lockdown Mode" -List -ColumnWidths 50, 50
                                                 }
                                                 if ($Healthcheck.VMHost.Services) {
                                                     $Services | Where-Object { $_.'Name' -eq 'SSH' -and $_.Daemon -eq 'Running' } | Set-Style -Style Warning -Property 'Daemon'
