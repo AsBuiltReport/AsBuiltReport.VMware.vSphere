@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.0.4
+        Version:        1.0.5
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -3086,9 +3086,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     ($_.Enabled -eq $null) -and
                                                     ($_.IntraVmAffinity -eq $null)
                                                 )
-                                            }
-                                            Section -Style Heading4 'SDRS VM Overrides' {
-                                                $VMOverrideDetails | Sort-Object 'Virtual Machine' | Table -Name 'SDRS VM Overrides'
                                             }
                                         }
 
