@@ -12,7 +12,7 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.6'
+    ModuleVersion = '1.0.7'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop'
@@ -100,10 +100,10 @@
             ProjectUri = 'https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere'
 
             # A URL to an icon representing this module.
-            # IconUri = ''
+            IconUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport/master/AsBuiltReport.png'
 
             # ReleaseNotes of this module
-            # ReleaseNotes = ''
+            ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
 
             # Prerelease string of this module
             # Prerelease = ''

@@ -1,5 +1,10 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.7] - 2019-06-21
+### Changed
+- Fixed font in default VMware style
+- Updated module manifest for icon and release notes
+
 ## [1.0.6] - 2019-05-16
 ### Changed
 - Fixed code errors which prevented a report from being generated
