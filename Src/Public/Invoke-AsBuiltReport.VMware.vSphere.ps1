@@ -1788,7 +1788,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host Boot Device
                                             Section -Style Heading5 'Boot Device' {
-                                                $ESXiBootDevice = Get-ESXiBootDevice -VMHost $VMHost -Server $vCenter
+                                                $ESXiBootDevice = Get-ESXiBootDevice -VMHost $VMHost
                                                 $VMHostBootDevice = [PSCustomObject]@{
                                                     'Host' = $ESXiBootDevice.Host
                                                     'Device' = $ESXiBootDevice.Device
