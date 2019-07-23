@@ -99,7 +99,7 @@ The **InfoLevel** sub-schema allows configuration of each section of the report 
 | InfoLevel | vSAN | 3
 | InfoLevel | Datastore | 3
 | InfoLevel | DSCluster | 3
-| InfoLevel | VM | 3
+| InfoLevel | VM | 2
 | InfoLevel | VUM | 3
 
 There are 6 levels (0-5) of detail granularity for each section as follows;
@@ -159,8 +159,9 @@ The **VMHost** sub-schema is used to configure health checks for VMHosts.
 | VMhost | IPv6Enabled | true / false | Highlights VMHosts which do not have IPv6 enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) IPv6 disabled
 | VMhost | UpTimeDays | true / false | Highlights VMHosts with uptime days greater than 9 months | ![Warning](https://placehold.it/15/FFE860/000000?text=+) 9 - 12 months<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  >12 months
 | VMhost | Licensing | true / false | Highlights VMHosts which are using production evaluation licenses | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Product evaluation license in use
-| VMhost | Services | true / false | Highlights status of important VMHost services | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-SSH service enabled
-| VMhost | TimeConfig | true / false | Highlights if the NTP service has stopped on a VMHost | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  NTP service stopped
+| VMhost | SshEnabled | true / false | Highlights if the SSH service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-SSH service enabled
+| VMhost | EsxiShellEnabled | true / false | Highlights if the ESXi Shell service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-EsxiShell service enabled
+| VMhost | NtpEnabled | true / false | Highlights if the NTP service has stopped or is disabled on a VMHost | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  NTP service stopped / disabled
 | VMhost | LockdownMode | true / false | Highlights VMHosts which do not have Lockdown mode enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Lockdown Mode disabled<br>
 | VMhost | VUMCompliance | true / false | Highlights VMHosts which are not compliant with VMware Update Manager software packages | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Incompatible
 

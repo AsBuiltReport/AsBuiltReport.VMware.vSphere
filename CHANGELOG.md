@@ -1,9 +1,22 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.8] - 2019-03-23
+### Added
+- Added License expiration information
+- Added additional information to VMkernel adapters
+- Added NTP, SSH & ESXi Shell health checks
+
+### Changed
+- Fixed vSwitch reporting issue with physical adpaters
+- Fixed issue with VMHost uptime health check reporting
+
 ## [1.0.7] - 2019-06-21
 ### Changed
 - Fixed font in default VMware style
 - Updated module manifest for icon and release notes
+
+### Removed
+- Removed Services health check
 
 ## [1.0.6] - 2019-05-16
 ### Changed
@@ -30,6 +43,7 @@
 - Refactored into PowerShell module
 - Updated default VMware style sheet to include page orientation
 - Changed VM Snapshot reporting to be per VM for InfoLevel 3
+
 ### Removed
 - Removed NSX-V reporting
 
