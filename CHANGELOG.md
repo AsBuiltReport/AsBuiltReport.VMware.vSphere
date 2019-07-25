@@ -1,5 +1,9 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.0.8] - 2019-07-25
+### Changed
+- Fixed issue 33 - Unable to retrieve PCIe device information on some VMHosts.
+
 ## [1.0.7] - 2019-06-21
 ### Changed
 - Fixed font in default VMware style

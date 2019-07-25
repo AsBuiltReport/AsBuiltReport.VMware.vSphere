@@ -428,7 +428,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .PARAMETER esxcli
     Esxcli session object associated to the host.
     .EXAMPLE
-    $Credentials = Get-Crendentials
+    $Credentials = Get-Credentials
     $Server = Connect-VIServer -Server vcenter01.example.com -Credentials $Credentials
     $VMHost = Get-VMHost -Server $Server -Name esx01.example.com
     $esxcli = Get-EsxCli -Server $Server -VMHost $VMHost -V2
@@ -461,10 +461,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 Version = "N/A"
             }
             $pciDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMKernelName -like "vmhba*" -or $_.VMKernelName -like "vmnic*" -or $_.VMKernelName -like "vmgfx*" } | Sort-Object -Property VMKernelName 
+            $fcoeAdapterList = $esxcli.fcoe.adapter.list.Invoke().PhysicalNIC # Get list of vmnics used for FCoE, because we don't want those vmnics here.
             foreach ($pciDevice in $pciDevices) {
                 $driverVersion = $esxcli.system.module.get.Invoke(@{module = $pciDevice.ModuleName }) | Select-Object -ExpandProperty Version
                 # Get NIC Firmware version
-                if ($pciDevice.VMKernelName -like 'vmnic*') {
+                if (($pciDevice.VMKernelName -like 'vmnic*') -and ($fcoeAdapterList -notcontains $pciDevice.VMKernelName) ) {
                     $vmnicDetail = $esxcli.network.nic.get.Invoke(@{nicname = $pciDevice.VMKernelName })
                     $firmwareVersion = $vmnicDetail.DriverInfo.FirmwareVersion
                     # Get NIC driver VIB package version
@@ -474,6 +475,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     else skip if VMkernnel is vmhba*. Can't get HBA Firmware from 
                     Powercli at the moment only through SSH or using Putty Plink+PowerCli.
                 #>
+                    $setPCCustomObject = $true # To stop vmnics used for FCOE in this section
                 } elseif ($pciDevice.VMKernelName -like 'vmhba*') {
                     if ($pciDevice.DeviceName -match "smart array") {
                         $hpsa = $vmhost.ExtensionData.Runtime.HealthSystemRuntime.SystemHealthInfo.NumericSensorInfo | Where-Object { $_.Name -match "HP Smart Array" }
@@ -484,16 +486,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     # Get HBA driver VIB package version
                     $vibName = $pciDevice.ModuleName -replace "_", "-"
                     $driverVib = $esxcli.software.vib.list.Invoke() | Select-Object -Property Name, Version | Where-Object { $_.Name -eq "scsi-" + $VibName -or $_.Name -eq "sata-" + $VibName -or $_.Name -eq $VibName }
+                    $setPCCustomObject = $true # To stop vmnics used for FCOE in this section
                 }
                 # Output collected data
-                [PSCustomObject]@{
-                    'VMkernel Name' = $pciDevice.VMKernelName
-                    'Device Name' = $pciDevice.DeviceName
-                    'Driver' = $pciDevice.ModuleName
-                    'Driver Version' = $driverVersion
-                    'Firmware Version' = $firmwareVersion
-                    'VIB Name' = $driverVib.Name
-                    'VIB Version' = $driverVib.Version
+                if ($setPCCustomObject -eq $true) {
+                    [PSCustomObject]@{
+                        'VMkernel Name' = $pciDevice.VMKernelName
+                        'Device Name' = $pciDevice.DeviceName
+                        'Driver' = $pciDevice.ModuleName
+                        'Driver Version' = $driverVersion
+                        'Firmware Version' = $firmwareVersion
+                        'VIB Name' = $driverVib.Name
+                        'VIB Version' = $driverVib.Version
+                    }
+                    $setPCCustomObject = $false # Reset flag
                 } 
             } 
         }
