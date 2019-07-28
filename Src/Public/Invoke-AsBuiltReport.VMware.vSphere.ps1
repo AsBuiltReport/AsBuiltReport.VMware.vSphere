@@ -428,7 +428,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .PARAMETER esxcli
     Esxcli session object associated to the host.
     .EXAMPLE
-    $Credentials = Get-Credentials
+    $Credentials = Get-Credential
     $Server = Connect-VIServer -Server vcenter01.example.com -Credentials $Credentials
     $VMHost = Get-VMHost -Server $Server -Name esx01.example.com
     $esxcli = Get-EsxCli -Server $Server -VMHost $VMHost -V2
