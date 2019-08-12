@@ -191,13 +191,13 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 
 | Schema | Sub-Schema | Setting | Description | Highlight |
 | ------ | ---------- | ------- | ----------- | --------- |
-| VM | PoweredOn | true / false | Enables/Disables checking if the VM is powered on | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM is powered off
-| VM | CpuHotAddEnabled | true / false | Highlights virtual machines which have CPU Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Add enabled
-| VM | CpuHotRemoveEnabled | true / false | Highlights virtual machines which have CPU Hot Remove enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Remove enabled
-| VM | MemoryHotAddEnabled | true / false | Highlights VMs which have Memory Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Memory Hot Add enabled
-| VM | ChangeBlockTrackingEnabled | true / false | Highlights VMs which do not have Change Block Tracking enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Change Block Tracking disabled
+| VM | PowerState | true / false | Enables/Disables checking if the VM is powered on | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM is powered off
+| VM | CpuHotAdd | true / false | Highlights virtual machines which have CPU Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Add enabled
+| VM | CpuHotRemove | true / false | Highlights virtual machines which have CPU Hot Remove enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Remove enabled
+| VM | MemoryHotAdd | true / false | Highlights VMs which have Memory Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Memory Hot Add enabled
+| VM | ChangeBlockTracking | true / false | Highlights VMs which do not have Change Block Tracking enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Change Block Tracking disabled
 | VM | SpbmPolicyCompliance | true / false | Highlights VMs which do not comply with storage based policies | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM storage based policy compliance is unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM does not comply with storage based policies
-| VM | VMToolsOK | true / false | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Tools not installed, out of date or not running
+| VM | VMToolsStatus | true / false | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Tools not installed, out of date or not running
 | VM | VMSnapshots | true / false | Highlights Virtual Machines which have snapshots older than 7 days | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Snapshot age >= 7 days<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM Snapshot age >= 14 days
 
 

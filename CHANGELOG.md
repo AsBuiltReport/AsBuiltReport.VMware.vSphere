@@ -1,5 +1,19 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.1.0] - 2019-08-12
+### Added
+- Added VM summary information
+- Added VM disk and guest volume information
+- Enhanced VMHost storage adapter reporting (Fix #32)
+- Enhanced VMHost network adapter CDP reporting
+- Enhanced VMHost VMkernel reporting
+- Enhanced VM SCSI controller reporting
+- Enhanced vSAN reporting
+
+### Changed
+- Improved report formatting
+- Updated report JSON structure & default settings
+
 ## [1.0.8] - 2019-03-23
 ### Added
 - Added License expiration information

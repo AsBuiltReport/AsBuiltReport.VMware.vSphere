@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.0.6
+        Version:        1.1.0
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -334,7 +334,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             try {
                 $optionValue = $esxcli.system.settings.advanced.list.Invoke($option)
             } catch {
-                $bootType = "stateless"
+                $bootType = "Stateless"
             }
             $bootType = $optionValue.StringValue
         }
@@ -346,21 +346,21 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             if ($device.IsBootDevice -eq $true) {
                 $foundBootDevice = $true
 
-                if ($device.IsLocal -eq $true -and $networkBoot -and $bootType -ne "stateful") {
-                    $bootType = "stateless caching"
+                if ($device.IsLocal -eq $true -and $networkBoot -and $bootType -ne "Stateful") {
+                    $bootType = "Stateless Caching"
                 } elseif ($device.IsLocal -eq $true -and $networkBoot -eq $false) {
-                    $bootType = "local"
+                    $bootType = "Local"
                 } elseif ($device.IsLocal -eq $false -and $networkBoot -eq $false) {
-                    $bootType = "remote"
+                    $bootType = "Remote"
                 }
 
                 $bootDevice = $device.Device
                 $bootModel = $device.Model
                 $bootVendor = $device.VEndor
                 $bootSize = $device.Size
-                $bootIsSAS = $device.IsSAS
-                $bootIsSSD = $device.IsSSD
-                $bootIsUSB = $device.IsUSB
+                $bootIsSAS = $TextInfo.ToTitleCase($device.IsSAS)
+                $bootIsSSD = $TextInfo.ToTitleCase($device.IsSSD)
+                $bootIsUSB = $TextInfo.ToTitleCase($device.IsUSB)
             }
         }
 
@@ -550,7 +550,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     
         #region Generate vSphere report
         if ($vCenter) {
-            #region Create a lookup hashtable to quickly link VM MoRefs to Names
+            # Create a lookup hashtable to quickly link VM MoRefs to Names
             # Exclude VMware Site Recovery Manager placeholder VMs
             $VMs = Get-VM -Server $vCenter | Where-Object {
                 $_.ExtensionData.Config.ManagedBy.ExtensionKey -notlike 'com.vmware.vcDr*'
@@ -559,16 +559,28 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             foreach ($VM in $VMs) {
                 $VMLookup.($VM.Id) = $VM.Name
             }
-            #endregion Create a lookup hashtable to quickly link VM MoRefs to Names
 
-            #region Create a lookup hashtable to quickly link Host MoRefs to Names
+            # Create a lookup hashtable to quickly link Host MoRefs to Names
             # Exclude VMware HCX hosts from VMHost lookup
             $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" } | Sort-Object Name
             $VMHostLookup = @{ }
             foreach ($VMHost in $VMHosts) {
                 $VMHostLookup.($VMHost.Id) = $VMHost.Name
             }
-            #endregion Create a lookup hashtable to quickly link Host MoRefs to Names
+
+            # Create a lookup hashtable to quickly link Datastore MoRefs to Names
+            $Datastores = Get-Datastore -Server $vCenter | Where-Object { $_.State -eq 'Available' } | Sort-Object Name
+            $DatastoreLookup = @{ }
+            foreach ($Datastore in $Datastores) {
+                $DatastoreLookup.($Datastore.Id) = $Datastore.Name
+            }
+
+            # Create a lookup hashtable to quickly link VDS Portgroups MoRefs to Names
+            $VDPortGroups = Get-VDPortGroup -Server $vCenter | Sort-Object Name
+            $VDPortGroupLookup = @{ }
+            foreach ($VDPortGroup in $VDPortGroups) {
+                $VDPortGroupLookup.($VDPortGroup.Key) = $VDPortGroup.Name
+            }
 
             $si = Get-View ServiceInstance -Server $vCenter
             $extMgr = Get-View -Id $si.Content.ExtensionManager -Server $vCenter
@@ -612,10 +624,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region vCenter Server Section
                 if ($InfoLevel.vCenter -ge 1) {
                     Section -Style Heading2 'vCenter Server' { 
-                        Paragraph ("The following section provides information on the configuration of vCenter " +
-                            "Server $vCenterServerName.")
+                        Paragraph "The following sections detail the configuration of vCenter Server $vCenterServerName."
                         BlankLine
-
                         #region vCenter Server Informative Information
                         if ($InfoLevel.vCenter -eq 2) {                   
                             $vCenterSummary = [PSCustomObject]@{
@@ -673,7 +683,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vCenter Server Database Settings
                             Section -Style Heading3 'Database Settings' {
                                 $vCenterDbInfo = [PSCustomObject]@{
-                                    'Database Type' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dbtype' }).Value
+                                    'Database Type' = $TextInfo.ToTitleCase(($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dbtype' }).Value)
                                     'Data Source Name' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dsn' }).Value
                                     'Maximum Database Connection' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'VirtualCenter.MaxDBConnection' }).Value
                                 }
@@ -816,9 +826,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($Clusters) {
                         #region Cluster Section
                         Section -Style Heading2 'Clusters' {
-                            Paragraph ("The following section provides information on the configuration of each " +
-                                "vSphere HA/DRS cluster managed by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of vSphere HA/DRS clusters managed by vCenter Server $vCenterServerName."
                             #region Cluster Informative Information   
                             if ($InfoLevel.Cluster -eq 2) {
                                 BlankLine
@@ -933,9 +941,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #region vSphere HA Cluster Configuration
                                         if ($Cluster.HAEnabled) {
                                             Section -Style Heading4 'vSphere HA Configuration' {
-                                                Paragraph ("The following sections detail the vSphere HA configuration " +
-                                                    "for cluster $Cluster.")
-
+                                                Paragraph "The following section details the vSphere HA configuration for $Cluster cluster."
                                                 #region vSphere HA Cluster Failures and Responses
                                                 Section -Style Heading5 'Failures and Responses' {
                                                     $HAClusterResponses = [PSCustomObject]@{
@@ -1127,9 +1133,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         # Proactive HA is only available in vSphere 6.5 and above
                                         if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled -and $vCenter.Version -ge 6.5) {
                                             Section -Style Heading4 'Proactive HA' {
-                                                Paragraph ("The following sections detail the Proactive HA configuration " +
-                                                    "for cluster $Cluster.")
-
+                                                Paragraph "The following section details the Proactive HA configuration for $Cluster cluster."
                                                 #region Proactive HA Failures and Responses Section
                                                 Section -Style Heading5 'Failures and Responses' {
                                                     $ProactiveHa = [PSCustomObject]@{
@@ -1427,7 +1431,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     [PSCustomObject]@{
                                                                         'Virtual Machine' = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
                                                                         'VM Restart Priority' = Switch ($DasVmOverride.DasSettings.RestartPriority) {
-                                                                            $null { '-' }
+                                                                            $null { '--' }
                                                                             'lowest' { 'Lowest' }
                                                                             'low' { 'Low' }
                                                                             'medium' { 'Medium' }
@@ -1437,12 +1441,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                             'clusterRestartPriority' { 'Cluster default' }
                                                                         }
                                                                         'VM Dependency Restart Condition Timeout' = Switch ($DasVmOverride.DasSettings.RestartPriorityTimeout) {
-                                                                            $null { '-' }
+                                                                            $null { '--' }
                                                                             '-1' { 'Disabled' }
                                                                             default { "$($DasVmOverride.DasSettings.RestartPriorityTimeout) seconds" }
                                                                         }
                                                                         'Host Isolation Response' = Switch ($DasVmOverride.DasSettings.IsolationResponse) {
-                                                                            $null { '-' }
+                                                                            $null { '--' }
                                                                             'none' { 'Disabled' }
                                                                             'powerOff' { 'Power off and restart VMs' }
                                                                             'shutdown' { 'Shutdown and restart VMs' }
@@ -1459,14 +1463,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         [PSCustomObject]@{
                                                                             'Virtual Machine' = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
                                                                             'PDL Failure Response' = Switch ($DasVmComponentProtection.VmStorageProtectionForPDL) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 'clusterDefault' { 'Cluster default' }
                                                                                 'warning' { 'Issue events' }
                                                                                 'restartAggressive' { 'Power off and restart VMs' }
                                                                                 'disabled' { 'Disabled' }
                                                                             }
                                                                             'APD Failure Response' = Switch ($DasVmComponentProtection.VmStorageProtectionForAPD) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 'clusterDefault' { 'Cluster default' }
                                                                                 'warning' { 'Issue events' }
                                                                                 'restartConservative' { 'Power off and restart VMs - Conservative restart policy' }
@@ -1474,12 +1478,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                                 'disabled' { 'Disabled' }
                                                                             }
                                                                             'VM Failover Delay' = Switch ($DasVmComponentProtection.VmTerminateDelayForAPDSec) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 '-1' { 'Disabled' }
                                                                                 default { "$(($DasVmComponentProtection.VmTerminateDelayForAPDSec)/60) minutes" }
                                                                             }
                                                                             'Response Recovery' = Switch ($DasVmComponentProtection.VmReactionOnAPDCleared) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 'reset' { 'Reset VMs' }
                                                                                 'disabled' { 'Disabled' }
                                                                                 'useClusterDefault' { 'Cluster default' }
@@ -1497,47 +1501,47 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         [PSCustomObject]@{
                                                                             'Virtual Machine' = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
                                                                             'VM Monitoring' = Switch ($DasVmMonitoring.VmMonitoring) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 'vmMonitoringDisabled' { 'Disabled' }
                                                                                 'vmMonitoringOnly' { 'VM Monitoring Only' }
                                                                                 'vmAndAppMonitoring' { 'VM and App Monitoring' }
                                                                             }
                                                                             'Failure Interval' = Switch ($DasVmMonitoring.FailureInterval) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 default {
                                                                                     if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
-                                                                                        '-'
+                                                                                        '--'
                                                                                     } else {
                                                                                         "$($DasVmMonitoring.FailureInterval) seconds"
                                                                                     }
                                                                                 }
                                                                             }
                                                                             'Minimum Uptime' = Switch ($DasVmMonitoring.MinUptime) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 default {
                                                                                     if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
-                                                                                        '-'
+                                                                                        '--'
                                                                                     } else {
                                                                                         "$($DasVmMonitoring.MinUptime) seconds"
                                                                                     }
                                                                                 }
                                                                             }
                                                                             'Maximum Per-VM Resets' = Switch ($DasVmMonitoring.MaxFailures) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 default {
                                                                                     if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
-                                                                                        '-'
+                                                                                        '--'
                                                                                     } else {
                                                                                         $DasVmMonitoring.MaxFailures
                                                                                     }
                                                                                 }
                                                                             }
                                                                             'Maximum Resets Time Window' = Switch ($DasVmMonitoring.MaxFailureWindow) {
-                                                                                $null { '-' }
+                                                                                $null { '--' }
                                                                                 '-1' { 'No window' }                                                                
                                                                                 default {
                                                                                     if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
-                                                                                        '-'
+                                                                                        '--'
                                                                                     } else {
                                                                                         "Within $(($DasVmMonitoring.MaxFailureWindow)/3600) hrs"
                                                                                     }
@@ -1567,7 +1571,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'Description' = $ClusterBaseline.Description
                                                                     'Type' = $ClusterBaseline.BaselineType
                                                                     'Target Type' = $ClusterBaseline.TargetType
-                                                                    'Last Update Time' = $ClusterBaseline.LastUpdateTime
+                                                                    'Last Update Time' = ($ClusterBaseline.LastUpdateTime).ToLocalTime()
                                                                     '# of Patches' = $ClusterBaseline.CurrentPatches.Count
                                                                 }
                                                             }
@@ -1650,9 +1654,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($ResourcePools) {
                         #region Resource Pools Section
                         Section -Style Heading2 'Resource Pools' {
-                            Paragraph ("The following section provides information on the configuration of " +
-                                "resource pools managed by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of resource pools managed by vCenter Server $vCenterServerName."
                             #region Resource Pool Informative Information
                             if ($InfoLevel.ResourcePool -eq 2) {
                                 BlankLine
@@ -1737,8 +1739,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($VMHosts) {
                         #region Hosts Section
                         Section -Style Heading2 'Hosts' {
-                            Paragraph ("The following section provides information on the configuration of VMware " +
-                                "ESXi hosts managed by vCenter Server $vCenterServerName.")
+                            Paragraph "The following sections detail the configuration of VMware ESXi hosts managed by vCenter Server $vCenterServerName."
                             #region ESXi Host Informative Information
                             if ($InfoLevel.VMHost -eq 2) {
                                 BlankLine
@@ -1774,8 +1775,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         ### TODO: Host Certificate, Swap File Location
                                         #region ESXi Host Hardware Section
                                         Section -Style Heading4 'Hardware' {
-                                            Paragraph ("The following section provides information on the host " +
-                                                "hardware configuration of $VMHost.")
+                                            Paragraph "The following section details the host hardware configuration for $VMHost."
                                             BlankLine
 
                                             #region ESXi Host Specifications
@@ -1795,7 +1795,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Manufacturer' = $VMHost.Manufacturer
                                                 'Model' = $VMHost.Model
                                                 'Serial Number' = $VMHostHardware.SerialNumber 
-                                                'Asset Tag' = $VMHostHardware.AssetTag 
+                                                'Asset Tag' = Switch ($VMHostHardware.AssetTag) {
+                                                    '' { 'Unknown' }
+                                                    default { $VMHostHardware.AssetTag }
+                                                }
                                                 'Processor Type' = $VMHost.Processortype
                                                 'HyperThreading' = Switch ($VMHost.HyperthreadingActive) {
                                                     $true { 'Enabled' }
@@ -1820,7 +1823,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Product' = $VMHostLicense.Product 
                                                 'License Key' = $VMHostLicense.LicenseKey
                                                 'License Expiration' = $VMHostLicense.Expiration 
-                                                'Boot Time' = $VMHost.ExtensionData.Runtime.Boottime 
+                                                'Boot Time' = ($VMHost.ExtensionData.Runtime.Boottime).ToLocalTime()
                                                 'Uptime Days' = $VMHostUptime.UptimeDays
                                             }
                                             if ($Healthcheck.VMHost.ConnectionState) {
@@ -1890,8 +1893,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                         #region ESXi Host System Section
                                         Section -Style Heading4 'System' {
-                                            Paragraph "The following section provides information on the host system configuration of $VMHost."
-
+                                            Paragraph "The following section details the host system configuration for $VMHost."
                                             #region ESXi Host Profile Information
                                             if ($VMHost | Get-VMHostProfile) {
                                                 Section -Style Heading5 'Host Profile' {
@@ -2021,7 +2023,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                         #region ESXi Host Storage Section
                                         Section -Style Heading4 'Storage' {
-                                            Paragraph "The following section provides information on the host storage configuration of $VMHost."
+                                            Paragraph "The following section details the host storage configuration for $VMHost."
         
                                             #region ESXi Host Datastore Specifications
                                             $VMHostDatastores = $VMHost | Get-Datastore
@@ -2049,40 +2051,94 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Datastore Specifications
         
                                             #region ESXi Host Storage Adapter Information
-                                            $VMHostHba = $VMHost | Get-VMHostHba | Where-Object { $_.type -eq 'FibreChannel' -or $_.type -eq 'iSCSI' }
-                                            if ($VMHostHba) {
+                                            $VMHostHbas = $VMHost | Get-VMHostHba | Sort-Object Device
+                                            if ($VMHostHbas) {
                                                 #region ESXi Host Storage Adapters Section
                                                 Section -Style Heading5 'Storage Adapters' {
-                                                    $VMHostHbaFC = $VMHost | Get-VMHostHba -Type FibreChannel
-                                                    if ($VMHostHbaFC) {
-                                                        Paragraph "The following table details the fibre channel storage adapters for $VMHost."
-                                                        BlankLine
-                                                        $VMHostHbaFC = $VMHost | Get-VMHostHba -Type FibreChannel | Select-Object Device, Type, Model, Driver, 
-                                                        @{L = 'Node WWN'; E = { ([String]::Format("{0:X}", $_.NodeWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":" } }, 
-                                                        @{L = 'Port WWN'; E = { ([String]::Format("{0:X}", $_.PortWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":" } }, speed, status
-                                                        $VMHostHbaFC | Sort-Object Device | Table -Name "$VMHost FC Storage Adapters"
-                                                    }
-
-                                                    $VMHostHbaIScsi = $VMHost | Get-VMHostHba -Type iSCSI
-                                                    if ($VMHostHbaFC -and $VMHostHbaIScsi) {
-                                                        BlankLine
-                                                    }
-                                                    if ($VMHostHbaIScsi) {
-                                                        Paragraph "The following table details the iSCSI storage adapters for $VMHost."
-                                                        BlankLine
-                                                        $VMHostHbaIScsi = $VMHost | Get-VMHostHba -Type iSCSI | Select-Object Device, @{L = 'iSCSI Name'; E = { $_.IScsiName } }, Model, Driver, @{L = 'Speed'; E = { $_.CurrentSpeedMb } }, status
-                                                        $VMHostHbaIScsi | Sort-Object Device | Table -Name "$VMHost iSCSI Storage Adapters" -List -ColumnWidths 25, 75
+                                                    Paragraph "The following section details the storage adapter configuration for $VMHost."
+                                                    foreach ($VMHostHba in $VMHostHbas) {
+                                                        Section -Style Heading5 "$($VMHostHba.Device)" {
+                                                            $VMHostStorageAdapter = [PSCustomObject]@{
+                                                                'Device' = $VMHostHba.Device
+                                                                'Type' = Switch ($VMHostHba.Type) {
+                                                                    'FibreChannel' { 'Fibre Channel' }
+                                                                    'IScsi' { 'iSCSI' }
+                                                                    'ParallelScsi' { 'Parallel SCSI' }
+                                                                    default { $TextInfo.ToTitleCase($VMHostHba.Type) }
+                                                                }
+                                                                'Model' = $VMHostHba.Model
+                                                                'Status' = $TextInfo.ToTitleCase($VMHostHba.Status)
+                                                            }
+                                                            $MemberProps = @{
+                                                                'InputObject' = $VMHostStorageAdapter
+                                                                'MemberType' = 'NoteProperty'
+                                                            }
+                                                            if ($VMHostStorageAdapter.Type -eq 'iSCSI') {
+                                                                $iScsiAuthenticationMethod = Switch ($VMHostHba.ExtensionData.AuthenticationProperties.ChapAuthenticationType) {
+                                                                    'chapProhibited' { 'None' }
+                                                                    'chapPreferred' { 'Use unidirectional CHAP unless prohibited by target' }
+                                                                    'chapDiscouraged' { 'Use unidirectional CHAP if required by target' }
+                                                                    'chapRequired' { 
+                                                                        Switch ($VMHostHba.ExtensionData.AuthenticationProperties.MutualChapAuthenticationType) {
+                                                                            'chapProhibited' { 'Use unidirectional CHAP' }
+                                                                            'chapRequired' { 'Use bidirectional CHAP' }
+                                                                        } 
+                                                                    }
+                                                                    default { $VMHostHba.ExtensionData.AuthenticationProperties.ChapAuthenticationType }
+                                                                }
+                                                                Add-Member @MemberProps -Name 'iSCSI Name' -Value $VMHostHba.IScsiName
+                                                                if ($VMHostHba.IScsiAlias) {
+                                                                    Add-Member @MemberProps -Name 'iSCSI Alias' -Value $VMHostHba.IScsiAlias
+                                                                } else {
+                                                                    Add-Member @MemberProps -Name 'iSCSI Alias' -Value '--'
+                                                                }
+                                                                if ($VMHostHba.CurrentSpeedMb) {
+                                                                    Add-Member @MemberProps -Name 'Speed' -Value "$($VMHostHba.CurrentSpeedMb) Mb"
+                                                                } else {
+                                                                    Add-Member @MemberProps -Name 'Speed' -Value '--'
+                                                                }
+                                                                if ($VMHostHba.ExtensionData.ConfiguredSendTarget) {
+                                                                    Add-Member @MemberProps -Name 'Dynamic Discovery' -Value (($VMHostHba.ExtensionData.ConfiguredSendTarget | Foreach-Object {"$($_.Address)"+":"+"$($_.Port)"}) -join [Environment]::NewLine)
+                                                                } else {
+                                                                    Add-Member @MemberProps -Name 'Dynamic Discovery' -Value '--'
+                                                                }
+                                                                if ($VMHostHba.ExtensionData.ConfiguredStaticTarget) {
+                                                                    Add-Member @MemberProps -Name 'Static Discovery' -Value (($VMHostHba.ExtensionData.ConfiguredStaticTarget | Foreach-Object {"$($_.Address)"+":"+"$($_.Port)" + "  " + "$($_.IScsiName)"}) -join [Environment]::NewLine)
+                                                                } else {
+                                                                    Add-Member @MemberProps -Name 'Static Discovery' -Value '--'
+                                                                }
+                                                                if ($iScsiAuthenticationMethod -eq 'None') {
+                                                                    Add-Member @MemberProps -Name 'Authentication Method' -Value $iScsiAuthenticationMethod
+                                                                } elseif ($iScsiAuthenticationMethod -eq 'Use bidirectional CHAP') {
+                                                                    Add-Member @MemberProps -Name 'Authentication Method' -Value $iScsiAuthenticationMethod
+                                                                    Add-Member @MemberProps -Name 'Outgoing CHAP Name' -Value $VMHostHba.ExtensionData.AuthenticationProperties.ChapName
+                                                                    Add-Member @MemberProps -Name 'Incoming CHAP Name' -Value $VMHostHba.ExtensionData.AuthenticationProperties.MutualChapName
+                                                                } else {
+                                                                    Add-Member @MemberProps -Name 'Authentication Method' -Value $iScsiAuthenticationMethod
+                                                                    Add-Member @MemberProps -Name 'Outgoing CHAP Name' -Value $VMHostHba.ExtensionData.AuthenticationProperties.ChapName
+                                                                }
+                                                                if ($InfoLevel.VMHost -eq 5) {
+                                                                    Add-Member @MemberProps -Name 'Advanced Options' -Value (($VMHostHba.ExtensionData.AdvancedOptions | Foreach-Object {"$($_.Key) = $($_.Value)"}) -join [Environment]::NewLine)
+                                                                }
+                                                            }
+                                                            if ($VMHostStorageAdapter.Type -eq 'Fibre Channel') {
+                                                                Add-Member @MemberProps -Name 'Node WWN' -Value (([String]::Format("{0:X}", $VMHostHba.NodeWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
+                                                                Add-Member @MemberProps -Name 'Port WWN' -Value (([String]::Format("{0:X}", $VMHostHba.PortWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
+                                                                Add-Member @MemberProps -Name 'Speed' -Value $VMHostHba.Speed
+                                                            }
+                                                            $VMHostStorageAdapter | Table -List -Name "$VMHost storage adapter $($VMHostStorageAdapter.Device)" -ColumnWidths 25, 75
+                                                        }
                                                     }
                                                 }
                                                 #endregion ESXi Host Storage Adapters Section
                                             }
-                                            #endregion ESXi Host Storage Adapater Information
+                                            #endregion ESXi Host Storage Adapter Information
                                         }
                                         #endregion ESXi Host Storage Section
 
                                         #region ESXi Host Network Section
                                         Section -Style Heading4 'Network' {
-                                            Paragraph "The following section provides information on the host network configuration of $VMHost."
+                                            Paragraph "The following section details the host network configuration for $VMHost."
                                             BlankLine
                                             #region ESXi Host Network Configuration
                                             $VMHostNetwork = $VMHost.ExtensionData.Config.Network
@@ -2110,8 +2166,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host Physical Adapters
                                             Section -Style Heading5 'Physical Adapters' {
-                                                Paragraph "The following sections detail the physical network adapters for $VMHost."
-                                                $PhysicalNetAdapters = $VMHost.ExtensionData.Config.Network.Pnic
+                                                Paragraph "The following section details the physical network adapter configuration for $VMHost."
+                                                $PhysicalNetAdapters = $VMHost.ExtensionData.Config.Network.Pnic | Sort-Object Device
                                                 $VMHostPhysicalNetAdapters = foreach ($PhysicalNetAdapter in $PhysicalNetAdapters) {
                                                     [PSCustomObject]@{
                                                         'Device' = $PhysicalNetAdapter.Device
@@ -2120,13 +2176,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             default { 'Connected' }
                                                         }
                                                         'vSwitch' = 
-                                                            if ($VMHost.ExtensionData.Config.Network.Vswitch.Pnic -contains $PhysicalNetAdapter.Key) {
-                                                                ($VMHost.ExtensionData.Config.Network.Vswitch | Where-Object {$_.Pnic -eq $PhysicalNetAdapter.Key}).Name
-                                                            } elseif ($VMHost.ExtensionData.Config.Network.ProxySwitch.Pnic -contains $PhysicalNetAdapter.Key) {
-                                                                ($VMHost.ExtensionData.Config.Network.ProxySwitch | Where-Object {$_.Pnic -eq $PhysicalNetAdapter.Key}).DvsName
-                                                            } else {
-                                                                '--'
-                                                            }
+                                                        if ($VMHost.ExtensionData.Config.Network.Vswitch.Pnic -contains $PhysicalNetAdapter.Key) {
+                                                            ($VMHost.ExtensionData.Config.Network.Vswitch | Where-Object { $_.Pnic -eq $PhysicalNetAdapter.Key }).Name
+                                                        } elseif ($VMHost.ExtensionData.Config.Network.ProxySwitch.Pnic -contains $PhysicalNetAdapter.Key) {
+                                                            ($VMHost.ExtensionData.Config.Network.ProxySwitch | Where-Object { $_.Pnic -eq $PhysicalNetAdapter.Key }).DvsName
+                                                        } else {
+                                                            '--'
+                                                        }
                                                         'MAC Address' = $PhysicalNetAdapter.Mac
                                                         'Actual Speed, Duplex' = Switch ($PhysicalNetAdapter.LinkSpeed.SpeedMb) {
                                                             $null { 'Down' }
@@ -2155,37 +2211,54 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 if ($InfoLevel.VMHost -ge 4) {
-                                                    foreach ($VMHostPhysicalNetAdapter in ($VMHostPhysicalNetAdapters | Sort-Object 'Device')) {
+                                                    foreach ($VMHostPhysicalNetAdapter in $VMHostPhysicalNetAdapters) {
                                                         Section -Style Heading5 "$($VMHostPhysicalNetAdapter.Device)" {
                                                             $VMHostPhysicalNetAdapter | Table -List -Name "$VMHost Physical Adapter $($VMHostPhysicalNetAdapter.Device)" -ColumnWidths 50, 50
                                                         }
                                                     }
                                                 } else {
                                                     BlankLine
-                                                    $VMHostPhysicalNetAdapters | Sort-Object 'Device' | Table -Name "$VMHost Network Physical Adapters"
+                                                    $VMHostPhysicalNetAdapters | Table -Name "$VMHost Network Physical Adapters"
                                                 }
                                             }
                                             #endregion ESXi Host Physical Adapters
                             
                                             #region ESXi Host Cisco Discovery Protocol
-                                            $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterCDP | Where-Object { $_.Status -eq 'Connected' }
+                                            $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterCDP | Where-Object { $_.Status -eq 'Connected' } | Sort-Object Device
                                             if ($VMHostNetworkAdapterCDP) {
                                                 Section -Style Heading5 'Cisco Discovery Protocol' {
-                                                    Paragraph "The following sections detail the CDP information for $VMHost."
+                                                    Paragraph "The following section details the CDP information for $VMHost."
                                                     if ($InfoLevel.VMHost -ge 4) {
                                                         foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterCDP) {
                                                             Section -Style Heading5 "$($VMHostNetworkAdapter.Device)" {
-                                                                $VMHostNetworkAdapter | Select-Object Device, Status, @{L = 'Hardware Platform'; E = { $_.HardwarePlatform } },
-                                                                @{L = 'Software Version'; E = { $_.SoftwareVersion } }, @{L = 'Switch'; E = { $_.SwitchId } },
-                                                                @{L = 'Management Address'; E = { $_.ManagementAddress } }, @{L = 'Switch ID'; E = { $_.SwitchId } }, 
-                                                                Address, @{L = 'Port ID'; E = { $_.PortId } }, VLAN, MTU | Sort-Object Device | Table -List -Name "$VMHost Network Adapter " + "$($VMHostNetworkAdapter.Device) CDP Information" -ColumnWidths 50, 50
+                                                                $VMHostCDP = [PSCustomObject]@{
+                                                                    'Status' = $VMHostNetworkAdapter.Status
+                                                                    'System Name' = $VMHostNetworkAdapter.SystemName
+                                                                    'Hardware Platform' = $VMHostNetworkAdapter.HardwarePlatform
+                                                                    'Switch ID' = $VMHostNetworkAdapter.SwitchId
+                                                                    'Software Version' = $VMHostNetworkAdapter.SoftwareVersion
+                                                                    'Management Address' = $VMHostNetworkAdapter.ManagementAddress
+                                                                    'Address' = $VMHostNetworkAdapter.Address
+                                                                    'Port ID' = $VMHostNetworkAdapter.PortId
+                                                                    'VLAN' = $VMHostNetworkAdapter.Vlan
+                                                                    'MTU' = $VMHostNetworkAdapter.Mtu
+                                                                }
+                                                                $VMHostCDP | Table -List -Name "$VMHost Network Adapter $($VMHostNetworkAdapter.Device) CDP Information" -ColumnWidths 50, 50
                                                             }
                                                         }
                                                     } else {
                                                         BlankLine
-                                                        $VMHostCDP = $VMHostNetworkAdapterCDP | Select-Object Device, Status, @{L = 'Hardware Platform'; E = { $_.HardwarePlatform } },
-                                                        @{L = 'Switch'; E = { $_.SwitchId } }, @{L = 'Management Address'; E = { $_.ManagementAddress } }, @{L = 'Port ID'; E = { $_.PortId } }
-                                                        $VMHostCDP | Sort-Object Device | Table -Name "$VMHost Network Adapter CDP Information" #-ColumnWidths 20, 20, 20, 20, 20
+                                                        $VMHostCDP = foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterCDP) {
+                                                            [PSCustomObject]@{
+                                                                'Device' = $VMHostNetworkAdapter.Device
+                                                                'Status' = $VMHostNetworkAdapter.Status
+                                                                'Hardware Platform' = $VMHostNetworkAdapter.HardwarePlatform
+                                                                'Switch ID' = $VMHostNetworkAdapter.SwitchId
+                                                                'Address' = $VMHostNetworkAdapter.Address
+                                                                'Port ID' = $VMHostNetworkAdapter.PortId
+                                                            }
+                                                        }
+                                                        $VMHostCDP | Table -Name "$VMHost Network Adapter CDP Information"
                                                     }
                                                 }
                                             }
@@ -2193,45 +2266,77 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host VMkernel Adapaters
                                             Section -Style Heading5 'VMkernel Adapters' {
-                                                Paragraph "The following sections detail the VMkernel adapters for $VMHost"
-                                                $VMkernelAdapters = $VMHost | Get-VMHostNetworkAdapter -VMKernel | Sort-Object DeviceName
-                                                foreach ($VMkernelAdapter in $VMkernelAdapters) {
-                                                    Section -Style Heading5 "$($VMkernelAdapter.DeviceName)" {
-                                                        $VMHostVmkAdapter = [PSCustomObject]@{
-                                                            'Device' = $VMkernelAdapter.DeviceName 
-                                                            'Port Group' = $VMkernelAdapter.PortGroupName
-                                                            'TCP/IP Stack' = Switch ($VMkernelAdapter.ExtensionData.Spec.NetStackInstanceKey) {
+                                                Paragraph "The following section details the VMkernel adapter configuration for $VMHost"
+                                                $VMkernelAdapters = $VMHost | Get-View | ForEach-Object -Process {
+                                                    $esx = $_
+                                                    $netSys = Get-View -Id $_.ConfigManager.NetworkSystem
+                                                    $vnicMgr = Get-View -Id $_.ConfigManager.VirtualNicManager
+                                                    $netSys.NetworkInfo.Vnic |
+                                                    ForEach-Object -Process {
+                                                        $device = $_.Device
+                                                        [PSCustomObject]@{
+                                                            'Device' = $_.Device
+                                                            'Port Group' = & {
+                                                                if ($_.Spec.Portgroup) {
+                                                                    $_.Spec.Portgroup
+                                                                } else {
+                                                                    Get-View -ViewType DistributedVirtualPortgroup -Property Name, Key -Filter @{'Key' = "$($_.Spec.DistributedVirtualPort.PortgroupKey)" } |
+                                                                    Select-Object -ExpandProperty Name
+                                                                } }
+                                                            'TCP/IP Stack' = Switch ($_.Spec.NetstackInstanceKey) {
                                                                 'defaultTcpipStack' { 'Default' }
                                                                 'vSphereProvisioning' { 'Provisioning' }
                                                                 'vmotion' { 'vMotion' }
                                                                 $null { 'Not Applicable' }
+                                                                default { $_.Spec.NetstackInstanceKey }
                                                             }
-                                                            'MTU' = $VMkernelAdapter.Mtu 
-                                                            'MAC Address' = $VMkernelAdapter.Mac
-                                                            'DHCP' = Switch ($VMkernelAdapter.DhcpEnabled) {
+                                                            'MTU' = $_.Spec.Mtu 
+                                                            'MAC Address' = $_.Spec.Mac
+                                                            'DHCP' = Switch ($_.Spec.Ip.Dhcp) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'IP Address' = $VMkernelAdapter.IP 
-                                                            'Subnet Mask' = $VMkernelAdapter.SubnetMask 
-                                                            'vMotion Traffic' = Switch ($VMkernelAdapter.vMotionEnabled) {
+                                                            'IP Address' = $_.Spec.IP.IPAddress
+                                                            'Subnet Mask' = $_.Spec.IP.SubnetMask
+                                                            'Default Gateway' = $_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway
+                                                            'vMotion' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vmotion' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'FT Logging' = Switch ($VMkernelAdapter.FaultToleranceLoggingEnabled) {
+                                                            'Provisioning' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vSphereProvisioning' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'Management Traffic' = Switch ($VMkernelAdapter.ManagementTrafficEnabled) {
+                                                            'FT Logging' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'faultToleranceLogging' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSAN Traffic' = Switch ($VMkernelAdapter.VsanTrafficEnabled) {
+                                                            'Management' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'management' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
+                                                                $true { 'Enabled' }
+                                                                $false { 'Disabled' }
+                                                            }
+                                                            'vSphere Replication' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vSphereReplication' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
+                                                                $true { 'Enabled' }
+                                                                $false { 'Disabled' }
+                                                            }
+                                                            'vSphere Replication NFC' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vSphereReplicationNFC' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
+                                                                $true { 'Enabled' }
+                                                                $false { 'Disabled' }
+                                                            }
+                                                            'vSAN' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vsan' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
+                                                                $true { 'Enabled' }
+                                                                $false { 'Disabled' }
+                                                            }
+                                                            'vSAN Witness' = Switch ((($vnicMgr.Info.NetConfig | where { $_.NicType -eq 'vsanWitness' }).SelectedVnic | % { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
                                                         }
-                                                        $VMHostVmkAdapter | Sort-Object 'Device' | Table -List -Name "$VMHost VMkernel Adapter $($VMHostVmkAdapter.Device)" -ColumnWidths 50, 50 
+                                                    }
+                                                }
+                                                foreach ($VMkernelAdapter in ($VMkernelAdapters | Sort-Object 'Device')) {
+                                                    Section -Style Heading5 "$($VMkernelAdapter.Device)" {
+                                                        $VMkernelAdapter | Table -List -Name "$VMHost VMkernel Adapter $($VMkernelAdapter.Device)" -ColumnWidths 50, 50
                                                     }
                                                 }
                                             }
@@ -2242,7 +2347,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             if ($VSSwitches) {
                                                 #region ESXi Host Standard Virtual Switch Properties
                                                 Section -Style Heading5 'Standard Virtual Switches' {
-                                                    Paragraph ("The following sections detail the standard virtual switch configuration for $VMHost.")
+                                                    Paragraph "The following section details the standard virtual switch configuration for $VMHost."
                                                     $VSSwitchNicTeaming = $VSSwitches | Get-NicTeamingPolicy
                                                     foreach ($VSSwitchNicTeam in $VSSwitchNicTeaming) {
                                                         Section -Style Heading5 "$($VSSwitchNicTeam.VirtualSwitch)" {
@@ -2440,8 +2545,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                         #region ESXi Host Security Section
                                         Section -Style Heading4 'Security' {
-                                            Paragraph ("The following section provides information on the host security configuration of $VMHost.")
-
+                                            Paragraph "The following section details the host security configuration for $VMHost."
                                             #region ESXi Host Lockdown Mode
                                             if ($VMHost.ExtensionData.Config.LockdownMode -ne $null) {
                                                 Section -Style Heading5 'Lockdown Mode' {
@@ -2544,15 +2648,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             if ($VMHostVMs) {
                                                 #region Virtual Machines Section
                                                 Section -Style Heading4 'Virtual Machines' {
-                                                    Paragraph ("The following section provides information on the virtual machine settings for $VMHost.")
+                                                    Paragraph "The following section details the virtual machine configuration for $VMHost."
                                                     BlankLine
                                                     #region ESXi Host Virtual Machine Information
                                                     $VMHostVMs = foreach ($VMHostVM in $VMHostVMs) {
                                                         [PSCustomObject]@{
                                                             'Name' = $VMHostVM.Name
                                                             'Power State' = Switch ($VMHostVM.PowerState) {
-                                                                'PoweredOn' { 'Powered On' }
-                                                                'PoweredOff' { 'Powered Off' }
+                                                                'PoweredOn' { 'On' }
+                                                                'PoweredOff' { 'Off' }
                                                                 default { $VMHostVM.PowerState }
                                                             }
                                                             'CPUs' = $VMHostVM.NumCpu
@@ -2562,19 +2666,19 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'Used GB' = [math]::Round(($VMHostVM.UsedSpaceGB), 2)
                                                             'HW Version' = $VMHostVM.HardwareVersion
                                                             'VM Tools Status' = Switch ($VMHostVM.ExtensionData.Guest.ToolsStatus) {
-                                                                'toolsOld' { 'Tools Old' }
-                                                                'toolsOk' { 'Tools OK' }
-                                                                'toolsNotRunning' { 'Tools Not Running' }
-                                                                'toolsNotInstalled' { 'Tools Not Installed' }
+                                                                'toolsOld' { 'Old' }
+                                                                'toolsOK' { 'OK' }
+                                                                'toolsNotRunning' { 'Not Running' }
+                                                                'toolsNotInstalled' { 'Not Installed' }
                                                                 default { $VMHostVM.ExtensionData.Guest.ToolsStatus }
                                                             }
                                                         }
                                                     }
-                                                    if ($Healthcheck.VM.VMToolsOK) {
-                                                        $VMHostVMs | Where-Object { $_.'VM Tools Status' -eq 'Tools Not Installed' -or $_.'VM Tools Status' -eq 'Tools Old' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                                    if ($Healthcheck.VM.VMToolsStatus) {
+                                                        $VMHostVMs | Where-Object { $_.'VM Tools Status' -eq 'Not Installed' -or $_.'VM Tools Status' -eq 'Old' } | Set-Style -Style Warning -Property 'VM Tools Status'
                                                     }
-                                                    if ($Healthcheck.VM.PoweredOn) {
-                                                        $VMHostVMs | Where-Object { $_.'Power State' -ne 'Powered On' } | Set-Style -Style Warning -Property 'Power State'
+                                                    if ($Healthcheck.VM.PowerState) {
+                                                        $VMHostVMs | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
                                                     }
                                                     $VMHostVMs | Sort-Object 'Name' | Table -Name "$VMHost Virtual Machines"
                                                     #endregion ESXi Host Virtual Machine Information
@@ -2634,9 +2738,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VDSwitches = Get-VDSwitch -Server $vCenter
                     if ($VDSwitches) {
                         Section -Style Heading2 'Distributed Virtual Switches' {
-                            Paragraph ("The following section provides information on the Distributed Virtual " +
-                                "Switches managed by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of distributed virtual switches managed by vCenter Server $vCenterServerName."
                             #region Distributed Virtual Switch Informative Information
                             if ($InfoLevel.Network -eq 2) {
                                 BlankLine
@@ -2877,9 +2979,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
                     if ($VsanClusters) {
                         Section -Style Heading2 'vSAN' {
-                            Paragraph ("The following section provides information on the vSAN managed " +
-                                "by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
                             #region vSAN Cluster Informative Information
                             if ($InfoLevel.Vsan -eq 2) {
                                 BlankLine
@@ -2924,7 +3024,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         if ($NumVsanHdd -gt 0) {
                                             $VsanClusterType = "Hybrid"
                                         } else {
-                                            $VsanClusterType = "All-Flash"
+                                            $VsanClusterType = "All Flash"
                                         }
                                         $VsanClusterDetail = [PSCustomObject]@{
                                             'Name' = $VsanCluster.Name
@@ -2961,6 +3061,57 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                         #endregion vSAN Cluster Advanced Detailed Information
                                         $VsanClusterDetail | Table -Name "$($VsanCluster.Name) vSAN Configuration" -List -ColumnWidths 50, 50
+
+                                        Section -Style Heading4 'Disk Groups' {
+                                            foreach ($VMHost in ($VsanDiskGroup.VMHost | Sort-Object | Select-Object -Unique)) {
+                                                Section -Style Heading4 $VMHost.Name {
+                                                    $a = foreach ($DiskGroup in ($VsanDiskGroup | where {$_.VMHost -eq $VMHost | Sort-Object})) {
+                                                            $Disks = $DiskGroup | Get-VsanDisk #| Where-Object {$_.IsCacheDisk -eq $false}
+                                                            [PSCustomObject]@{
+                                                                    #'VMHost' = $VMHost.Name
+                                                                    'Disk Group' = $DiskGroup.Uuid
+                                                                    'Disks in Use' = $Disks.Count
+                                                                    'State' = Switch ($DiskGroup.IsMounted) {
+                                                                        $true {'Mounted'}
+                                                                        $False {'Unmounted'}
+                                                                    }
+                                                                    'Type' = Switch ($DiskGroup.DiskGroupType) {
+                                                                        'AllFlash' {'All Flash'}
+                                                                        default {$DiskGroup.DiskGroupType}
+                                                                    }
+                                                                    'Disk Format Version' = $DiskGroup.DiskFormatVersion
+                                                                }
+                                                        }
+                                                        $a | Table #-List
+                                                    }
+                                            }
+                                        }
+
+                                        Section -Style Heading4 'Disks' {
+                                            $vDisks = foreach ($Disk in $VsanDisk) {
+                                                [PSCustomObject]@{
+                                                    'Host' = $Disk.VsanDiskGroup.VMHost.Name
+                                                    'Disk Group' = $Disk.VsanDiskGroup.Uuid
+                                                    'Name' = $Disk.ExtensionData.DisplayName
+                                                    #'vSAN UUID' = $Disk.Uuid
+                                                    'Drive Type' = Switch ($Disk.IsSsd) {
+                                                        $true { 'Flash' }
+                                                        $false { 'HDD' }
+                                                    }
+                                                    'Disk Tier' = Switch ($Disk.IsCacheDisk) {
+                                                        $true { 'Cache' }
+                                                        $false { 'Capacity' }
+                                                    }
+                                                    'Capacity' = $Disk.CapacityGB
+                                                    #'vSAN Health Status'
+                                                    #'Serial Number' = $Disk.ExtensionData.SerialNumber
+                                                    'Vendor' = $Disk.ExtensionData.Vendor
+                                                    'Model' = $Disk.ExtensionData.Model
+                                                }
+                                            }
+                                            $vDisks | Sort-Object 'Host','Disk Group','Disk Tier' | Table
+                                        }
+
                                     }
                                     #endregion vSAN Cluster Section 
                                 }      
@@ -2973,12 +3124,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region Datastore Section
                 if ($InfoLevel.Datastore -ge 1) {
-                    $Datastores = Get-Datastore -Server $vCenter | Where-Object { $_.State -eq 'Available' } | Sort-Object Name
+                    #$Datastores = Get-Datastore -Server $vCenter | Where-Object { $_.State -eq 'Available' } | Sort-Object Name
                     if ($Datastores) {
                         Section -Style Heading2 'Datastores' {
-                            Paragraph ("The following section provides information on datastores managed " +
-                                "by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of datastores managed by vCenter Server $vCenterServerName."
                             #region Datastore Infomative Information
                             if ($InfoLevel.Datastore -eq 2) {
                                 BlankLine
@@ -3095,9 +3244,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($DSClusters) {
                         #region Datastore Clusters Section
                         Section -Style Heading2 'Datastore Clusters' {
-                            Paragraph ("The following section provides information on datastore clusters " +
-                                "managed by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of datastore clusters managed by vCenter Server $vCenterServerName."
                             #region Datastore Cluster Informative Information
                             if ($InfoLevel.DSCluster -eq 2) {
                                 BlankLine
@@ -3234,193 +3381,78 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 if ($InfoLevel.VM -ge 1) {
                     if ($VMs) {
                         Section -Style Heading2 'Virtual Machines' {
-                            Paragraph ("The following section provides information on Virtual Machines " +
-                                "managed by vCenter Server $vCenterServerName.")
+                            Paragraph "The following sections detail the configuration of virtual machines managed by vCenter Server $vCenterServerName."
+                            #region Virtual Machine Summary Information
+                            if ($InfoLevel.VM -eq 1) {
+                                BlankLine
+                                $VMSummary = [PSCustomObject]@{
+                                    'Total VMs' = $VMs.Count
+                                    'Total vCPUs' = ($VMs | Measure-Object -Property NumCpu -Sum).Sum
+                                    'Total Memory' = "$([math]::Round(($VMs | Measure-Object -Property MemoryGB -Sum).Sum, 2)) GB"
+                                    'Total Provisioned Space' = "$([math]::Round(($VMs | Measure-Object -Property ProvisionedSpaceGB -Sum).Sum, 2)) GB"
+                                    'Total Used Space' = "$([math]::Round(($VMs | Measure-Object -Property UsedSpaceGB -Sum).Sum, 2)) GB"
+                                    'VMs Powered On' = ($VMs | Where-Object {$_.PowerState -eq 'PoweredOn'}).Count
+                                    'VMs Powered Off' = ($VMs | Where-Object {$_.PowerState -eq 'PoweredOff'}).Count
+                                    'VMs Suspended' = ($VMs | Where-Object {$_.PowerState -eq 'Suspended'}).Count
+                                    'VMs with Snapshots' = ($VMs | Where-Object {$_.ExtensionData.Snapshot}).Count
+                                    'Guest Operating System Types' = (($VMs | Get-View).Summary.Config.GuestFullName | Select-Object -Unique).Count
+                                    'VM Tools OK' = ($VMs | Where-Object {$_.ExtensionData.Guest.ToolsStatus -eq 'toolsOK'}).Count
+                                    'VM Tools Old' = ($VMs | Where-Object {$_.ExtensionData.Guest.ToolsStatus -eq 'toolsOld'}).Count
+                                    'VM Tools Not Running' = ($VMs | Where-Object {$_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotRunning'}).Count
+                                    'VM Tools Not Installed' = ($VMs | Where-Object {$_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotInstalled'}).Count
+                                }
+                                $VMSummary | Table -List -Name 'VM Summary' -ColumnWidths 50, 50
+                            }
+                            #endregion Virtual Machine Summary Information
 
                             #region Virtual Machine Informative Information
                             if ($InfoLevel.VM -eq 2) {
                                 BlankLine
+                                $VMSnapshotList = $VMs.Extensiondata.Snapshot.RootSnapshotList
                                 $VMInfo = foreach ($VM in $VMs) {
+                                    $VMView = $VM | Get-View
                                     [PSCustomObject]@{
                                         'Name' = $VM.Name
                                         'Power State' = Switch ($VM.PowerState) {
-                                            'PoweredOn' { 'Powered On' }
-                                            'PoweredOff' { 'Powered Off' }
+                                            'PoweredOn' { 'On' }
+                                            'PoweredOff' { 'Off' }
                                             default { $VM.PowerState }
                                         }
+                                        'IP Address' = Switch ($VMView.Summary.Guest.IpAddress) {
+                                            $null { '--' }
+                                            default { $VMView.Summary.Guest.IpAddress }
+                                        }
                                         'vCPUs' = $VM.NumCpu
-                                        'Cores per Socket' = $VM.CoresPerSocket
-                                        'Memory GB' = [math]::Round(($VM.MemoryGB), 2)
-                                        'Provisioned GB' = [math]::Round(($VM.ProvisionedSpaceGB), 2)
-                                        'Used GB' = [math]::Round(($VM.UsedSpaceGB), 2)
-                                        'HW Version' = $VM.HardwareVersion
-                                        'VM Tools Status' = Switch ($VM.ExtensionData.Guest.ToolsStatus) {
-                                            'toolsOld' { 'Tools Old' }
-                                            'toolsOk' { 'Tools OK' }
-                                            'toolsNotRunning' { 'Tools Not Running' }
-                                            'toolsNotInstalled' { 'Tools Not Installed' }
-                                            default { $VM.ExtensionData.Guest.ToolsStatus }
+                                        'Memory GB' = [math]::Round(($VM.MemoryGB), 0)
+                                        'Provisioned GB' = [math]::Round(($VM.ProvisionedSpaceGB), 0)
+                                        'Used GB' = [math]::Round(($VM.UsedSpaceGB), 0)
+                                        'HW Version' = ($VM.HardwareVersion).Replace('vmx-','v')
+                                        'VM Tools Status' = Switch ($VMView.Summary.Guest.ToolsStatus) {
+                                            'toolsOld' { 'Old' }
+                                            'toolsOK' { 'OK' }
+                                            'toolsNotRunning' { 'Not Running' }
+                                            'toolsNotInstalled' { 'Not Installed' }
+                                            default { $VMView.Guest.ToolsStatus }
                                         }         
                                     }
                                 }
-                                if ($Healthcheck.VM.VMToolsOK) {
-                                    $VMInfo | Where-Object { $_.'VM Tools Status' -ne 'Tools OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                if ($Healthcheck.VM.VMToolsStatus) {
+                                    $VMInfo | Where-Object { $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
                                 }
-                                if ($Healthcheck.VM.PoweredOn) {
-                                    $VMInfo | Where-Object { $_.'Power State' -ne 'Powered On' } | Set-Style -Style Warning -Property 'Power State'
+                                if ($Healthcheck.VM.PowerState) {
+                                    $VMInfo | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
                                 }
                                 $VMInfo | Table -Name 'VM Informative Information'
-                            }
-                            #endregion Virtual Machine Informative Information
 
-                            #region Virtual Machine Detailed Information
-                            if ($InfoLevel.VM -ge 3) {
-                                ## TODO: More VM Details to Add
-                                $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $_.StoragePolicy -ne $null }
-                                foreach ($VM in $VMs) {
-                                    Section -Style Heading3 $VM.name {
-                                        $VMUptime = Get-Uptime -VM $VM
-                                        $VMSpbmPolicy = $VMSpbmConfig | Where-Object { $_.entity -eq $vm }
-                                        $VMDetail = [PSCustomObject]@{
-                                            'Name' = $VM.Name
-                                            'ID' = $VM.Id 
-                                            'Operating System' = $VM.ExtensionData.Summary.Config.GuestFullName
-                                            'Hardware Version' = $VM.HardwareVersion
-                                            'Power State' = Switch ($VM.PowerState) {
-                                                'PoweredOn' { 'Powered On' }
-                                                'PoweredOff' { 'Powered Off' }
-                                                default { $VM.PowerState }
-                                            }
-                                            'VM Tools Status' = Switch ($VM.ExtensionData.Guest.ToolsStatus) {
-                                                'toolsOld' { 'Tools Old' }
-                                                'toolsOk' { 'Tools OK' }
-                                                'toolsNotRunning' { 'Tools Not Running' }
-                                                'toolsNotInstalled' { 'Tools Not Installed' }
-                                                default { $VM.ExtensionData.Guest.ToolsStatus }
-                                            }
-                                            'Fault Tolerance State' = Switch ($VM.ExtensionData.Runtime.FaultToleranceState) {
-                                                'notConfigured' { 'Not Configured' }
-                                                'needsSecondary' { 'Needs Secondary' }
-                                                'running' { 'Running' }
-                                                'disabled' { 'Disabled' }
-                                                'starting' { 'Starting' }
-                                                'enabled' { 'Enabled' }
-                                                default { $VM.ExtensionData.Runtime.FaultToleranceState }
-                                            } 
-                                            'Host' = $VM.VMHost.Name
-                                            'Parent' = $VM.VMHost.Parent.Name
-                                            'Parent Folder' = $VM.Folder.Name
-                                            'Parent Resource Pool' = $VM.ResourcePool.Name
-                                            'vCPUs' = $VM.NumCpu
-                                            'Cores per Socket' = $VM.CoresPerSocket
-                                            'CPU Resources' = "$($VM.VMResourceConfiguration.CpuSharesLevel) / $($VM.VMResourceConfiguration.NumCpuShares)"
-                                            'CPU Reservation' = $VM.VMResourceConfiguration.CpuReservationMhz
-                                            'CPU Limit' = "$($VM.VMResourceConfiguration.CpuReservationMhz) MHz" 
-                                            'CPU Hot Add' = Switch ($VM.ExtensionData.Config.CpuHotAddEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            }
-                                            'CPU Hot Remove' = Switch ($VM.ExtensionData.Config.CpuHotRemoveEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            } 
-                                            'Memory Allocation' = "$([math]::Round(($VM.memoryGB), 2)) GB" 
-                                            'Memory Resources' = "$($VM.VMResourceConfiguration.MemSharesLevel) / $($VM.VMResourceConfiguration.NumMemShares)"
-                                            'Memory Hot Add' = Switch ($VM.ExtensionData.Config.MemoryHotAddEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            }
-                                            'IP Address' = [string]::Join(", ", ($VM.Guest.Net.IpAddress))
-                                            'MAC Address' = [string]::Join(", ", ($VM.Guest.Net.MacAddress))
-                                            'vDisks' = $VM.ExtensionData.Summary.Config.NumVirtualDisks
-                                            'Used Space' = "$([math]::Round(($VM.UsedSpaceGB), 2)) GB"
-                                            'Provisioned Space' = "$([math]::Round(($VM.ProvisionedSpaceGB), 2)) GB"
-                                            'Changed Block Tracking' = Switch ($VM.ExtensionData.Config.ChangeTrackingEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            }
-                                            'Storage Based Policy' = Switch ($VMSpbmPolicy.StoragePolicy.Name) {
-                                                $null { 'Not Applicable' }
-                                                default { $VMSpbmPolicy.StoragePolicy.Name }
-                                            }
-                                            'Storage Based Policy Compliance' = Switch ($VMSpbmPolicy.ComplianceStatus) {
-                                                $null { 'Not Applicable' }
-                                                'compliant' { 'Compliant' } 
-                                                'nonCompliant' { 'Non Compliant' }
-                                                'unknown' { 'Unknown' }
-                                                default { $VMSpbmPolicy.ComplianceStatus }
-                                            }
-                                            'vNICs' = $VM.ExtensionData.Summary.Config.NumEthernetCards
-                                            'Creation Date' = $VM.ExtensionData.Config.CreateDate
-                                        }
-                                        $MemberProps = @{
-                                            'InputObject' = $VMDetail
-                                            'MemberType' = 'NoteProperty'
-                                        }
-                                        if ($VM.Notes) {
-                                            Add-Member @MemberProps -Name 'Notes' -Value $VM.Notes  
-                                        }
-                                        if ($VM.PowerState -eq 'PoweredOn') {
-                                            Add-Member @MemberProps -Name 'Boot Time' -Value $VM.ExtensionData.Runtime.BootTime
-                                            Add-Member @MemberProps -Name 'Uptime Days' -Value $VMUptime.UptimeDays
-                                        }  
-                                        if ($Healthcheck.VM.VMToolsOK) {
-                                            $VMDetail | Where-Object { $_.'VM Tools Status' -ne 'Tools OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
-                                        }
-                                        if ($Healthcheck.VM.PoweredOn) {
-                                            $VMDetail | Where-Object { $_.'Power State' -ne 'Powered On' } | Set-Style -Style Warning -Property 'Power State'
-                                        }
-                                        if ($Healthcheck.VM.CpuHotAddEnabled) {
-                                            $VMDetail | Where-Object { $_.'CPU Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Add'
-                                        }
-                                        if ($Healthcheck.VM.CpuHotRemoveEnabled) {
-                                            $VMDetail | Where-Object { $_.'CPU Hot Remove' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Remove'
-                                        } 
-                                        if ($Healthcheck.VM.MemoryHotAddEnabled) {
-                                            $VMDetail | Where-Object { $_.'Memory Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'Memory Hot Add'
-                                        } 
-                                        if ($Healthcheck.VM.ChangeBlockTrackingEnabled) {
-                                            $VMDetail | Where-Object { $_.'Changed Block Tracking' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Changed Block Tracking'
-                                        } 
-                                        if ($Healthcheck.VM.SpbmPolicyCompliance) {
-                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Unknown' } | Set-Style -Style Warning -Property 'Storage Based Policy Compliance'
-                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Non Compliant' } | Set-Style -Style Critical -Property 'Storage Based Policy Compliance'
-                                        } 
-                                        $VMDetail | Table -Name 'VM Detailed Information' -List -ColumnWidths 50, 50
-
-                                        $VMSnapshots = $VM | Get-Snapshot
-                                        if ($VMSnapshots -and $Options.ShowVMSnapshots) {
-                                            Section -Style Heading4 "Snapshots" {
-                                                $VMSnapshots = foreach ($VMSnapshot in $VMSnapshots) {
-                                                    [PSCustomObject]@{
-                                                        'Snapshot Name' = $VMSnapshot.Name
-                                                        'Description' = $VMSnapshot.Description
-                                                        'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.Created).Days
-                                                    } 
-                                                }
-                                                if ($Healthcheck.VM.VMSnapshots) {
-                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 7 } | Set-Style -Style Warning 
-                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 14 } | Set-Style -Style Critical
-                                                }
-                                                $VMSnapshots | Table -Name "$VM Snapshots"
-                                            }
-                                        }
-                                    }
-                                } 
-                            }
-                            #endregion Virtual Machine Detailed Information
-
-                            #region VM Snapshot Information
-                            if ($InfoLevel.VM -eq 2) {
-                                $VMSnapshots = $VMs | Get-Snapshot 
-                                if ($VMSnapshots -and $Options.ShowVMSnapshots) {
+                                #region VM Snapshot Information
+                                if ($VMSnapshotList -and $Options.ShowVMSnapshots) {
                                     Section -Style Heading3 'Snapshots' {
-                                        $VMSnapshotInfo = foreach ($VMSnapshot in $VMSnapshots) {
+                                        $VMSnapshotInfo = foreach ($VMSnapshot in $VMSnapshotList) {
                                             [PSCustomObject]@{
-                                                'Virtual Machine' = $VMSnapshot.VM
+                                                'Virtual Machine' = $VMLookup."$($VMSnapshot.VM)"
                                                 'Snapshot Name' = $VMSnapshot.Name
                                                 'Description' = $VMSnapshot.Description
-                                                'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.Created).Days
+                                                'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.CreateTime).Days
                                             } 
                                         }
                                         if ($Healthcheck.VM.VMSnapshots) {
@@ -3430,8 +3462,301 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $VMSnapshotInfo | Table -Name 'VM Snapshot Information'
                                     }
                                 }
+                                #endregion VM Snapshot Information
                             }
-                            #endregion VM Snapshot Information
+                            #endregion Virtual Machine Informative Information
+
+                            #region Virtual Machine Detailed Information
+                            if ($InfoLevel.VM -ge 3) {
+                                $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $_.StoragePolicy -ne $null }
+                                if ($InfoLevel.VM -ge 4) {
+                                    $VMHardDisks = Get-HardDisk -VM ($VMs) -Server $vCenter
+                                }
+                                foreach ($VM in $VMs) {
+                                    Section -Style Heading3 $VM.name {
+                                        $VMUptime = Get-Uptime -VM $VM
+                                        $VMSpbmPolicy = $VMSpbmConfig | Where-Object { $_.entity -eq $vm }
+                                        $VMView = $VM | Get-View
+                                        $VMSnapshotList = $vmview.Snapshot.RootSnapshotList
+                                        $VMDetail = [PSCustomObject]@{
+                                            'Name' = $VM.Name
+                                            'ID' = $VM.Id 
+                                            'Operating System' = $VMView.Summary.Config.GuestFullName
+                                            'Hardware Version' = ($VM.HardwareVersion).Replace('vmx-','v')
+                                            'Power State' = Switch ($VM.PowerState) {
+                                                'PoweredOn' { 'On' }
+                                                'PoweredOff' { 'Off' }
+                                                default { $VM.PowerState }
+                                            }
+                                            'VM Tools Status' = Switch ($VMView.Guest.ToolsStatus) {
+                                                'toolsOld' { 'Old' }
+                                                'toolsOK' { 'OK' }
+                                                'toolsNotRunning' { 'Not Running' }
+                                                'toolsNotInstalled' { 'Not Installed' }
+                                                default { $VMView.Guest.ToolsStatus }
+                                            }
+                                            'Fault Tolerance State' = Switch ($VMView.Runtime.FaultToleranceState) {
+                                                'notConfigured' { 'Not Configured' }
+                                                'needsSecondary' { 'Needs Secondary' }
+                                                'running' { 'Running' }
+                                                'disabled' { 'Disabled' }
+                                                'starting' { 'Starting' }
+                                                'enabled' { 'Enabled' }
+                                                default { $VMview.Runtime.FaultToleranceState }
+                                            } 
+                                            'Host' = $VM.VMHost.Name
+                                            'Parent' = $VM.VMHost.Parent.Name
+                                            'Parent Folder' = $VM.Folder.Name
+                                            'Parent Resource Pool' = $VM.ResourcePool.Name
+                                            'vCPUs' = $VM.NumCpu
+                                            'Cores per Socket' = $VM.CoresPerSocket
+                                            'CPU Shares' = "$($VM.VMResourceConfiguration.CpuSharesLevel) / $($VM.VMResourceConfiguration.NumCpuShares)"
+                                            'CPU Reservation' = $VM.VMResourceConfiguration.CpuReservationMhz
+                                            'CPU Limit' = "$($VM.VMResourceConfiguration.CpuReservationMhz) MHz" 
+                                            'CPU Hot Add' = Switch ($VMView.Config.CpuHotAddEnabled) {
+                                                $true { 'Enabled' }
+                                                $false { 'Disabled' }
+                                            }
+                                            'CPU Hot Remove' = Switch ($VMView.Config.CpuHotRemoveEnabled) {
+                                                $true { 'Enabled' }
+                                                $false { 'Disabled' }
+                                            } 
+                                            'Memory Allocation' = "$([math]::Round(($VM.memoryGB), 2)) GB" 
+                                            'Memory Shares' = "$($VM.VMResourceConfiguration.MemSharesLevel) / $($VM.VMResourceConfiguration.NumMemShares)"
+                                            'Memory Hot Add' = Switch ($VMView.Config.MemoryHotAddEnabled) {
+                                                $true { 'Enabled' }
+                                                $false { 'Disabled' }
+                                            }
+                                            'vNICs' = $VMView.Summary.Config.NumEthernetCards
+                                            'DNS Name' = if ($VMView.Guest.HostName) {
+                                                $VMView.Guest.HostName
+                                            } else {
+                                                '--'
+                                            }
+                                            'Networks' = if ($VMView.Guest.Net.Network) {
+                                                (($VMView.Guest.Net | Where-Object {$_.Network -ne $null} | Select-Object Network | Sort-Object Network).Network -join ', ')
+                                            } else {
+                                                '--'
+                                            }
+                                            'IP Addresses' = if ($VMView.Guest.Net.IpAddress) {
+                                                (($VMView.Guest.Net | Where-Object {($_.Network -ne $null) -and ($_.IpAddress -ne $null)} | Select-Object IpAddress | Sort-Object IpAddress).IpAddress -join ', ')
+                                            } else {
+                                                '--'
+                                            }
+                                            'MAC Addresses' = if ($VMView.Guest.Net.MacAddress) {
+                                                (($VMView.Guest.Net | Where-Object {$_.Network -ne $null} | Select-Object -Property MacAddress).MacAddress -join ', ')
+                                            } else {
+                                                '--'
+                                            }
+                                            'vDisks' = $VMView.Summary.Config.NumVirtualDisks
+                                            'Provisioned Space' = "$([math]::Round(($VM.ProvisionedSpaceGB), 2)) GB"
+                                            'Used Space' = "$([math]::Round(($VM.UsedSpaceGB), 2)) GB"
+                                            'Changed Block Tracking' = Switch ($VMView.Config.ChangeTrackingEnabled) {
+                                                $true { 'Enabled' }
+                                                $false { 'Disabled' }
+                                            }
+                                            'Storage Based Policy' = Switch ($VMSpbmPolicy.StoragePolicy.Name) {
+                                                $null { '--' }
+                                                default { $VMSpbmPolicy.StoragePolicy.Name }
+                                            }
+                                            'Storage Based Policy Compliance' = Switch ($VMSpbmPolicy.ComplianceStatus) {
+                                                $null { '--' }
+                                                'compliant' { 'Compliant' } 
+                                                'nonCompliant' { 'Non Compliant' }
+                                                'unknown' { 'Unknown' }
+                                                default { $VMSpbmPolicy.ComplianceStatus }
+                                            }
+                                        }
+                                        $MemberProps = @{
+                                            'InputObject' = $VMDetail
+                                            'MemberType' = 'NoteProperty'
+                                        }
+                                        #if ($VMView.Config.CreateDate) {
+                                        #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime()
+                                        #}
+                                        if ($VM.Notes) {
+                                            Add-Member @MemberProps -Name 'Notes' -Value $VM.Notes  
+                                        }
+                                        if ($VMView.Runtime.BootTime) {
+                                            Add-Member @MemberProps -Name 'Boot Time' -Value ($VMView.Runtime.BootTime).ToLocalTime()
+                                        }
+                                        if ($VMUptime.UptimeDays) {
+                                            Add-Member @MemberProps -Name 'Uptime Days' -Value $VMUptime.UptimeDays
+                                        }
+
+                                        #region VM Health Checks
+                                        if ($Healthcheck.VM.VMToolsStatus) {
+                                            $VMDetail | Where-Object { $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                        }
+                                        if ($Healthcheck.VM.PowerState) {
+                                            $VMDetail | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
+                                        }
+                                        if ($Healthcheck.VM.CpuHotAdd) {
+                                            $VMDetail | Where-Object { $_.'CPU Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Add'
+                                        }
+                                        if ($Healthcheck.VM.CpuHotRemove) {
+                                            $VMDetail | Where-Object { $_.'CPU Hot Remove' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Remove'
+                                        } 
+                                        if ($Healthcheck.VM.MemoryHotAdd) {
+                                            $VMDetail | Where-Object { $_.'Memory Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'Memory Hot Add'
+                                        } 
+                                        if ($Healthcheck.VM.ChangeBlockTracking) {
+                                            $VMDetail | Where-Object { $_.'Changed Block Tracking' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Changed Block Tracking'
+                                        } 
+                                        if ($Healthcheck.VM.SpbmPolicyCompliance) {
+                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Unknown' } | Set-Style -Style Warning -Property 'Storage Based Policy Compliance'
+                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Non Compliant' } | Set-Style -Style Critical -Property 'Storage Based Policy Compliance'
+                                        }
+                                        #endregion VM Health Checks
+
+                                        $VMDetail | Table -Name "$($VM.Name) Detailed Information" -List -ColumnWidths 50, 50
+
+                                        if ($InfoLevel.VM -ge 4) {
+                                            $VMnics = $VM.Guest.Nics | Where-Object {$_.Device -ne $null} | Sort-Object Device
+                                            $VMHdds = $VMHardDisks | Where-Object {$_.ParentId -eq $VM.Id} | Sort-Object Name
+                                            $SCSIControllers = $VMView.Config.Hardware.Device | Where-Object { $_.DeviceInfo.Label -match "SCSI Controller" }
+                                            $VMGuestVols = $VM.Guest.Disks | Sort-Object Path
+                                            if ($VMnics) {
+                                                Section -Style Heading4 "Network Adapters" {
+                                                    $VMnicInfo = foreach ($VMnic in $VMnics) {
+                                                        [PSCustomObject]@{
+                                                            'Device' = $VMnic.Device
+                                                            'Connected' = $VMnic.Connected
+                                                            'Network Name' = Switch -wildcard ($VMnic.NetworkName) {
+                                                                'dvportgroup*' { $VDPortgroupLookup."$($VMnic.NetworkName)" }
+                                                                default { $VMnic.NetworkName }
+                                                            }
+                                                            'Adapter Type' = $VMnic.Device.Type
+                                                            'IP Address' = $VMnic.IpAddress -join [Environment]::NewLine
+                                                            'MAC Address' = $VMnic.Device.MacAddress
+                                                        }
+                                                    }
+                                                    $VMnicInfo | Table -Name "$($VM.Name) Network Adapters"
+                                                }
+                                            }
+                                            if ($SCSIControllers) {
+                                                Section -Style Heading4 "SCSI Controllers" {
+                                                    $VMScsiControllers = foreach ($VMSCSIController in $SCSIControllers) {
+                                                        [PSCustomObject]@{
+                                                            'Device' = $VMSCSIController.DeviceInfo.Label
+                                                            'Controller Type' = $VMSCSIController.DeviceInfo.Summary
+                                                            'Bus Sharing' = Switch ($VMSCSIController.SharedBus) {
+                                                                'noSharing' { 'None' }
+                                                                default { $VMSCSIController.SharedBus }
+                                                            }
+                                                        }
+                                                    }
+                                                    $VMScsiControllers | Sort-Object 'Device' | Table -Name "$($VM.Name) SCSI Controllers"
+                                                }
+                                            }
+                                            if ($VMHdds) {
+                                                Section -Style Heading4 "Hard Disks" {
+                                                    If ($InfoLevel.VM -eq 4) {
+                                                        $VMHardDiskInfo = foreach ($VMHdd in $VMHdds) {
+                                                                $SCSIDevice = $VMView.Config.Hardware.Device | Where-Object { $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
+                                                                $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
+                                                                [PSCustomObject]@{
+                                                                    'Disk' = $VMHdd.Name
+                                                                    'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[")+1,$VMHdd.Filename.IndexOf("]")-1)
+                                                                    'Capacity' = "$([math]::Round(($VMHdd.CapacityGB), 2)) GB"
+                                                                    'Disk Provisioning' = Switch ($VMHdd.StorageFormat) {
+                                                                        'EagerZeroedThick' { 'Thick Eager Zeroed'}
+                                                                        'LazyZeroedThick' { 'Thick Lazy Zeroed'}
+                                                                        $null { '--' }
+                                                                        default { $VMHdd.StorageFormat }
+                                                                    }
+                                                                    'Disk Type' = Switch ($VMHdd.DiskType) {
+                                                                        'RawPhysical' { 'Physical RDM' }
+                                                                        'RawVirtual' { "Virtual RDM"}
+                                                                        'Flat' { 'VMDK' }
+                                                                        default { $VMHdd.DiskType }
+                                                                    }
+                                                                    'Disk Mode' = Switch ($VMHdd.Persistence) {
+                                                                        'IndependentPersistent' { 'Independent - Persistent'}
+                                                                        'IndependentNonPersistent' { 'Independent - Nonpersistent'}
+                                                                        'Persistent' { 'Dependent'}
+                                                                        default { $VMHdd.Persistence }
+                                                                    }
+                                                                }
+                                                            }
+                                                        $VMHardDiskInfo | Table -Name "$($VM.Name) Hard Disk Information"
+                                                    } else {
+                                                        foreach ($VMHdd in $VMHdds) {
+                                                            Section -Style Heading5 "$($VMHdd.Name)" {
+                                                                $SCSIDevice = $VMView.Config.Hardware.Device | Where-Object { $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
+                                                                $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
+                                                                $VMHardDiskInfo = [PSCustomObject]@{
+                                                                    'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[")+1,$VMHdd.Filename.IndexOf("]")-1)
+                                                                    'Capacity' = "$([math]::Round(($VMHdd.CapacityGB), 2)) GB"
+                                                                    'Disk Path' = $VMHdd.Filename.Substring($VMHdd.Filename.IndexOf("]")+2)
+                                                                    'Disk Shares' = "$($TextInfo.ToTitleCase($VMHdd.ExtensionData.Shares.Level)) / $($VMHdd.ExtensionData.Shares.Shares)"
+                                                                    'Disk Limit IOPs' = Switch ($VMHdd.ExtensionData.StorageIOAllocation.Limit) {
+                                                                        '-1' { 'Unlimited'}
+                                                                        default { $VMHdd.ExtensionData.StorageIOAllocation.Limit }
+                                                                    }
+                                                                    'Disk Provisioning' = Switch ($VMHdd.StorageFormat) {
+                                                                        'EagerZeroedThick' { 'Thick Eager Zeroed'}
+                                                                        'LazyZeroedThick' { 'Thick Lazy Zeroed'}
+                                                                        $null { '--' }
+                                                                        default { $VMHdd.StorageFormat }
+                                                                    }
+                                                                    'Disk Type' = Switch ($VMHdd.DiskType) {
+                                                                        'RawPhysical' { 'Physical RDM' }
+                                                                        'RawVirtual' { "Virtual RDM"}
+                                                                        'Flat' { 'VMDK' }
+                                                                        default { $VMHdd.DiskType }
+                                                                    }
+                                                                    'Disk Mode' = Switch ($VMHdd.Persistence) {
+                                                                        'IndependentPersistent' { 'Independent - Persistent'}
+                                                                        'IndependentNonPersistent' { 'Independent - Nonpersistent'}
+                                                                        'Persistent' { 'Dependent'}
+                                                                        default { $VMHdd.Persistence }
+                                                                    }
+                                                                    'SCSI Controller' = $SCSIController.DeviceInfo.Label
+                                                                    'SCSI Address' = "$($SCSIController.BusNumber):$($VMHdd.ExtensionData.UnitNumber)"
+                                                                }
+                                                                $VMHardDiskInfo | Table -List "$($VM.Name) $($VMHdd.Name) Information" -ColumnWidths 25, 75
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if ($VMGuestVols) {
+                                                Section -Style Heading4 "Guest Volumes" {
+                                                    $VMGuestDiskInfo = foreach ($VMGuestVol in $VMGuestVols) {
+                                                        [PSCustomObject]@{
+                                                            'Path' = $VMGuestVol.Path
+                                                            'Capacity' = "$([math]::Round(($VMGuestVol.CapacityGB), 2)) GB"
+                                                            'Used Space' = "$([math]::Round((($VMGuestVol.CapacityGB) - ($VMGuestVol.FreeSpaceGB)), 2)) GB"
+                                                            'Free Space' = "$([math]::Round($VMGuestVol.FreeSpaceGB, 2)) GB"
+                                                        }
+                                                    }
+                                                    $VMGuestDiskInfo | Table -Name "$($VM.Name) Guest Volumes" -ColumnWidths 25, 25, 25, 25
+                                                }
+                                            }
+                                        }
+
+                                        
+                                        if ($VMSnapshotList -and $Options.ShowVMSnapshots) {
+                                            Section -Style Heading4 "Snapshots" {
+                                                $VMSnapshots = foreach ($VMSnapshot in $VMSnapshotList) {
+                                                    [PSCustomObject]@{
+                                                        'Snapshot Name' = $VMSnapshot.Name
+                                                        'Description' = $VMSnapshot.Description
+                                                        'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.CreateTime).Days
+                                                    } 
+                                                }
+                                                if ($Healthcheck.VM.VMSnapshots) {
+                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 7 } | Set-Style -Style Warning 
+                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 14 } | Set-Style -Style Critical
+                                                }
+                                                $VMSnapshots | Table -Name "$($VM.Name) Snapshots"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            #endregion Virtual Machine Detailed Information
                         }
                     }
                 }
@@ -3442,9 +3767,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VUMBaselines = Get-PatchBaseline -Server $vCenter
                     if ($VUMBaselines) {
                         Section -Style Heading2 'VMware Update Manager' {
-                            Paragraph ("The following section provides information on VMware Update Manager " +
-                                "managed by vCenter Server $vCenterServerName.")
-
+                            Paragraph "The following sections detail the configuration of VMware Update Manager managed by vCenter Server $vCenterServerName."
                             #region VUM Baseline Detailed Information
                             if ($InfoLevel.VUM -ge 2) {
                                 Section -Style Heading3 'Baselines' {
@@ -3454,7 +3777,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'Description' = $VUMBaseline.Description
                                             'Type' = $VUMBaseline.BaselineType
                                             'Target Type' = $VUMBaseline.TargetType
-                                            'Last Update Time' = $VUMBaseline.LastUpdateTime
+                                            'Last Update Time' = ($VUMBaseline.LastUpdateTime).ToLocalTime()
                                             '# of Patches' = $VUMBaseline.CurrentPatches.Count
                                         }
                                     }
