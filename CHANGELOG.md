@@ -1,17 +1,20 @@
 # VMware vSphere As Built Report Changelog
 
-## [1.1.0] - 2019-08-12
+## [1.1.1] - 2019-12-08
 ### Added
 - Added VM summary information
 - Added VM disk and guest volume information
-- Enhanced VMHost storage adapter reporting (Fix #32)
-- Enhanced VMHost network adapter CDP reporting
-- Enhanced VM SCSI controller reporting
-- Enhanced vSAN reporting
+- Added Virtual Switch to VMkernel adapter information
+- Improved VMHost storage adapter reporting (Fix #32)
+- Improved VMHost network adapter CDP reporting
+- Improved VM SCSI controller reporting
+- Improved vSAN reporting (Disk Groups, iSCSI Targets & LUNs)
 
 ### Changed
 - Improved report formatting
 - Updated report JSON structure & default settings
+- Resolved issue with reporting of ESXi boot device size
+- Resolved issue with PCI device reporting when ESXi hosts have FCoE adapters (Fix #33)
 
 ## [1.0.8] - 2019-07-23
 ### Added
