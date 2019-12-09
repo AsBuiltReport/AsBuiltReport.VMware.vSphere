@@ -45,15 +45,25 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 
 ### Module Installation
 
-Open a Windows PowerShell terminal window and install each of the required modules as follows;
+Open a Windows PowerShell terminal window and install each of the required modules. 
+
+**Note:** VMware PowerCLI 10.0 or higher required.
+
 ```powershell
-install-module VMware.PowerCLI
+install-module VMware.PowerCLI -MinimumVersion 10.0
 install-module AsBuiltReport.VMware.vSphere
 ```
 
 ### Required Privileges
 
-To generate a VMware vSphere report, a user account with full administrative privileges to vCenter Server is required.
+The following role assigned privileges are required to generate a VMware vSphere As Built Report.
+
+* Global > Licenses
+* Global > Settings
+* Host > CIM > CIM Interaction
+* Host > Configuration > Change Settings
+* Profile-driven Storage > Profile-driven storage view
+* VMware vSphere Update Manager > View Compliance Status
 
 ## Configuration
 The vSphere As Built Report utilises a JSON file to allow configuration of report information, options, detail and healthchecks. 
@@ -112,8 +122,6 @@ There are 6 levels (0-5) of detail granularity for each section as follows;
 | 3 | Detailed | provides detailed information for individual objects
 | 4 | Adv Detailed | provides detailed information for individual objects, as well as information for associated objects (Hosts, Clusters, Datastores, VMs etc)
 | 5 | Comprehensive | provides comprehensive information for individual objects, such as advanced configuration settings
-
-\*\* *future release*
 
 ### Healthcheck
 The **Healthcheck** sub-schema is used to toggle health checks on or off.
@@ -224,8 +232,6 @@ New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphe
 ```
 
 ## Known Issues
-- Verbose script errors when connecting to vCenter with a Read-Only user account. 
-  - A user account with administrator privileges to vCenter Server is required to generate a VMware vSphere report.
 
 - Error message _"Unable to determine the identity of the domain"_ when saving a report. 
   - Issue relates to [Isolated Storage](http://rekiwi.blogspot.com/2008/12/unable-to-determine-identity-of-domain.html) and occurs when generating large reports. 

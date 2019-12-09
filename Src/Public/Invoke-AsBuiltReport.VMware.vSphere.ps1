@@ -448,6 +448,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             'Vendor' = $ScsiDisk.Vendor
             'Model' = $ScsiDisk.Model
             'MultipathPolicy' = $MultipathPolicy
+            'Paths' = ($Multipath.Path).Count
             'CapacityGB' = $CapacityGB
         }
     }
@@ -544,6 +545,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     #---------------------------------------------------------------------------------------------#
     #                                         SCRIPT BODY                                         #
     #---------------------------------------------------------------------------------------------#
+    # Check for VMware PowerCLI 10.0 or above
+    try {
+        $PowerCLIVersion = Get-PowerCLIVersion
+        if ($PowerCLIVersion.Major -lt 10){
+            Throw 'VMware PowerCLI 10.0 or higher required'
+        }
+    } catch {
+        Write-Error $_
+    }
 
     # Connect to vCenter Server using supplied credentials
     foreach ($VIServer in $Target) { 
@@ -566,8 +576,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         }
 
         # Create a lookup hashtable to link Host MoRefs to Names
-        # Exclude VMware HCX hosts from VMHost lookup
-        $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" } | Sort-Object Name
+        # Exclude VMware HCX hosts and ESX/ESXi versions prior to vSphere 5.0 from VMHost lookup
+        $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5} | Sort-Object Name
         $VMHostLookup = @{ }
         foreach ($VMHost in $VMHosts) {
             $VMHostLookup.($VMHost.Id) = $VMHost.Name
@@ -2129,7 +2139,7 @@ Section -Style Heading1 $vCenterServerName {
                                                         Add-Member @MemberProps -Name 'Authentication Method' -Value $iScsiAuthenticationMethod
                                                         Add-Member @MemberProps -Name 'Outgoing CHAP Name' -Value $VMHostHba.ExtensionData.AuthenticationProperties.ChapName
                                                     }
-                                                    if ($InfoLevel.VMHost -eq 5) {
+                                                    if ($InfoLevel.VMHost -eq 4) {
                                                         Add-Member @MemberProps -Name 'Advanced Options' -Value (($VMHostHba.ExtensionData.AdvancedOptions | ForEach-Object { "$($_.Key) = $($_.Value)" }) -join [Environment]::NewLine)
                                                     }
                                                 }
@@ -2311,7 +2321,7 @@ Section -Style Heading1 $vCenterServerName {
                                                 'Virtual Switch' = & { 
                                                     if ($_.Spec.Portgroup)
                                                     {
-                                                        (Get-VirtualPortGroup -Standard -Name $script:pg).VirtualSwitchName
+                                                        (Get-VirtualPortGroup -Standard -Name $script:pg -VMHost $VMHost).VirtualSwitchName
                                                     }
                                                     else
                                                     {
@@ -3323,6 +3333,7 @@ Section -Style Heading1 $vCenterServerName {
                                     'Model' = $ScsiDeviceDetail.Model
                                     'Is SSD' = $ScsiDeviceDetail.Ssd
                                     'Multipath Policy' = $ScsiDeviceDetail.MultipathPolicy
+                                    'Paths' = $ScsiDeviceDetail.Paths
                                 }
                             }
                             $ScsiLuns | Sort-Object Host | Table -Name 'SCSI LUN Information'
