@@ -453,7 +453,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     }
 
     Function Get-PciDeviceDetail {
-        <#
+    <#
     .SYNOPSIS
     Helper function to return PCI Devices Drivers & Firmware information for a specific host.
     .PARAMETER Server
@@ -493,15 +493,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 Name = "N/A"
                 Version = "N/A"
             }
-            $pciDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMKernelName -like "vmhba*" -or $_.VMKernelName -like "vmnic*" -or $_.VMKernelName -like "vmgfx*" } | Sort-Object -Property VMKernelName 
+            $pciDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -like "vmhba*" -or $_.VMkernelName -like "vmnic*" -or $_.VMkernelName -like "vmgfx*" } | Sort-Object -Property VMkernelName 
             $nicList = $esxcli.network.nic.list.Invoke() | Sort-Object Name
             #$fcoeAdapterList = $esxcli.fcoe.adapter.list.Invoke().PhysicalNIC # Get list of vmnics used for FCoE, because we don't want those vmnics here.
             foreach ($pciDevice in $pciDevices) {
                 $driverVersion = $esxcli.system.module.get.Invoke(@{module = $pciDevice.ModuleName }) | Select-Object -ExpandProperty Version
                 # Get NIC Firmware version
-                #if (($pciDevice.VMKernelName -like 'vmnic*') -and ($fcoeAdapterList -notcontains $pciDevice.VMKernelName) -and ($nicList.Name -contains $pciDevice.VMKernelName) ) {
-                if (($pciDevice.VMKernelName -like 'vmnic*') -and ($nicList.Name -contains $pciDevice.VMKernelName) ) {   
-                    $vmnicDetail = $esxcli.network.nic.get.Invoke(@{nicname = $pciDevice.VMKernelName })
+                #if (($pciDevice.VMkernelName -like 'vmnic*') -and ($fcoeAdapterList -notcontains $pciDevice.VMkernelName) -and ($nicList.Name -contains $pciDevice.VMkernelName) ) {
+                if (($pciDevice.VMkernelName -like 'vmnic*') -and ($nicList.Name -contains $pciDevice.VMkernelName) ) {   
+                    $vmnicDetail = $esxcli.network.nic.get.Invoke(@{nicname = $pciDevice.VMkernelName })
                     $firmwareVersion = $vmnicDetail.DriverInfo.FirmwareVersion
                     # Get NIC driver VIB package version
                     $driverVib = $esxcli.software.vib.list.Invoke() | Select-Object -Property Name, Version | Where-Object { $_.Name -eq $vmnicDetail.DriverInfo.Driver -or $_.Name -eq "net-" + $vmnicDetail.DriverInfo.Driver -or $_.Name -eq "net55-" + $vmnicDetail.DriverInfo.Driver }
@@ -510,7 +510,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     else skip if VMkernnel is vmhba*. Can't get HBA Firmware from 
                     Powercli at the moment only through SSH or using Putty Plink+PowerCli.
                     #>
-                } elseif ($pciDevice.VMKernelName -like 'vmhba*') {
+                } elseif ($pciDevice.VMkernelName -like 'vmhba*') {
                     if ($pciDevice.DeviceName -match "smart array") {
                         $hpsa = $vmhost.ExtensionData.Runtime.HealthSystemRuntime.SystemHealthInfo.NumericSensorInfo | Where-Object { $_.Name -match "HP Smart Array" }
                         if ($hpsa) {
@@ -523,7 +523,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 }
                 # Output collected data
                 [PSCustomObject]@{
-                    'VMkernel Name' = $pciDevice.VMKernelName
+                    'VMkernel Name' = $pciDevice.VMkernelName
                     'Device Name' = $pciDevice.DeviceName
                     'Driver' = $pciDevice.ModuleName
                     'Driver Version' = $driverVersion
@@ -1876,7 +1876,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host PCI Devices
                                             Section -Style Heading5 'PCI Devices' {
-                                                $PciHardwareDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMKernelName -like "vmhba*" -OR $_.VMKernelName -like "vmnic*" -OR $_.VMKernelName -like "vmgfx*" } 
+                                                $PciHardwareDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -like "vmhba*" -OR $_.VMkernelName -like "vmnic*" -OR $_.VMkernelName -like "vmgfx*" } 
                                                 $VMHostPciDevices = foreach ($PciHardwareDevice in $PciHardwareDevices) {
                                                     [PSCustomObject]@{
                                                         'VMkernel Name' = $PciHardwareDevice.VMkernelName 
@@ -2071,7 +2071,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     foreach ($VMHostHba in $VMHostHbas) {
                                                         $Target = ((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | Where-Object {$_.Adapter -eq $VMHostHba.Key}).Target
                                                         $LUNs = Get-ScsiLun -Hba $VMHostHba -LunType "disk" -ErrorAction SilentlyContinue
-                                                        $Paths = ($Target | %{$_.Lun.Count} | Measure-Object -Sum)
+                                                        $Paths = ($Target | foreach {$_.Lun.Count} | Measure-Object -Sum)
                                                         Section -Style Heading5 "$($VMHostHba.Device)" {
                                                             $VMHostStorageAdapter = [PSCustomObject]@{
                                                                 'Adapter' = $VMHostHba.Device
@@ -2144,7 +2144,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 Add-Member @MemberProps -Name 'Port WWN' -Value (([String]::Format("{0:X}", $VMHostHba.PortWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
                                                                 Add-Member @MemberProps -Name 'Speed' -Value $VMHostHba.Speed
                                                             }
-                                                            $VMHostStorageAdapter | Table -List -Name "$VMHost storage adapter $($VMHostStorageAdapter.Device)" -ColumnWidths 25, 75
+                                                            $VMHostStorageAdapter | Table -List -Name "$VMHost storage adapter $($VMHostStorageAdapter.Adapter)" -ColumnWidths 25, 75
                                                         }
                                                     }
                                                 }
@@ -2170,14 +2170,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $VMHostNetworkDetail = [PSCustomObject]@{
                                                 'Host' = $VMHost.Name 
                                                 'Virtual Switches' = ($VMHostVirtualSwitch | Sort-Object) -join ', '
-                                                'VMKernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
+                                                'VMkernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
                                                 'Physical Adapters' = ($VMHostNetwork.Pnic.Device | Sort-Object) -join ', '
-                                                'VMKernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
+                                                'VMkernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
                                                 'IPv6' = Switch ($VMHostNetwork.IPv6Enabled) {
                                                     $true { 'Enabled' }
                                                     $false { 'Disabled' }
                                                 }
-                                                'VMKernel IPv6 Gateway' = Switch ($VMHostNetwork.IpRouteConfig.IpV6DefaultGateway) {
+                                                'VMkernel IPv6 Gateway' = Switch ($VMHostNetwork.IpRouteConfig.IpV6DefaultGateway) {
                                                     $null { '--' }
                                                     default { $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway }
                                                 }
@@ -2400,7 +2400,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'Number of Ports Available' = $VSSwitchNicTeam.VirtualSwitch.NumPortsAvailable
                                                         }
                                                     }
-                                                    $VSSProperties | Table -Name "$VMHost Standard Virtual Switch $($VSSGeneral.Name)" #-List -ColumnWidths 50, 50
+                                                    $VSSProperties | Table -Name "$VMHost Standard Virtual Switches"
                                                     #endregion ESXi Host Standard Virtual Switch Properties
 
                                                     #region ESXi Host Virtual Switch Security Policy
@@ -2857,7 +2857,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $VDSwitchDetail | Table -Name "$VDS Distributed Switch General Properties" -List -ColumnWidths 50, 50 
                                         #endregion Distributed Switch General Properties
 
-                                        #region Distributed Switch Uplinks
+                                        #region Distributed Switch Uplink Ports
                                         $VdsUplinks = $VDS | Get-VDPortgroup | Where-Object { $_.IsUplink -eq $true } | Get-VDPort
                                         if ($VdsUplinks) {
                                             Section -Style Heading4 'Distributed Switch Uplink Ports' {
@@ -2873,7 +2873,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $VdsUplinkDetail | Sort-Object 'Distributed Switch', 'Host', 'Uplink Name' | Table -Name "$VDS Distributed Switch Uplink Ports"
                                             }
                                         }
-                                        #endregion Distributed Switch Uplinks               
+                                        #endregion Distributed Switch Uplink Ports               
                     
                                         #region Distributed Switch Security
                                         $VDSecurityPolicy = $VDS | Get-VDSecurityPolicy
@@ -2942,7 +2942,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         '# of Ports' = $VDSPortgroup.NumPorts
                                                     }
                                                 }
-                                                $VDSPortgroupDetail | Sort-Object 'Port Group' | Table -Name "$VDS Distributed Port Groups" 
+                                                $VDSPortgroupDetail | Sort-Object 'Port Group' | Table -Name "$VDS Distributed Switch Port Groups" 
                                             }
                                         }
                                         #endregion Distributed Switch Port Groups
