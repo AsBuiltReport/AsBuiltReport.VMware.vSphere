@@ -35,6 +35,15 @@ Sample vSphere As Built report with health checks, using custom report style.
 # Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
+## Supported vSphere Versions
+The VMware vSphere As Built Report supports the following vSphere versions;
+- vSphere 5.0
+- vSphere 5.1
+- vSphere 5.5
+- vSphere 6.0
+- vSphere 6.5
+- vSphere 6.7
+
 ## Pre-requisites
 The following PowerShell modules are required for generating a VMware vSphere As Built report.
 
@@ -43,7 +52,7 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
-### Module Installation
+## Module Installation
 
 Open a Windows PowerShell terminal window and install each of the required modules. 
 
@@ -200,6 +209,7 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 | Schema | Sub-Schema | Setting | Description | Highlight |
 | ------ | ---------- | ------- | ----------- | --------- |
 | VM | PowerState | true / false | Enables/Disables checking if the VM is powered on | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM is powered off
+| VM | ConnectionState | true / false | Enables/Disables checking if the VM is orphaned or inaccessible | ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM is orphaned or inaccessible
 | VM | CpuHotAdd | true / false | Highlights virtual machines which have CPU Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Add enabled
 | VM | CpuHotRemove | true / false | Highlights virtual machines which have CPU Hot Remove enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Remove enabled
 | VM | MemoryHotAdd | true / false | Highlights VMs which have Memory Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Memory Hot Add enabled

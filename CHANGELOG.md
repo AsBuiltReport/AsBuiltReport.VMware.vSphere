@@ -1,26 +1,33 @@
 # VMware vSphere As Built Report Changelog
 
-## [1.1.2] - 2019-12-09
+## [Unreleased]
 ### Added
-- Added check for minimum VMware PowerCLI version (Fix #72)
+- Added vCenter Server certificate information (Fix #31)
 - Added VM summary information
 - Added VM disk and guest volume information
 - Added Virtual Switch to VMkernel adapter information
+- Added Virtual Switch & Port Group Traffic Shaping information
 - Added vSAN Disk Groups, iSCSI Targets & LUN reporting
+- Added number of paths to SCSI LUN information
+- Added VMHost CPU & Memory totals to Informative level
+- Added VM Connection State information & health check
+- Added number of targets, devices & paths to storage adapters
 
 ### Changed
 - Improved report formatting
 - Improved VMHost storage adapter reporting (Fix #32)
 - Improved VMHost network adapter CDP reporting
 - Improved VM SCSI controller reporting
+- Updated VMHost CPU & Memory totals/usage in Detailed level
 - Updated report JSON structure & default settings. A new report JSON must be generated for this release, use `New-AsBuiltReportConfig -Report VMware.vSphere -Path <path> -Overwrite`.
 - Updated README with minimum required privileges to generate a VMware vSphere As Built Report. Full administrator privileges should no longer be required.
-- Resolved issue with PCI device reporting when ESXi hosts have FCoE adapters (Fix #33)
+- Resolved issue with VMHost PCI device reporting (Fix #33)
 - Resolved issue with reporting of ESXi boot device size (Fix #65)
-- Resolved issue with vSphere licensing (Fix # 68 & #69)
+- Resolved issue with vSphere licensing (Fix #68 & #69)
 
-## Removed
+### Removed
 - Removed support for ESX/ESXi hosts prior to vSphere 5.0 (Fix #67)
+- Removed VMHost CPU & Memory usage from Informative level
 
 ## [1.0.8] - 2019-07-23
 ### Added
@@ -29,7 +36,7 @@
 - Added NTP, SSH & ESXi Shell health checks
 
 ### Changed
-- Fixed vSwitch reporting issue with physical adpaters
+- Fixed vSwitch reporting issue with physical adpaters (Fix #27)
 - Fixed issue with VMHost uptime health check reporting
 
 ## [1.0.7] - 2019-06-21
