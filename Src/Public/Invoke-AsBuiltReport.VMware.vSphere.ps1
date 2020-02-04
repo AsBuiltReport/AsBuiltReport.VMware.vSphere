@@ -2144,6 +2144,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 Add-Member @MemberProps -Name 'Port WWN' -Value (([String]::Format("{0:X}", $VMHostHba.PortWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
                                                                 Add-Member @MemberProps -Name 'Speed' -Value $VMHostHba.Speed
                                                             }
+                                                            if ($Healthcheck.VMHost.StorageAdapter) {
+                                                                $VMHostStorageAdapter | Where-Object { $_.'Status' -ne 'Online' } | Set-Style -Style Warning -Property 'Status'
+                                                                $VMHostStorageAdapter | Where-Object { $_.'Status' -eq 'Offline' } | Set-Style -Style Critical -Property 'Status'
+                                                            }
                                                             $VMHostStorageAdapter | Table -List -Name "$VMHost storage adapter $($VMHostStorageAdapter.Adapter)" -ColumnWidths 25, 75
                                                         }
                                                     }
@@ -2217,7 +2221,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $null { 'Down' }
                                                             default {
                                                                 if ($PhysicalNetAdapter.LinkSpeed.Duplex) {
-                                                                    "$($PhysicalNetAdapter.LinkSpeed.SpeedMb) Mb, Full Duplex"
+                                                                    "$($PhysicalNetAdapter.LinkSpeed.SpeedMb) Mbps, Full Duplex"
                                                                 } else {
                                                                     'Auto negotiate'
                                                                 }
@@ -2227,9 +2231,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $null { 'Auto negotiate' }
                                                             default {
                                                                 if ($PhysicalNetAdapter.Spec.LinkSpeed.Duplex) {
-                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mb, Full Duplex"
+                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps, Full Duplex"
                                                                 } else {
-                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mb"
+                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps"
                                                                 }
                                                             }
                                                         }
@@ -2238,6 +2242,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $false { 'Not Supported' }
                                                         }
                                                     }
+                                                }
+                                                if ($Healthcheck.VMHost.NetworkAdapter) {
+                                                    $VMHostPhysicalNetAdapters | Where-Object { $_.'Status' -ne 'Connected' } | Set-Style -Style Critical -Property 'Status'
+                                                    $VMHostPhysicalNetAdapters | Where-Object { $_.'Actual Speed, Duplex' -eq 'Down' } | Set-Style -Style Critical -Property 'Actual Speed, Duplex'
                                                 }
                                                 if ($InfoLevel.VMHost -ge 4) {
                                                     foreach ($VMHostPhysicalNetAdapter in $VMHostPhysicalNetAdapters) {

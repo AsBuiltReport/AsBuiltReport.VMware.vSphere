@@ -179,6 +179,8 @@ The **VMHost** sub-schema is used to configure health checks for VMHosts.
 | VMHost | SSH | true / false | Highlights if the SSH service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-SSH service enabled
 | VMHost | ESXiShell | true / false | Highlights if the ESXi Shell service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-EsxiShell service enabled
 | VMHost | NTP | true / false | Highlights if the NTP service has stopped or is disabled on a VMHost | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  NTP service stopped / disabled
+| VMHost | StorageAdapter | true / false | Highlights storage adapters which are not 'Online' | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Storage adapter status is 'Unknown'<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Storage adapter status is 'Offline'
+| VMHost | NetworkAdapter | true / false | Highlights physical network adapters which are not 'Connected'<br> Highlights physical network adapters which are 'Down' | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Network adapter is 'Disconnected'<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Network adapter is 'Down'
 | VMHost | LockdownMode | true / false | Highlights VMHosts which do not have Lockdown mode enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Lockdown Mode disabled<br>
 | VMHost | VUMCompliance | true / false | Highlights VMHosts which are not compliant with VMware Update Manager software packages | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Incompatible
 
