@@ -35,25 +35,44 @@ Sample vSphere As Built report with health checks, using custom report style.
 # Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
+## Supported vSphere Versions
+The VMware vSphere As Built Report supports the following vSphere versions;
+- vSphere 5.0
+- vSphere 5.1
+- vSphere 5.5
+- vSphere 6.0
+- vSphere 6.5
+- vSphere 6.7
+
 ## Pre-requisites
 The following PowerShell modules are required for generating a VMware vSphere As Built report.
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery 
 
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
-- [AsBuiltReport Module](https://www.powershellgallery.com/packages/AsBuiltReport/)
+- [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
-### Module Installation
+## Module Installation
 
-Open a Windows PowerShell terminal window and install each of the required modules as follows;
+Open a Windows PowerShell terminal window and install each of the required modules. 
+
+**Note:** VMware PowerCLI 10.0 or higher required.
+
 ```powershell
-install-module VMware.PowerCLI
-install-module AsBuiltReport
+install-module VMware.PowerCLI -MinimumVersion 10.0
+install-module AsBuiltReport.VMware.vSphere
 ```
 
 ### Required Privileges
 
-To generate a VMware vSphere report, a user account with full administrative privileges to vCenter Server is required.
+The following role assigned privileges are required to generate a VMware vSphere As Built Report.
+
+* Global > Licenses
+* Global > Settings
+* Host > CIM > CIM Interaction
+* Host > Configuration > Change Settings
+* Profile-driven Storage > Profile-driven storage view
+* VMware vSphere Update Manager > View Compliance Status
 
 ## Configuration
 The vSphere As Built Report utilises a JSON file to allow configuration of report information, options, detail and healthchecks. 
@@ -94,12 +113,12 @@ The **InfoLevel** sub-schema allows configuration of each section of the report 
 | InfoLevel | vCenter | 3
 | InfoLevel | ResourcePool | 3
 | InfoLevel | Cluster | 3
-| InfoLevel | VMhost | 3
+| InfoLevel | VMHost | 3
 | InfoLevel | Network | 3
 | InfoLevel | vSAN | 3
 | InfoLevel | Datastore | 3
 | InfoLevel | DSCluster | 3
-| InfoLevel | VM | 3
+| InfoLevel | VM | 2
 | InfoLevel | VUM | 3
 
 There are 6 levels (0-5) of detail granularity for each section as follows;
@@ -112,8 +131,6 @@ There are 6 levels (0-5) of detail granularity for each section as follows;
 | 3 | Detailed | provides detailed information for individual objects
 | 4 | Adv Detailed | provides detailed information for individual objects, as well as information for associated objects (Hosts, Clusters, Datastores, VMs etc)
 | 5 | Comprehensive | provides comprehensive information for individual objects, such as advanced configuration settings
-
-\*\* *future release*
 
 ### Healthcheck
 The **Healthcheck** sub-schema is used to toggle health checks on or off.
@@ -144,7 +161,7 @@ The **Cluster** sub-schema is used to configure health checks for vSphere Cluste
 | Cluster | PredictiveDRS | true / false | Highlights vSphere Clusters which do not have Predictive DRS enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Predictive DRS disabled
 | Cluster | DRSVMHostRules | true / false | Highlights DRS VMHost rules which are disabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) DRS VMHost rule disabled
 | Cluster | DRSRules | true / false | Highlights DRS rules which are disabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) DRS rule disabled
-| Cluster | VsanEnabled | true / false | Highlights vSphere Clusters which do not have Virtual SAN enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Virtual SAN disabled
+| Cluster | vSANEnabled | true / false | Highlights vSphere Clusters which do not have Virtual SAN enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Virtual SAN disabled
 | Cluster | EVCEnabled | true / false | Highlights vSphere Clusters which do not have Enhanced vMotion Compatibility (EVC) enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) vSphere EVC disabled
 | Cluster | VUMCompliance | true / false | Highlights vSphere Clusters which do not comply with VMware Update Manager baselines | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Not Compliant
 
@@ -153,16 +170,19 @@ The **VMHost** sub-schema is used to configure health checks for VMHosts.
 
 | Schema | Sub-Schema | Setting | Description | Highlight |
 | ------ | ---------- | ------- | ----------- | --------- |
-| VMhost | ConnectionState | true / false | Highlights VMHosts connection state | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Maintenance<br>  ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Disconnected
-| VMhost | HyperThreading | true / false | Highlights VMHosts which have HyperThreading disabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) HyperThreading disabled<br> 
-| VMhost | ScratchLocation | true / false | Highlights VMHosts which are configured with the default scratch location | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Scratch location is /tmp/scratch
-| VMhost | IPv6Enabled | true / false | Highlights VMHosts which do not have IPv6 enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) IPv6 disabled
-| VMhost | UpTimeDays | true / false | Highlights VMHosts with uptime days greater than 9 months | ![Warning](https://placehold.it/15/FFE860/000000?text=+) 9 - 12 months<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  >12 months
-| VMhost | Licensing | true / false | Highlights VMHosts which are using production evaluation licenses | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Product evaluation license in use
-| VMhost | Services | true / false | Highlights status of important VMHost services | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-SSH service enabled
-| VMhost | TimeConfig | true / false | Highlights if the NTP service has stopped on a VMHost | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  NTP service stopped
-| VMhost | LockdownMode | true / false | Highlights VMHosts which do not have Lockdown mode enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Lockdown Mode disabled<br>
-| VMhost | VUMCompliance | true / false | Highlights VMHosts which are not compliant with VMware Update Manager software packages | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Incompatible
+| VMHost | ConnectionState | true / false | Highlights VMHosts connection state | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Maintenance<br>  ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Disconnected
+| VMHost | HyperThreading | true / false | Highlights VMHosts which have HyperThreading disabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) HyperThreading disabled<br> 
+| VMHost | ScratchLocation | true / false | Highlights VMHosts which are configured with the default scratch location | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Scratch location is /tmp/scratch
+| VMHost | IPv6 | true / false | Highlights VMHosts which do not have IPv6 enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) IPv6 disabled
+| VMHost | UpTimeDays | true / false | Highlights VMHosts with uptime days greater than 9 months | ![Warning](https://placehold.it/15/FFE860/000000?text=+) 9 - 12 months<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  >12 months
+| VMHost | Licensing | true / false | Highlights VMHosts which are using production evaluation licenses | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Product evaluation license in use
+| VMHost | SSH | true / false | Highlights if the SSH service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-SSH service enabled
+| VMHost | ESXiShell | true / false | Highlights if the ESXi Shell service is enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) TSM / TSM-EsxiShell service enabled
+| VMHost | NTP | true / false | Highlights if the NTP service has stopped or is disabled on a VMHost | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  NTP service stopped / disabled
+| VMHost | StorageAdapter | true / false | Highlights storage adapters which are not 'Online' | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Storage adapter status is 'Unknown'<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Storage adapter status is 'Offline'
+| VMHost | NetworkAdapter | true / false | Highlights physical network adapters which are not 'Connected'<br> Highlights physical network adapters which are 'Down' | ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Network adapter is 'Disconnected'<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Network adapter is 'Down'
+| VMHost | LockdownMode | true / false | Highlights VMHosts which do not have Lockdown mode enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Lockdown Mode disabled<br>
+| VMHost | VUMCompliance | true / false | Highlights VMHosts which are not compliant with VMware Update Manager software packages | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+)  Incompatible
 
 #### vSAN
 The **vSAN** sub-schema is used to configure health checks for vSAN.
@@ -190,13 +210,14 @@ The **VM** sub-schema is used to configure health checks for virtual machines.
 
 | Schema | Sub-Schema | Setting | Description | Highlight |
 | ------ | ---------- | ------- | ----------- | --------- |
-| VM | PoweredOn | true / false | Enables/Disables checking if the VM is powered on | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM is powered off
-| VM | CpuHotAddEnabled | true / false | Highlights virtual machines which have CPU Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Add enabled
-| VM | CpuHotRemoveEnabled | true / false | Highlights virtual machines which have CPU Hot Remove enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Remove enabled
-| VM | MemoryHotAddEnabled | true / false | Highlights VMs which have Memory Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Memory Hot Add enabled
-| VM | ChangeBlockTrackingEnabled | true / false | Highlights VMs which do not have Change Block Tracking enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Change Block Tracking disabled
+| VM | PowerState | true / false | Enables/Disables checking if the VM is powered on | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM is powered off
+| VM | ConnectionState | true / false | Enables/Disables checking if the VM is orphaned or inaccessible | ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM is orphaned or inaccessible
+| VM | CpuHotAdd | true / false | Highlights virtual machines which have CPU Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Add enabled
+| VM | CpuHotRemove | true / false | Highlights virtual machines which have CPU Hot Remove enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) CPU Hot Remove enabled
+| VM | MemoryHotAdd | true / false | Highlights VMs which have Memory Hot Add enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Memory Hot Add enabled
+| VM | ChangeBlockTracking | true / false | Highlights VMs which do not have Change Block Tracking enabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Change Block Tracking disabled
 | VM | SpbmPolicyCompliance | true / false | Highlights VMs which do not comply with storage based policies | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM storage based policy compliance is unknown<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM does not comply with storage based policies
-| VM | VMToolsOK | true / false | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Tools not installed, out of date or not running
+| VM | VMToolsStatus | true / false | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Tools not installed, out of date or not running
 | VM | VMSnapshots | true / false | Highlights Virtual Machines which have snapshots older than 7 days | ![Warning](https://placehold.it/15/FFE860/000000?text=+) VM Snapshot age >= 7 days<br> ![Critical](https://placehold.it/15/FFB38F/000000?text=+) VM Snapshot age >= 14 days
 
 
@@ -223,8 +244,6 @@ New-AsBuiltReport -Target 'vcenter-01.corp.local' -Username 'administrator@vsphe
 ```
 
 ## Known Issues
-- Verbose script errors when connecting to vCenter with a Read-Only user account. 
-  - A user account with administrator privileges to vCenter Server is required to generate a VMware vSphere report.
 
 - Error message _"Unable to determine the identity of the domain"_ when saving a report. 
   - Issue relates to [Isolated Storage](http://rekiwi.blogspot.com/2008/12/unable-to-determine-identity-of-domain.html) and occurs when generating large reports. 

@@ -60,7 +60,7 @@ if ($AsBuiltConfig.Company.FullName) {
 }
 Table -Name 'Cover Page' -List -Style Borderless -Width 0 -Hashtable ([Ordered] @{
         'Author:' = $AsBuiltConfig.Report.Author
-        'Date:' = Get-Date -Format 'dd MMMM yyyy'
+        'Date:' = (Get-Date).ToLongDateString()
         'Version:' = $ReportConfig.Report.Version
     })
 PageBreak

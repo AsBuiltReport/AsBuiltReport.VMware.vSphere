@@ -1,9 +1,49 @@
 # VMware vSphere As Built Report Changelog
 
+## [1.1.3 - 2020-02-04]
+### Added
+- Added vCenter Server certificate information (Fix #31)
+- Added VM summary information
+- Added VM disk and guest volume information
+- Added Virtual Switch to VMkernel adapter information
+- Added Virtual Switch & Port Group Traffic Shaping information
+- Added vSAN Disk Groups, iSCSI Targets & LUN reporting
+- Added number of paths to SCSI LUN information
+- Added VMHost CPU & Memory totals to Informative level
+- Added VM Connection State information & health check
+- Added number of targets, devices & paths to storage adapters
+- Added VMHost storage and network adapter health checks
+- Added License expiration information
+- Added additional information to VMkernel adapters
+- Added NTP, SSH & ESXi Shell health checks
+
+### Changed
+- Improved report formatting
+- Improved VMHost storage adapter reporting (Fix #32)
+- Improved VMHost network adapter CDP reporting
+- Improved VM SCSI controller reporting
+- Updated VMHost CPU & Memory totals/usage in Detailed level
+- Updated report JSON structure & default settings. A new report JSON must be generated for this release, use `New-AsBuiltReportConfig -Report VMware.vSphere -Path <path> -Overwrite`.
+- Updated README with minimum required privileges to generate a VMware vSphere As Built Report. Full administrator privileges should no longer be required.
+
+## Fixed
+- Resolved issue with VMHost PCI device reporting (Fix #33)
+- Resolved issue with reporting of ESXi boot device size (Fix #65)
+- Resolved issue with vSphere licensing (Fix #68 & #69)
+- Resolved vSwitch reporting issue with physical adpaters (Fix #27)
+- Resolved issue with VMHost uptime health check reporting
+
+### Removed
+- Removed support for ESX/ESXi hosts prior to vSphere 5.0 (Fix #67)
+- Removed VMHost CPU & Memory usage from Informative level
+
 ## [1.0.7] - 2019-06-21
 ### Changed
 - Fixed font in default VMware style
 - Updated module manifest for icon and release notes
+
+### Removed
+- Removed Services health check
 
 ## [1.0.6] - 2019-05-16
 ### Changed
@@ -30,6 +70,7 @@
 - Refactored into PowerShell module
 - Updated default VMware style sheet to include page orientation
 - Changed VM Snapshot reporting to be per VM for InfoLevel 3
+
 ### Removed
 - Removed NSX-V reporting
 
