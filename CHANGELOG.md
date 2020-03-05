@@ -13,6 +13,7 @@
 ### Fixed
 - Section error with vSAN InfoLevel 4 or above
 - Corrected text color for highlighted cells in default VMware style
+- Fixed reporting of stateless boot devices (Fix #76)
 
 ## [1.1.3 - 2020-02-04]
 ### Added

@@ -1911,7 +1911,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'Boot Type' = $ESXiBootDevice.BootType
                                                     'Vendor' = $ESXiBootDevice.Vendor
                                                     'Model' = $ESXiBootDevice.Model
-                                                    'Size' = "$([math]::Round($ESXiBootDevice.SizeMB / 1024, 2)) GB"
+                                                    'Size' = Switch ($ESXiBootDevice.SizeMB) {
+                                                        'N/A' { 'N/A' }
+                                                        default { "$([math]::Round($ESXiBootDevice.SizeMB / 1024, 2)) GB" }
+                                                    }
                                                     'Is SAS' = $ESXiBootDevice.IsSAS
                                                     'Is SSD' = $ESXiBootDevice.IsSSD
                                                     'Is USB' = $ESXiBootDevice.IsUSB
