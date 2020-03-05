@@ -45,7 +45,7 @@ The VMware vSphere As Built Report supports the following vSphere versions;
 - vSphere 6.7
 
 ## Pre-requisites
-The following PowerShell modules are required for generating a VMware vSphere As Built report.
+Windows PowerShell 5.1 and the following PowerShell modules are required for generating a VMware vSphere As Built report. PowerShell Core is not currently supported.
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery 
 
@@ -142,6 +142,7 @@ The **vCenter** sub-schema is used to configure health checks for vCenter Server
 | ------ | ---------- | ------- | ----------- | --------- |
 | vCenter | Mail | true / false | Highlights mail settings which are not configured | ![Critical](https://placehold.it/15/FFB38F/000000?text=+) Not Configured 
 | vCenter | Licensing | true / false | Highlights product evaluation licenses | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Product evaluation license in use
+| vCenter | Alarms | true / false | Highlights vCenter Server alarms which are disabled | ![Warning](https://placehold.it/15/FFE860/000000?text=+) Alarm disabled
 
 #### Cluster
 The **Cluster** sub-schema is used to configure health checks for vSphere Clusters.

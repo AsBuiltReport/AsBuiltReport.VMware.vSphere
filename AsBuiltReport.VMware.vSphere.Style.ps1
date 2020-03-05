@@ -16,10 +16,10 @@ Style -Name 'Normal' -Size 10 -Color '565656' -Default
 Style -Name 'TOC' -Size 16 -Color '006A91' 
 Style -Name 'TableDefaultHeading' -Size 10 -Color 'FAFAFA' -BackgroundColor '485969'
 Style -Name 'TableDefaultRow' -Size 10 -Color '565656'
-Style -Name 'Critical' -Size 10 -BackgroundColor 'F5DBD9'
-Style -Name 'Warning' -Size 10 -BackgroundColor 'FEF3B5'
-Style -Name 'Info' -Size 10 -BackgroundColor 'E1F1F6'
-Style -Name 'OK' -Size 10 -BackgroundColor 'DFF0D0'
+Style -Name 'Critical' -Size 10 -Color '565656' -BackgroundColor 'F5DBD9'
+Style -Name 'Warning' -Size 10 -Color '565656' -BackgroundColor 'FEF3B5'
+Style -Name 'Info' -Size 10 -Color '565656' -BackgroundColor 'E1F1F6'
+Style -Name 'OK' -Size 10 -Color '565656' -BackgroundColor 'DFF0D0'
 
 # Configure Table Styles
 $TableDefaultProperties = @{

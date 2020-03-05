@@ -5,12 +5,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/XML/Text formats using PScribo.
     .NOTES
-        Version:        1.1.3
+        Version:        1.1.4
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
         Credits:        Iain Brighton (@iainbrighton) - PScribo module
-                        
     .LINK
         https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere
     #>
@@ -453,7 +452,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     }
 
     Function Get-PciDeviceDetail {
-    <#
+        <#
     .SYNOPSIS
     Helper function to return PCI Devices Drivers & Firmware information for a specific host.
     .PARAMETER Server
@@ -461,7 +460,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .PARAMETER esxcli
     Esxcli session object associated to the host.
     .EXAMPLE
-    $Credentials = Get-Crendentials
+    $Credentials = Get-Credential
     $Server = Connect-VIServer -Server vcenter01.example.com -Credentials $Credentials
     $VMHost = Get-VMHost -Server $Server -Name esx01.example.com
     $esxcli = Get-EsxCli -Server $Server -VMHost $VMHost -V2
@@ -683,6 +682,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             Section -Style Heading3 'Database Settings' {
                                 $vCenterDbInfo = [PSCustomObject]@{
                                     'Database Type' = $TextInfo.ToTitleCase(($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dbtype' }).Value)
+                                    'Database Version' = $TextInfo.ToTitleCase(($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dbversion' }).Value)
                                     'Data Source Name' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dsn' }).Value
                                     'Maximum Database Connection' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'VirtualCenter.MaxDBConnection' }).Value
                                 }
@@ -767,8 +767,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $Tags = Get-Tag -Server $vCenter
                             if ($Tags) {
                                 Section -Style Heading3 'Tags' {
-                                    $Tags = $Tags | Select-Object Name, Description, Category
-                                    $Tags | Sort-Object Name, Category | Table -Name 'Tags'
+                                    $Tags | Sort-Object Name, Category | Table -Name 'Tags' -Columns Name, Description, Category
                                 }
                             }
                             #endregion vCenter Server Tags
@@ -787,41 +786,88 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $TagAssignments = Get-TagAssignment -Server $vCenter
                             if ($TagAssignments) {
                                 Section -Style Heading3 'Tag Assignments' {
-                                    $TagAssignments = $TagAssignments | Select-Object Tag, Entity
-                                    $TagAssignments | Sort-Object Tag, Entity | Table -Name 'Tag Assignments' -ColumnWidths 50, 50
+                                    $TagAssignments | Sort-Object Tag, Entity | Table -Name 'Tag Assignments' -Columns Tag, Entity -ColumnWidths 50, 50
                                 }
                             }
                             #endregion vCenter Server Tag Assignments
+
+                            #region VM Storage Policies
+                            $SpbmStoragePolicies = Get-SpbmStoragePolicy | Sort-Object Name
+                            if ($SpbmStoragePolicies) {
+                                Section -Style Heading3 'VM Storage Policies' {
+                                    $VmStoragePolicies = foreach ($SpbmStoragePolicy in $SpbmStoragePolicies) {
+                                        [PSCustomObject]@{
+                                            'VM Storage Policy' = $SpbmStoragePolicy.Name
+                                            'Description' = $SpbmStoragePolicy.Description
+                                        }
+                                    }
+                                    $VmStoragePolicies | Table -Name 'VM Storage Policies' -ColumnWidths 50, 50
+                                }
+                            }
+                            #endregion VM Storage Policies
                         }
                         #endregion vCenter Server Detailed Information
                     
-                        #region vCenter Alarms (Comprehensive Information)
-                        if ($InfoLevel.vCenter -ge 5) {
+                        #region vCenter Server Advanced Detail Information
+                        if ($InfoLevel.vCenter -ge 4) {
+                            #region vCenter Alarms
                             Section -Style Heading3 'Alarms' {
-                                Paragraph ("The following table details the configuration of the vCenter Server " +
-                                    "alarms for $vCenterServerName.")
-                                BlankLine
-                                $AlarmAction = Get-AlarmAction -Server $vCenter 
-                                $AlarmActions = foreach ($Action in $AlarmAction) {
-                                    [PSCustomObject]@{
-                                        'Alarm Name' = $Action.AlarmDefinition
-                                        'Enabled' = Switch ($Action.AlarmDefinition.Enabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
+                                $Alarms = Get-AlarmDefinition -PipelineVariable alarm | ForEach-Object -Process {
+                                    Get-AlarmAction -AlarmDefinition $_ -PipelineVariable action | ForEach-Object -Process {
+                                        Get-AlarmActionTrigger -AlarmAction $_ |
+                                        Select-Object @{N = 'Alarm'; E = { $alarm.Name } },
+                                        @{N = 'Description'; E = { $alarm.Description } },
+                                        @{N = 'Enabled'; E = { Switch ($alarm.Enabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                } } 
+                                        },
+                                        @{N = 'Entity'; E = { $alarm.Entity.Type } },
+                                        @{N = 'Trigger'; E = {
+                                                "{0}:{1}->{2} (Repeat={3})" -f $action.ActionType,
+                                                $_.StartStatus,
+                                                $_.EndStatus,
+                                                $_.Repeat
+                                            }
+                                        },
+                                        @{N = 'Trigger Info'; E = { Switch ($action.ActionType) {
+                                                    'SendEmail' { 
+                                                        "To: $($action.To -join ', ') `
+                                                        Cc: $($action.Cc -join ', ') `
+                                                        Subject: $($action.Subject) `
+                                                        Body: $($action.Body)"
+                                                    }
+                                                    'ExecuteScript' {
+                                                        "$($action.ScriptFilePath)"
+                                                    }
+                                                    default { '--' }
+                                                }
+                                            }
                                         }
-                                        'Defined In' = $Action.AlarmDefinition.Entity
-                                        'Action Type' = Switch ($Action.ActionType) {
-                                            'SendSNMP' { 'Send SNMP traps' }
-                                            'SendEmail' { 'Send email notifications' }
-                                            'ExecuteScript' { 'Run Script' }
-                                        }
-                                        'Trigger' = $Action.Trigger -join [Environment]::NewLine
                                     }
                                 }
-                                $AlarmActions | Sort-Object 'Alarm Name' | Table -Name 'Alarm Actions' #-ColumnWidths 50, 20, 30
+                                if ($Healthcheck.vCenter.Alarms) {
+                                    $Alarms | Where-Object { $_.'Enabled' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Enabled'
+                                }
+                                if ($InfoLevel.vCenter -ge 5) {
+                                    $Alarms | Sort-Object 'Alarm', 'Trigger' | Table -Name 'Alarms' -List -ColumnWidths 25, 75
+                                } else {
+                                    $Alarms | Sort-Object 'Alarm', 'Trigger' | Table -Name 'Alarms' -Columns 'Alarm', 'Description', 'Enabled', 'Entity', 'Trigger'
+                                }
                             }
+                            #endregion vCenter Alarms
                         }
-                        #endregion vCenter Alarms (Comprehensive Information)
+                        #endregion vCenter Server Advanced Detail Information
+
+                        #region vCenter Server Comprehensive Information
+                        if ($InfoLevel.vCenter -ge 5) {
+                            #region vCenter Advanced System Settings
+                            Section -Style Heading3 'Advanced System Settings' {
+                                $vCenterAdvSettings | Sort-Object Name | Table -Name 'vCenter Advanced System Settings' -Columns 'Name', 'Value' -ColumnWidths 50, 50
+                            }
+                            #endregion vCenter Advanced System Settings
+                        }
+                        #endregion vCenter Server Comprehensive Information
                     }
                 }
                 #endregion vCenter Server Section
@@ -2069,9 +2115,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Section -Style Heading5 'Storage Adapters' {
                                                     Paragraph "The following section details the storage adapter configuration for $VMHost."
                                                     foreach ($VMHostHba in $VMHostHbas) {
-                                                        $Target = ((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | Where-Object {$_.Adapter -eq $VMHostHba.Key}).Target
+                                                        $Target = ((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | Where-Object { $_.Adapter -eq $VMHostHba.Key }).Target
                                                         $LUNs = Get-ScsiLun -Hba $VMHostHba -LunType "disk" -ErrorAction SilentlyContinue
-                                                        $Paths = ($Target | foreach {$_.Lun.Count} | Measure-Object -Sum)
+                                                        $Paths = ($Target | foreach { $_.Lun.Count } | Measure-Object -Sum)
                                                         Section -Style Heading5 "$($VMHostHba.Device)" {
                                                             $VMHostStorageAdapter = [PSCustomObject]@{
                                                                 'Adapter' = $VMHostHba.Device
@@ -2397,7 +2443,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region Section Standard Virtual Switches
                                                 Section -Style Heading5 'Standard Virtual Switches' {
                                                     Paragraph "The following section details the standard virtual switch configuration for $VMHost."
-                                                    Blankline
+                                                    BlankLine
                                                     $VSSwitchNicTeaming = $VSSwitches | Get-NicTeamingPolicy
                                                     #region ESXi Host Standard Virtual Switch Properties
                                                     $VSSProperties = foreach ($VSSwitchNicTeam in $VSSwitchNicTeaming) {
@@ -3186,6 +3232,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
 
                                         Section -Style Heading4 'Disks' {
+                                            ##ToDo: InfoLevel 4
                                             $vDisks = foreach ($Disk in $VsanDisk) {
                                                 [PSCustomObject]@{
                                                     'Disk' = $Disk.Name
@@ -3206,16 +3253,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                             }
                                             $vDisks = $vDisks | Sort-Object 'Host', 'Disk Group', 'Disk Tier'
-                                            if ($InfoLevel.vSAN -ge 4) {
-                                                <#
-                                                foreach ($vDisk in ($vDisks)) {
-                                                    Section -Style Heading4 $vDisk.Host {
-                                                    }
-                                                }
-                                                #>
-                                            } else {
-                                                $vDisks | Select-Object 'Disk', 'Disk Group', 'Disk Type', 'Disk Tier', 'Capacity GB', 'Host' | Table -Name 'vSAN Disks'
-                                            }
+                                            $vDisks | Select-Object 'Disk', 'Disk Group', 'Disk Type', 'Disk Tier', 'Capacity GB', 'Host' | Table -Name 'vSAN Disks'
                                         }
 
                                         $VsanIscsiTargets = Get-VsanIscsiTarget -Cluster $VsanCluster.Cluster -ErrorAction SilentlyContinue

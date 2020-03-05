@@ -1,5 +1,19 @@
 # VMware vSphere As Built Report Changelog
 
+## [Unreleased]
+### Added
+- vCenter Server database version
+- vCenter Server advanced system settings
+- vCenter Server alarm health check
+- Basic VM storage policy reporting
+
+### Changed
+- Enhanced vCenter alarm reporting
+
+### Fixed
+- Section error with vSAN InfoLevel 4 or above
+- Corrected text color for highlighted cells in default VMware style
+
 ## [1.1.3 - 2020-02-04]
 ### Added
 - Added vCenter Server certificate information (Fix #31)
@@ -26,7 +40,7 @@
 - Updated report JSON structure & default settings. A new report JSON must be generated for this release, use `New-AsBuiltReportConfig -Report VMware.vSphere -Path <path> -Overwrite`.
 - Updated README with minimum required privileges to generate a VMware vSphere As Built Report. Full administrator privileges should no longer be required.
 
-## Fixed
+### Fixed
 - Resolved issue with VMHost PCI device reporting (Fix #33)
 - Resolved issue with reporting of ESXi boot device size (Fix #65)
 - Resolved issue with vSphere licensing (Fix #68 & #69)
