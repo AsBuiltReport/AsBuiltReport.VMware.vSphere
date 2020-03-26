@@ -9,11 +9,14 @@
 
 ### Changed
 - Enhanced vCenter alarm reporting
+- Changed Tag Assignment section to separate the category and tag to their own table columns
+- Changed Tag Assignment section to sort on Entity
 
 ### Fixed
 - Section error with vSAN InfoLevel 4 or above
 - Corrected text color for highlighted cells in default VMware style
 - Fixed reporting of stateless boot devices (Fix #76)
+- Fixed issue where script was failing trying to parse vSphere Tag data (Fix #77)
 
 ## [1.1.3 - 2020-02-04]
 ### Added
