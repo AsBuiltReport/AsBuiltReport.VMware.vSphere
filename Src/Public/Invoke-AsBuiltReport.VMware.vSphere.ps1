@@ -786,7 +786,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $TagAssignments = Get-TagAssignment -Server $vCenter
                             if ($TagAssignments) {
                                 Section -Style Heading3 'Tag Assignments' {
-                                    $TagAssignments | Sort-Object Tag, Entity | Table -Name 'Tag Assignments' -Columns Tag, Entity -ColumnWidths 50, 50
+                                    $TagAssignmentInfo = foreach ($TagAssignment in $TagAssignments) {
+                                        [PSCustomObject]@{
+                                            'Entity' = $TagAssignment.Entity.Name
+                                            'Tag' = $TagAssignment.Tag.Name
+                                            'Category' = $TagAssignment.Tag.Category
+                                        }
+                                    }
+                                    $TagAssignmentInfo | Sort-Object Entity | Table -Name 'Tag Assignments'
                                 }
                             }
                             #endregion vCenter Server Tag Assignments
