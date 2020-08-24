@@ -492,7 +492,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 Name = "N/A"
                 Version = "N/A"
             }
-            $pciDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -like "vmhba*" -or $_.VMkernelName -like "vmnic*" -or $_.VMkernelName -like "vmgfx*" } | Sort-Object -Property VMkernelName 
+            $pciDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -match 'vmhba|vmnic|vmgfx' -and $_.ModuleName -ne 'None'} | Sort-Object -Property VMkernelName 
             $nicList = $esxcli.network.nic.list.Invoke() | Sort-Object Name
             #$fcoeAdapterList = $esxcli.fcoe.adapter.list.Invoke().PhysicalNIC # Get list of vmnics used for FCoE, because we don't want those vmnics here.
             foreach ($pciDevice in $pciDevices) {
