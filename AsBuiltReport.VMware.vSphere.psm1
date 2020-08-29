@@ -1,7 +1,8 @@
-# Get public function definition files and dot source them
-$Public = @(Get-ChildItem -Path $PSScriptRoot\Src\Public\*.ps1)
+# Get public and private function definition files and dot source them
+$Public = @(Get-ChildItem -Path $PSScriptRoot\Src\Public\*.ps1 -ErrorAction SilentlyContinue)
+$Private = @(Get-ChildItem -Path $PSScriptRoot\Src\Private\*.ps1 -ErrorAction SilentlyContinue)
 
-foreach ($Module in $Public) {
+foreach ($Module in @($Public + $Private)) {
     try {
         . $Module.FullName
     } catch {
@@ -10,3 +11,4 @@ foreach ($Module in $Public) {
 }
 
 Export-ModuleMember -Function $Public.BaseName
+Export-ModuleMember -Function $Private.BaseName
