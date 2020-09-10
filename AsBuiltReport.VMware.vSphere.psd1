@@ -12,7 +12,7 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.3'
+    ModuleVersion = '1.2.0'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Desktop'
@@ -48,7 +48,12 @@
     # ProcessorArchitecture = ''
 
     # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules = @('AsBuiltReport.Core')
+    RequiredModules = @(
+        @{
+            ModuleName = 'AsBuiltReport.Core'; 
+            ModuleVersion = '1.1.0'
+        }
+    )
 
     # Assemblies that must be loaded prior to importing this module
     # RequiredAssemblies = @()

@@ -1,6 +1,28 @@
-# VMware vSphere As Built Report Changelog
+# :arrows_counterclockwise: VMware vSphere As Built Report Changelog
 
-## [1.1.3 - 2020-02-04]
+## [1.2.0] - 2020-08-31
+### Added
+- vCenter Server advanced system settings
+- vCenter Server alarm health check
+- Basic VM storage policy reporting
+- Headers, footers & table captions/numbering
+
+### Changed
+- Improved table formatting
+- Enhanced vCenter alarm reporting
+- Changed Tag Assignment section to separate the category and tag to their own table columns
+- Changed Tag Assignment section to sort on Entity
+- Renamed InfoLevel `Informative` to `Adv Summary`
+- Moved script functions from main script to private functions
+
+### Fixed
+- Section error with vSAN InfoLevel 4 or above
+- Fixed text color for highlighted cells in default VMware style
+- Fixed reporting of stateless boot devices (Fix #76)
+- Fixed issue where script was failing trying to parse vSphere Tag data (Fix #77)
+- Fixed issue with reporting on PCI-E device drivers by adding additional filter (Fix #75)
+
+## [1.1.3] - 2020-02-04
 ### Added
 - Added vCenter Server certificate information (Fix #31)
 - Added VM summary information
@@ -26,7 +48,7 @@
 - Updated report JSON structure & default settings. A new report JSON must be generated for this release, use `New-AsBuiltReportConfig -Report VMware.vSphere -Path <path> -Overwrite`.
 - Updated README with minimum required privileges to generate a VMware vSphere As Built Report. Full administrator privileges should no longer be required.
 
-## Fixed
+### Fixed
 - Resolved issue with VMHost PCI device reporting (Fix #33)
 - Resolved issue with reporting of ESXi boot device size (Fix #65)
 - Resolved issue with vSphere licensing (Fix #68 & #69)
@@ -95,7 +117,7 @@
 - Improved VM reporting for Guest OS, CPU Hot Add/Remove, Memory Hot Add & Change Block Tracking
 - Minor updates to section paragraph text
 
-## 0.2.1
+## [0.2.1]
 ### Added
 - Added SDRS VM Overrides to Datastore Cluster section
 
@@ -106,7 +128,7 @@
 - Script formatting improvements to some sections to align with PowerShell best practice guidelines
 - vCenter Server SSL Certificate section removed temporarily   
 
-## 0.2.0
+## [0.2.0]
 ### Added
 - Added regions/endregions to all sections of script
 - Added Resource Pool summary information
