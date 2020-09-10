@@ -19,6 +19,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         [PSCredential] $Credential
     )
 
+    # Check if VMware PowerCLI 10.0 or higher is installed
+    $RequiredModules = Get-Module -ListAvailable -Name 'VMware.PowerCLI' | Sort-Object -Property Version -Descending | Select-Object -First 1
+    if ($RequiredModules.Version.Major -lt 10) {
+        Write-Warning -Message "VMware PowerCLI 10.0 or higher is required to run the VMware vSphere As Built Report. Run 'Install-Module -Name VMware.PowerCLI -MinimumVersion 10.0' to install the required modules."
+        break
+    }
+
     # Import Report Configuration
     $Report = $ReportConfig.Report
     $InfoLevel = $ReportConfig.InfoLevel
@@ -336,6 +343,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                     $TableParams = @{
                                         Name = "Tags - $vCenterServerName"
+                                        ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -358,7 +366,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                     $TableParams = @{
                                         Name = "Tag Categories - $vCenterServerName"
-                                        ColumnWidths = 40, 40, 20
+                                        ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -381,6 +389,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                     $TableParams = @{
                                         Name = "Tag Assignments - $vCenterServerName"
+                                        ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1469,7 +1478,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                     $TableParams = @{
                                                         Name = "Permissions - $Cluster"
-                                                        ColumnWidths = 50, 8, 16, 14, 12
+                                                        ColumnWidths = 42, 12, 20, 14, 12
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"

@@ -91,6 +91,8 @@ Table -Name 'Cover Page' -List -Style Borderless -Width 0 -Hashtable ([Ordered] 
     })
 PageBreak
 
-# Add Table of Contents
-TOC -Name 'Table of Contents'
-PageBreak
+if ($ReportConfig.Report.ShowTableOfContents) {
+    # Add Table of Contents
+    TOC -Name 'Table of Contents'
+    PageBreak
+}

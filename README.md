@@ -43,8 +43,6 @@ Below are the instructions on how to install, configure and generate a VMware vS
 
 ### VMware vSphere
 The VMware vSphere As Built Report supports the following vSphere versions;
-- vSphere 5.0
-- vSphere 5.1
 - vSphere 5.5
 - vSphere 6.0
 - vSphere 6.5
@@ -107,14 +105,15 @@ The following provides information of how to configure each schema within the re
 ### Report
 The **Report** schema provides configuration of the vSphere report information.
 
-| Sub-Schema         | Setting      | Default                        | Description                                                  |
-|--------------------|--------------|--------------------------------|--------------------------------------------------------------|
-| Name               | User defined | VMware vSphere As Built Report | The name of the As Built Report                              |
-| Version            | User defined | 1.0                            | The report version                                           |
-| Status             | User defined | Released                       | The report release status                                    |
-| ShowCoverPageImage | true / false | true                           | Toggle to enable/disable the display of the cover page image |
-| ShowHeaderFooter   | true / false | true                           | Toggle to enable/disable document headers & footers          |
-| ShowTableCaptions  | true / false | true                           | Toggle to enable/disable table captions/numbering            |
+| Sub-Schema          | Setting      | Default                        | Description                                                  |
+|---------------------|--------------|--------------------------------|--------------------------------------------------------------|
+| Name                | User defined | VMware vSphere As Built Report | The name of the As Built Report                              |
+| Version             | User defined | 1.0                            | The report version                                           |
+| Status              | User defined | Released                       | The report release status                                    |
+| ShowCoverPageImage  | true / false | true                           | Toggle to enable/disable the display of the cover page image |
+| ShowTableOfContents | true / false | true                           | Toggle to enable/disable table of contents                   |
+| ShowHeaderFooter    | true / false | true                           | Toggle to enable/disable document headers & footers          |
+| ShowTableCaptions   | true / false | true                           | Toggle to enable/disable table captions/numbering            |
 
 ### Options
 The **Options** schema allows certain options within the report to be toggled on or off.
