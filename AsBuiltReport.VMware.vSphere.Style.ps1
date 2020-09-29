@@ -6,18 +6,19 @@ DocumentOption -EnableSectionNumbering -PageSize A4 -DefaultFont 'Arial' -Margin
 # Configure Heading and Font Styles
 Style -Name 'Title' -Size 24 -Color '717074' -Align Center
 Style -Name 'Title 2' -Size 18 -Color 'A1A0A4' -Align Center
-Style -Name 'Title 3' -Size 12 -Color '006A91' -Align Left
+Style -Name 'Title 3' -Size 12 -Color '006A91' -Align Center
 Style -Name 'Heading 1' -Size 16 -Color '00364D' 
-Style -Name 'Heading 2' -Size 14 -Color '00567A' 
-Style -Name 'Heading 3' -Size 12 -Color '00648F' 
-Style -Name 'Heading 4' -Size 11 -Color '320047' 
-Style -Name 'Heading 5' -Size 10 -Color '333333'
+Style -Name 'Heading 2' -Size 14 -Color '004B6B' 
+Style -Name 'Heading 3' -Size 12 -Color '00567A' 
+Style -Name 'Heading 4' -Size 11 -Color '00648F' 
+Style -Name 'Heading 5' -Size 10 -Color '0072A3'
 Style -Name 'Normal' -Size 10 -Color '565656' -Default
 Style -Name 'Caption' -Size 10 -Color '565656' -Italic -Align Center
 Style -Name 'Header' -Size 10 -Color '565656' -Align Center
 Style -Name 'Footer' -Size 10 -Color '565656' -Align Center
-Style -Name 'TOC' -Size 16 -Color '00364D' 
-Style -Name 'TableDefaultHeading' -Size 10 -Color 'FAFAFA' -BackgroundColor '00364D'
+Style -Name 'TOC' -Size 16 -Color '00364D'
+#Style -Name 'TableDefaultHeading' -Size 10 -Color '565656' -BackgroundColor 'FAFAFA' # Light Theme
+Style -Name 'TableDefaultHeading' -Size 10 -Color 'FAFAFA' -BackgroundColor '00364D' # Dark Theme
 Style -Name 'TableDefaultRow' -Size 10 -Color '565656'
 Style -Name 'Critical' -Size 10 -Color '565656' -BackgroundColor 'FEDDD7'
 Style -Name 'Warning' -Size 10 -Color '565656' -BackgroundColor 'FFF4C7'
@@ -29,7 +30,8 @@ $TableDefaultProperties = @{
     Id = 'TableDefault'
     HeaderStyle = 'TableDefaultHeading'
     RowStyle = 'TableDefaultRow'
-    BorderColor = '00364D'
+    #BorderColor = 'A6A6A6' # Light Theme
+    BorderColor = '00364D' # Dark Theme
     Align = 'Left'
     CaptionStyle = 'Caption'
     CaptionLocation = 'Below' 
