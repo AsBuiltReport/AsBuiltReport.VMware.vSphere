@@ -1,5 +1,15 @@
 # :arrows_counterclockwise: VMware vSphere As Built Report Changelog
 
+## [1.2.1] - 2020-09-29
+### Fixed
+- Fixed sort order of VMHost PCI Devices
+- Fixed VMHost reporting for InfoLevels 1 & 2
+- Fixed DSCluster reporting for InfoLevels 1 & 2
+
+### Changed
+- Set fixed table column widths for improved formatting
+- Corrected section header colours in VMware default style
+
 ## [1.2.0] - 2020-08-31
 ### Added
 - vCenter Server advanced system settings
