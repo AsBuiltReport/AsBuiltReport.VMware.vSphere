@@ -59,7 +59,7 @@ This report is compatible with the following PowerShell versions;
 _Note: Due to compatibility issues, VMware Update Manager information will not be reported when using PowerShell 7_
 
 ## :wrench: System Requirements
-PowerShell 5.1 or PowerShell 7.x, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
+PowerShell 5.1 or PowerShell 7, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery
 
@@ -142,20 +142,20 @@ There are 6 levels (0-5) of detail granularity for each section as follows;
 |    4    | Adv Detailed      | Provides detailed information for individual objects, as well as information for associated objects (Hosts, Clusters, Datastores, VMs etc) |
 |    5    | Comprehensive     | Provides comprehensive information for individual objects, such as advanced configuration settings                                         |
 
-The table below outlines the default and maximum **InfoLevel** settings for each section.
+The table below outlines the default, minimum and maximum **InfoLevel** settings for each section.
 
-| Sub-Schema   | Default Setting | Maximum Setting |
-|--------------|:---------------:|:---------------:|
-| vCenter      |        3        |        5        |
-| Cluster      |        3        |        4        |
-| ResourcePool |        3        |        4        |
-| VMHost       |        3        |        5        |
-| Network      |        3        |        4        |
-| vSAN         |        3        |        4        |
-| Datastore    |        3        |        4        |
-| DSCluster    |        3        |        4        |
-| VM           |        2        |        4        |
-| VUM          |        3        |        5        |
+| Sub-Schema   | Default Setting | Minimum Setting | Maximum Setting |
+|--------------|:---------------:|:---------------:|:---------------:|
+| vCenter      |        3        |        1        |        5        |
+| Cluster      |        3        |        1        |        4        |
+| ResourcePool |        3        |        1        |        4        |
+| VMHost       |        3        |        1        |        5        |
+| Network      |        3        |        1        |        4        |
+| vSAN         |        3        |        1        |        4        |
+| Datastore    |        3        |        1        |        4        |
+| DSCluster    |        3        |        1        |        4        |
+| VM           |        2        |        1        |        4        |
+| VUM          |        3        |        3        |        5        |
 
 ### Healthcheck
 The **Healthcheck** schema is used to toggle health checks on or off.

@@ -136,6 +136,16 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             }
             #endregion Site Recovery Manager Server Name
 
+            #region NSX-T Manager Server Name
+            Write-PScriboMessage 'Checking for VMware NSX-T Manager Server.'
+            $NsxtServer = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.nsx.management.nsxt' } |
+            Select-Object @{
+                N = 'Name';
+                E = { ($_.Server | Where-Object { ($_.Company -eq 'VMware') -and ($_.Type -eq 'VIP') } |
+                        Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0] }
+            }
+            #endregion NSX-T Manager Server Name
+
             #region Tag Information
             $TagAssignments = Get-TagAssignment -Server $vCenter
             $Tags = Get-Tag -Server $vCenter | Sort-Object Name, Category
@@ -206,6 +216,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             }
                             if ($SrmServer.Name) {
                                 Add-Member @MemberProps -Name 'Site Recovery Manager Server' -Value $SrmServer.Name
+                            }
+                            if ($NsxtServer.Name) {
+                                Add-Member @MemberProps -Name 'NSX-T Manager Server' -Value $NsxtServer.Name
                             }
                             if ($VxRailMgr.Name) {
                                 Add-Member @MemberProps -Name 'VxRail Manager Server' -Value $VxRailMgr.Name
@@ -350,7 +363,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Privilege List' = ($VIRole.PrivilegeList).Replace("."," > ") | Select-Object -Unique
                                     }
                                 }
-                                if ($InfoLevel.vCenter -ge 5) {
+                                if ($InfoLevel.vCenter -ge 4) {
                                     $VIRoleInfo | ForEach-Object {
                                         Section -Style Heading4 $($_.Role) {
                                             $TableParams = @{
@@ -509,19 +522,24 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                     }
                                 }
+                                $Alarms = $Alarms | Sort-Object 'Alarm', 'Trigger'
                                 if ($Healthcheck.vCenter.Alarms) {
                                     $Alarms | Where-Object { $_.'Enabled' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Enabled'
                                 }
                                 if ($InfoLevel.vCenter -ge 5) {
-                                    $TableParams = @{
-                                        Name = "Alarms - $vCenterServerName"
-                                        List = $true
-                                        ColumnWidths = 25, 75
+                                    foreach ($Alarm in $Alarms) {
+                                        Section -Style Heading4 $($Alarm.Alarm) {
+                                            $TableParams = @{
+                                                Name = "$($Alarm.Alarm) - $vCenterServerName"
+                                                List = $true
+                                                ColumnWidths = 25, 75
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $Alarm | Table @TableParams
+                                        }
                                     }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $Alarms | Sort-Object 'Alarm', 'Trigger' | Table @TableParams
                                 } else {
                                     $TableParams = @{
                                         Name = "Alarms - $vCenterServerName"
@@ -531,7 +549,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     if ($Report.ShowTableCaptions) {
                                         $TableParams['Caption'] = "- $($TableParams.Name)"
                                     }
-                                    $Alarms | Sort-Object 'Alarm', 'Trigger' | Table @TableParams
+                                    $Alarms | Table @TableParams
                                 }
                             }
                             #endregion vCenter Alarms
@@ -561,14 +579,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region Clusters
                 Write-PScriboMessage "Cluster InfoLevel set at $($InfoLevel.Cluster)."
-                if ($InfoLevel.Cluster -ge 2) {
+                if ($InfoLevel.Cluster -ge 1) {
                     $Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
                     if ($Clusters) {
                         #region Cluster Section
                         Section -Style Heading2 'Clusters' {
                             Paragraph "The following sections detail the configuration of vSphere HA/DRS clusters managed by vCenter Server $vCenterServerName."
                             #region Cluster Advanced Summary
-                            if ($InfoLevel.Cluster -eq 2) {
+                            if ($InfoLevel.Cluster -le 2) {
                                 BlankLine
                                 $ClusterInfo = foreach ($Cluster in $Clusters) {
                                     [PSCustomObject]@{
@@ -1580,14 +1598,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region Resource Pool Section
                 Write-PScriboMessage "ResourcePool InfoLevel set at $($InfoLevel.ResourcePool)."
-                if ($InfoLevel.ResourcePool -ge 2) {
+                if ($InfoLevel.ResourcePool -ge 1) {
                     $ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
                     if ($ResourcePools) {
                         #region Resource Pools Section
                         Section -Style Heading2 'Resource Pools' {
                             Paragraph "The following sections detail the configuration of resource pools managed by vCenter Server $vCenterServerName."
                             #region Resource Pool Advanced Summary
-                            if ($InfoLevel.ResourcePool -eq 2) {
+                            if ($InfoLevel.ResourcePool -le 2) {
                                 BlankLine
                                 $ResourcePoolInfo = foreach ($ResourcePool in $ResourcePools) {
                                     [PSCustomObject]@{
@@ -1651,11 +1669,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             }
                                             'Number of VMs' = $ResourcePool.ExtensionData.VM.Count
                                         }
+                                        <#
                                         $MemberProps = @{
                                             'InputObject' = $ResourcePoolDetail
                                             'MemberType' = 'NoteProperty'
                                         }
-                                        <#
+
                                         if ($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}) {
                                             Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}).Tag -join ',')
                                         }
@@ -1697,7 +1716,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'Hosts' {
                             Paragraph "The following sections detail the configuration of VMware ESXi hosts managed by vCenter Server $vCenterServerName."
                             #region ESXi Host Advanced Summary
-                            if ($InfoLevel.VMHost -lt 3) {
+                            if ($InfoLevel.VMHost -le 2) {
                                 BlankLine
                                 $VMHostInfo = foreach ($VMHost in $VMHosts) {
                                     [PSCustomObject]@{
@@ -1793,9 +1812,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Bios Release Date' = $VMHost.ExtensionData.Hardware.BiosInfo.ReleaseDate
                                                 'ESXi Version' = $VMHost.Version
                                                 'ESXi Build' = $VMHost.build
-                                                #'Product' = $VMHostLicense.Product
-                                                #'License Key' = $VMHostLicense.LicenseKey
-                                                #'License Expiration' = $VMHostLicense.Expiration
                                                 'Boot Time' = ($VMHost.ExtensionData.Runtime.Boottime).ToLocalTime()
                                                 'Uptime Days' = $VMHostUptime.UptimeDays
                                             }
@@ -2232,7 +2248,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     Add-Member @MemberProps -Name 'Authentication Method' -Value $iScsiAuthenticationMethod
                                                                     Add-Member @MemberProps -Name 'Outgoing CHAP Name' -Value $VMHostHba.ExtensionData.AuthenticationProperties.ChapName
                                                                 }
-                                                                if ($InfoLevel.VMHost -eq 4) {
+                                                                if ($InfoLevel.VMHost -ge 4) {
                                                                     Add-Member @MemberProps -Name 'Advanced Options' -Value (($VMHostHba.ExtensionData.AdvancedOptions | ForEach-Object { "$($_.Key) = $($_.Value)" }) -join [Environment]::NewLine)
                                                                 }
                                                             }
@@ -3076,14 +3092,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region Distributed Switch Section
                 Write-PScriboMessage "Network InfoLevel set at $($InfoLevel.Network)."
-                if ($InfoLevel.Network -ge 2) {
+                if ($InfoLevel.Network -ge 1) {
                     # Create Distributed Switch Section if they exist
                     $VDSwitches = Get-VDSwitch -Server $vCenter | Sort-Object Name
                     if ($VDSwitches) {
                         Section -Style Heading2 'Distributed Switches' {
                             Paragraph "The following sections detail the configuration of distributed switches managed by vCenter Server $vCenterServerName."
                             #region Distributed Switch Advanced Summary
-                            if ($InfoLevel.Network -eq 2) {
+                            if ($InfoLevel.Network -le 2) {
                                 BlankLine
                                 $VDSInfo = foreach ($VDS in $VDSwitches) {
                                     [PSCustomObject]@{
@@ -3135,11 +3151,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'Discovery Protocol' = $VDS.LinkDiscoveryProtocol
                                             'Discovery Protocol Operation' = $VDS.LinkDiscoveryProtocolOperation
                                         }
+                                        <#
                                         $MemberProps = @{
                                             'InputObject' = $VDSwitchDetail
                                             'MemberType' = 'NoteProperty'
                                         }
-                                        <#
                                         if ($TagAssignments | Where-Object {$_.entity -eq $VDS}) {
                                             Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VDS}).Tag -join ',')
                                         }
@@ -3442,13 +3458,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region vSAN Section
                 Write-PScriboMessage "vSAN InfoLevel set at $($InfoLevel.vSAN)."
-                if (($InfoLevel.vSAN -ge 2) -and ($vCenter.Version -gt 6)) {
+                if (($InfoLevel.vSAN -ge 1) -and ($vCenter.Version -gt 6)) {
                     $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
                     if ($VsanClusters) {
                         Section -Style Heading2 'vSAN' {
                             Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
                             #region vSAN Cluster Advanced Summary
-                            if ($InfoLevel.vSAN -eq 2) {
+                            if ($InfoLevel.vSAN -le 2) {
                                 BlankLine
                                 $VsanClusterInfo = foreach ($VsanCluster in $VsanClusters) {
                                     [PSCustomObject]@{
@@ -3458,7 +3474,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $true { 'Yes' }
                                             $false { 'No' }
                                         }
-                                        ## TODO: Update for vSphere 7.0 U1 and higher - Space Efficiency: Deduplication & Compression, Compression Only, None
+                                        # TODO: Update for vSphere 7.0 U1 and higher - Space Efficiency: Deduplication & Compression, Compression Only, None
                                         'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
                                             $true { 'Enabled' }
                                             $false { 'Disabled' }
@@ -3543,7 +3559,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                         $VsanClusterDetail | Table @TableParams
 
-                                        ## TODO: vSAN Services
+                                        # TODO: vSAN Services
 
                                         Section -Style Heading4 'Disk Groups' {
                                             $VsanDiskGroups = foreach ($DiskGroup in $VsanDiskGroup) {
@@ -3584,8 +3600,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                     'Host' = $Disk.VsanDiskGroup.VMHost.Name
                                                     'Claimed As' = Switch ($Disk.IsCacheDisk) {
-                                                        $true { 'vSAN Cache' }
-                                                        $false { 'vSAN Capacity' }
+                                                        $true { 'Cache' }
+                                                        $false { 'Capacity' }
                                                     }
                                                     'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
                                                     'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
@@ -3712,43 +3728,43 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region Datastore Section
                 Write-PScriboMessage "Datastore InfoLevel set at $($InfoLevel.Datastore)."
-                if ($InfoLevel.Datastore -ge 2) {
+                if ($InfoLevel.Datastore -ge 1) {
                     if ($Datastores) {
                         Section -Style Heading2 'Datastores' {
                             Paragraph "The following sections detail the configuration of datastores managed by vCenter Server $vCenterServerName."
                             #region Datastore Infomative Information
-                            #if ($InfoLevel.Datastore -eq 2) {
-                            BlankLine
-                            $DatastoreInfo = foreach ($Datastore in $Datastores) {
-                                [PSCustomObject]@{
-                                    'Datastore' = $Datastore.Name
-                                    'Type' = $Datastore.Type
-                                    'Version' = Switch ($Datastore.FileSystemVersion) {
-                                        $null { '--' }
-                                        default { $Datastore.FileSystemVersion }
+                            if ($InfoLevel.Datastore -le 2) {
+                                BlankLine
+                                $DatastoreInfo = foreach ($Datastore in $Datastores) {
+                                    [PSCustomObject]@{
+                                        'Datastore' = $Datastore.Name
+                                        'Type' = $Datastore.Type
+                                        'Version' = Switch ($Datastore.FileSystemVersion) {
+                                            $null { '--' }
+                                            default { $Datastore.FileSystemVersion }
+                                        }
+                                        '# of Hosts' = $Datastore.ExtensionData.Host.Count
+                                        '# of VMs' = $Datastore.ExtensionData.VM.Count
+                                        'Total Capacity GB' = [math]::Round($Datastore.CapacityGB, 2)
+                                        'Used Capacity GB' = [math]::Round((($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)), 2)
+                                        'Free Space GB' = [math]::Round($Datastore.FreeSpaceGB, 2)
+                                        '% Used' = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
                                     }
-                                    '# of Hosts' = $Datastore.ExtensionData.Host.Count
-                                    '# of VMs' = $Datastore.ExtensionData.VM.Count
-                                    'Total Capacity GB' = [math]::Round($Datastore.CapacityGB, 2)
-                                    'Used Capacity GB' = [math]::Round((($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)), 2)
-                                    'Free Space GB' = [math]::Round($Datastore.FreeSpaceGB, 2)
-                                    '% Used' = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
                                 }
+                                if ($Healthcheck.Datastore.CapacityUtilization) {
+                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 75 -and
+                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
+                                }
+                                $TableParams = @{
+                                    Name = "Datastore Summary - $($vCenterServerName)"
+                                    ColumnWidths = 20, 9, 9, 9, 9, 11, 11, 11, 11
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                $DatastoreInfo | Sort-Object Datastore | Table @TableParams
                             }
-                            if ($Healthcheck.Datastore.CapacityUtilization) {
-                                $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
-                                $DatastoreInfo | Where-Object { $_.'% Used' -ge 75 -and
-                                    $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
-                            }
-                            $TableParams = @{
-                                Name = "Datastore Summary - $($vCenterServerName)"
-                                ColumnWidths = 20, 9, 9, 9, 9, 11, 11, 11, 11
-                            }
-                            if ($Report.ShowTableCaptions) {
-                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                            }
-                            $DatastoreInfo | Sort-Object Datastore | Table @TableParams
-                            #}
                             #endregion Datastore Advanced Summary
 
                             #region Datastore Detailed Information
@@ -3873,7 +3889,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'Datastore Clusters' {
                             Paragraph "The following sections detail the configuration of datastore clusters managed by vCenter Server $vCenterServerName."
                             #region Datastore Cluster Advanced Summary
-                            if ($InfoLevel.DSCluster -lt 3) {
+                            if ($InfoLevel.DSCluster -le 2) {
                                 BlankLine
                                 $DSClusterInfo = foreach ($DSCluster in $DSClusters) {
                                     [PSCustomObject]@{
@@ -4501,7 +4517,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                 #region VMware Update Manager Section
                 Write-PScriboMessage "VUM InfoLevel set at $($InfoLevel.VUM)."
-                if ($InfoLevel.VUM -ge 2 -and $VumServer.Name) {
+                if (($InfoLevel.VUM -ge 1) -and ($VumServer.Name)) {
                     if ("Desktop" -eq $PSVersionTable.PsEdition) {
                         $VUMBaselines = Get-PatchBaseline -Server $vCenter
                     } else {
@@ -4511,27 +4527,25 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'VMware Update Manager' {
                             Paragraph "The following sections detail the configuration of VMware Update Manager managed by vCenter Server $vCenterServerName."
                             #region VUM Baseline Detailed Information
-                            if ($InfoLevel.VUM -ge 2) {
-                                Section -Style Heading3 'Baselines' {
-                                    $VUMBaselineInfo = foreach ($VUMBaseline in $VUMBaselines) {
-                                        [PSCustomObject]@{
-                                            'Baseline' = $VUMBaseline.Name
-                                            'Description' = $VUMBaseline.Description
-                                            'Type' = $VUMBaseline.BaselineType
-                                            'Target Type' = $VUMBaseline.TargetType
-                                            'Last Update Time' = ($VUMBaseline.LastUpdateTime).ToLocalTime()
-                                            '# of Patches' = $VUMBaseline.CurrentPatches.Count
-                                        }
+                            Section -Style Heading3 'Baselines' {
+                                $VUMBaselineInfo = foreach ($VUMBaseline in $VUMBaselines) {
+                                    [PSCustomObject]@{
+                                        'Baseline' = $VUMBaseline.Name
+                                        'Description' = $VUMBaseline.Description
+                                        'Type' = $VUMBaseline.BaselineType
+                                        'Target Type' = $VUMBaseline.TargetType
+                                        'Last Update Time' = ($VUMBaseline.LastUpdateTime).ToLocalTime()
+                                        '# of Patches' = $VUMBaseline.CurrentPatches.Count
                                     }
-                                    $TableParams = @{
-                                        Name = "VMware Update Manager Baseline Summary - $($vCenterServerName)"
-                                        ColumnWidths = 25, 25, 10, 10, 20, 10
-                                    }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $VUMBaselineInfo | Sort-Object Baseline | Table @TableParams
                                 }
+                                $TableParams = @{
+                                    Name = "VMware Update Manager Baseline Summary - $($vCenterServerName)"
+                                    ColumnWidths = 25, 25, 10, 10, 20, 10
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                $VUMBaselineInfo | Sort-Object Baseline | Table @TableParams
                             }
                             #endregion VUM Baseline Detailed Information
 
