@@ -1,5 +1,20 @@
 # :arrows_counterclockwise: VMware vSphere As Built Report Changelog
 
+## [1.3.0] - Unreleased
+### Fixed
+- Fixed Datastore table sort by Datastore Name
+- Fixed issues with vSAN advanced detailed reporting
+- Fixed issues with Distributed vSwitch advanced detailed reporting
+- Fixed display issues with highlights in `README.md`
+
+### Added
+- Added PowerShell 7 compatibility
+- Added PSScriptAnalyzer & PublishPSModule GitHub Action workflows
+- Added comprehensive reporting for VI roles
+- Added advanced detailed reporting for vSAN disks
+- Added support for VMware Cloud environments (VMC, AVS, GVE) (Fix #87)
+
+
 ## [1.2.1] - 2020-09-29
 ### Fixed
 - Fixed sort order of VMHost PCI Devices
@@ -92,7 +107,7 @@
 ### Added
 - Added Update Manager Server name to vCenter Server detailed information
 
-### Changed 
+### Changed
 - Fixed VMHost count for Distributed Virtual Switches
 - Fixed vCenter Server licensing for vCenter Server 5.5/6.0
 - Fixed script termination where ESXi hosts do not have a datastore
@@ -136,7 +151,7 @@
 - Fixed issues with current working directory paths
 - Changed InfoLevel settings and definitions
 - Script formatting improvements to some sections to align with PowerShell best practice guidelines
-- vCenter Server SSL Certificate section removed temporarily   
+- vCenter Server SSL Certificate section removed temporarily
 
 ## [0.2.0]
 ### Added
