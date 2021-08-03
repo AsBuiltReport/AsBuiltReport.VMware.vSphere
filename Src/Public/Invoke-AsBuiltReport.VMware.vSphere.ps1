@@ -2456,7 +2456,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $device = $_.Device
                                                         [PSCustomObject]@{
                                                             'Adapter' = $_.Device
-                                                            'Port Group' = & {
+                                                            'Network Label' = & {
                                                                 if ($_.Spec.Portgroup) {
                                                                     $script:pg = $_.Spec.Portgroup
                                                                 } else {
@@ -2476,6 +2476,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 'defaultTcpipStack' { 'Default' }
                                                                 'vSphereProvisioning' { 'Provisioning' }
                                                                 'vmotion' { 'vMotion' }
+                                                                'vxlan' { 'nsx-overlay' }
+                                                                'hyperbus' { 'nsx-hyperbus' }
                                                                 $null { 'Not Applicable' }
                                                                 default { $_.Spec.NetstackInstanceKey }
                                                             }
@@ -2485,8 +2487,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'IP Address' = $_.Spec.IP.IPAddress
-                                                            'Subnet Mask' = $_.Spec.IP.SubnetMask
+                                                            'IP Address' = & {
+                                                                if ($_.Spec.IP.IPAddress) {
+                                                                    $script:ip = $_.Spec.IP.IPAddress
+                                                                } else {
+                                                                    $script:ip = '--'
+                                                                }
+                                                                $script:ip
+                                                            }
+                                                            'Subnet Mask' = & {
+                                                                if ($_.Spec.IP.SubnetMask) {
+                                                                    $script:netmask = $_.Spec.IP.SubnetMask
+                                                                } else {
+                                                                    $script:netmask = '--'
+                                                                }
+                                                                $script:netmask
+                                                            }
                                                             'Default Gateway' = Switch ($_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway) {
                                                                 $null { '--' }
                                                                 default { $_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway }

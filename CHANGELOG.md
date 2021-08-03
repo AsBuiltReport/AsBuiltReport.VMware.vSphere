@@ -4,6 +4,7 @@
 ### Fixed
 - Fixed Datastore table sort by Datastore Name
 - Fixed issues with vSAN advanced detailed reporting
+- Fixed issues with VMkernel Adpater reporting
 - Fixed issues with Distributed vSwitch advanced detailed reporting
 - Fixed display issues with highlights in `README.md`
 
@@ -12,7 +13,7 @@
 - Added PSScriptAnalyzer & PublishPSModule GitHub Action workflows
 - Added comprehensive reporting for VI roles
 - Added advanced detailed reporting for vSAN disks
-- Added support for VMware Cloud environments (VMC, AVS, GVE) (Fix #87)
+- Added support for VMware Cloud environments (VCF, VMC, AVS, GVE) (Fix #87)
 
 
 ## [1.2.1] - 2020-09-29
