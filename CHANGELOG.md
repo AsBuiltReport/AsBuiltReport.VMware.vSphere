@@ -1,6 +1,6 @@
 # :arrows_counterclockwise: VMware vSphere As Built Report Changelog
 
-## [[1.3.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.0)] - Unreleased
+## [[1.3.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.0)] - 2021-08-29
 ### Fixed
 - Incorrect section reporting with certain InfoLevels
 - Datastore table now sorts by Datastore Name
