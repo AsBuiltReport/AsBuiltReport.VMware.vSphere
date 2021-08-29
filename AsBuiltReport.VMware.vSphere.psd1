@@ -96,7 +96,7 @@
 
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'Documentation', 'PScribo', 'PSEdition_Desktop', 'Windows', 'MacOS', 'Linux'
+            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'vCenter', 'Documentation', 'PScribo', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux'
 
             # A URL to the license for this module.
             LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE'

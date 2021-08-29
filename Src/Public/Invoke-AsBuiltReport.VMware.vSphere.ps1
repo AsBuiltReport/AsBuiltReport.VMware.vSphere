@@ -55,9 +55,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         #region Generate vSphere report
         if ($vCenter) {
             # Check logged in user has sufficient privileges to generate an As Built Report
-            Write-PScriboMessage 'Checking user privileges.'
-            $UserPermission = Get-VIPermission | Where-Object {$_.Principal -eq $vCenter.User}
-            $UserRole = Get-VIRole -Name $UserPermission.Role
+            Write-PScriboMessage 'Checking vCenter user privileges.'
+            Try {
+                $UserPermission = Get-VIPermission | Where-Object {$_.Principal -eq $vCenter.User}
+                $AuthMgr = Get-View $($vCenter.ExtensionData.Content.AuthorizationManager)
+                $UserRole = $AuthMgr.RoleList | Where-Object {$_.Name -eq $($UserPermission.Role)}
+            } Catch {
+                Write-PScriboMessage 'Unable to obtain vCenter user privileges.'
+            }
 
             # Create a lookup hashtable to quickly link VM MoRefs to Names
             # Exclude VMware Site Recovery Manager placeholder VMs
@@ -195,7 +200,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 'MemberType' = 'NoteProperty'
                             }
                             #region vCenter Server Detail
-                            if ($UserRole.PrivilegeList -contains 'Global.Licenses') {
+                            if ($UserRole.Privilege -contains 'Global.Licenses') {
                                 $vCenterLicense = Get-License -vCenter $vCenter
                                 Add-Member @MemberProps -Name 'Product' -Value $vCenterLicense.Product
                                 Add-Member @MemberProps -Name 'License Key' -Value $vCenterLicense.LicenseKey
@@ -299,7 +304,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion vCenter Server Historical Statistics
 
                             #region vCenter Server Licensing
-                            if ($UserRole.PrivilegeList -contains 'Global.Licenses') {
+                            if ($UserRole.Privilege -contains 'Global.Licenses') {
                                 Section -Style Heading3 'Licensing' {
                                     $Licenses = Get-License -Licenses | Select-Object Product, @{L = 'License Key'; E = { ($_.LicenseKey) } }, Total, Used, @{L = 'Available'; E = { ($_.total) - ($_.Used) } }, Expiration -Unique
                                     if ($Healthcheck.vCenter.Licensing) {
@@ -396,8 +401,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $TagInfo = foreach ($Tag in $Tags) {
                                         [PSCustomObject] @{
                                             'Tag' = $Tag.Name
-                                            'Description' = $Tag.Description
-                                            'Category' = $Tag.Category
+                                            'Description' = Switch ($Tag.Description) {
+                                                '' { 'None' }
+                                                default { $Tag.Description }
+                                            }
+                                            'Category' = Switch ($Tag.Category) {
+                                                '' { 'None' }
+                                                default { $Tag.Category }
+                                            }
                                         }
                                     }
                                     $TableParams = @{
@@ -418,8 +429,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $TagCategoryInfo = foreach ($TagCategory in $TagCategories) {
                                         [PSCustomObject] @{
                                             'Category' = $TagCategory.Name
-                                            'Description' = $TagCategory.Description
-                                            'Cardinality' = $TagCategory.Cardinality
+                                            'Description' = Switch ($TagCategory.Description) {
+                                                '' { 'None' }
+                                                default { $TagCategory.Description }
+                                            }
+                                            'Cardinality' = Switch ($TagCategory.Cardinality) {
+                                                '' { 'None' }
+                                                default { $TagCategory.Cardinality }
+                                            }
                                         }
                                     }
                                     $TableParams = @{
@@ -457,7 +474,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion vCenter Server Tag Assignments
 
                             #region VM Storage Policies
-                            if ($UserRole.PrivilegeList -contains 'StorageProfile.View') {
+                            if ($UserRole.Privilege -contains 'StorageProfile.View') {
                                 $SpbmStoragePolicies = Get-SpbmStoragePolicy | Sort-Object Name
                                 if ($SpbmStoragePolicies) {
                                     Section -Style Heading3 'VM Storage Policies' {
@@ -1464,7 +1481,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VM Overrides
 
                                                 #region Cluster VUM Baselines
-                                                if ($UserRole.PrivilegeList -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                                if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($VUMConnection) {
                                                         if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                             $ClusterPatchBaselines = $Cluster | Get-PatchBaseline
@@ -1512,7 +1529,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VUM Baselines
 
                                                 #region Cluster VUM Compliance (Advanced Detail Information)
-                                                if  ($UserRole.PrivilegeList -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                                if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
                                                         if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                             $ClusterCompliances = $Cluster | Get-Compliance
@@ -1819,7 +1836,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'InputObject' = $VMHostDetail
                                                 'MemberType' = 'NoteProperty'
                                             }
-                                            if ($UserRole.PrivilegeList -contains 'Global.Licenses') {
+                                            if ($UserRole.Privilege -contains 'Global.Licenses') {
                                                 $VMHostLicense = Get-License -VMHost $VMHost
                                                 Add-Member @MemberProps -Name 'Product' -Value $VMHostLicense.Product
                                                 Add-Member @MemberProps -Name 'License Key' -Value $VMHostLicense.LicenseKey
@@ -1950,7 +1967,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Profile Information
 
                                             #region ESXi Host Image Profile Information
-                                            if ($UserRole.PrivilegeList -contains 'Host.Config.Settings') {
+                                            if ($UserRole.Privilege -contains 'Host.Config.Settings') {
                                                 Section -Style Heading5 'Image Profile' {
                                                     $installdate = Get-InstallDate
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
@@ -2017,7 +2034,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Syslog Configuration
 
                                             #region ESXi Update Manager Baseline Information
-                                            if ($UserRole.PrivilegeList -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                            if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
                                                     if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                         $VMHostPatchBaselines = $VMHost | Get-PatchBaseline
@@ -2053,7 +2070,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Update Manager Baseline Information
 
                                             #region ESXi Update Manager Compliance Information
-                                            if  ($UserRole.PrivilegeList -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                            if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
                                                     if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                         $VMHostCompliances = $VMHost | Get-Compliance
@@ -4158,7 +4175,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region Virtual Machine Detailed Information
                             # TODO: Test Tags
                             if ($InfoLevel.VM -ge 3) {
-                                if ($UserRole.PrivilegeList -contains 'StorageProfile.View') {
+                                if ($UserRole.Privilege -contains 'StorageProfile.View') {
                                     $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $null -ne $_.StoragePolicy }
                                 } else {
                                     Write-PScriboMessage "Insufficient user privileges to report VM storage policies. Please ensure the user account has the 'Storage Profile > View' privilege assigned."

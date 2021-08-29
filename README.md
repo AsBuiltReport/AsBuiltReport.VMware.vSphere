@@ -43,20 +43,23 @@ Below are the instructions on how to install, configure and generate a VMware vS
 
 ### VMware vSphere
 The VMware vSphere As Built Report supports the following vSphere versions;
-- vSphere 5.5
-- vSphere 6.0
 - vSphere 6.5
 - vSphere 6.7
 - vSphere 7.0
 
+#### End of Support
+The following VMware vSphere versions are no longer being tested and/or supported;
+- vSphere 5.5
+- vSphere 6.0
+
 ### PowerShell
 This report is compatible with the following PowerShell versions;
 
-| Windows PowerShell 5.1 |     PowerShell 7     |
+| Windows PowerShell 5.1 |     PowerShell 7 ^    |
 |:----------------------:|:--------------------:|
 |   :white_check_mark:   | :white_check_mark: |
 
-_Note: Due to compatibility issues, VMware Update Manager information will not be reported when using PowerShell 7_
+^ _Due to compatibility issues, VMware Update Manager information will not be reported when using PowerShell 7_
 
 ## :wrench: System Requirements
 PowerShell 5.1 or PowerShell 7, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
@@ -66,9 +69,17 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
+### Linux & macOS
+* .NET Core is required for cover page image support on Linux and macOS operating systems.
+    * [Installing .NET Core for macOS](https://docs.microsoft.com/en-us/dotnet/core/install/macos)
+    * [Installing .NET Core for Linux](https://docs.microsoft.com/en-us/dotnet/core/install/linux)
+
+❗ If you are unable to install .NET Core, you must set `ShowCoverPageImage` to `False` in the report JSON configuration file.
+
+
 ### :closed_lock_with_key: Required Privileges
 
-A VMware vSphere As Built Report can be generated with read only privileges, however the following sections will be skipped;
+A VMware vSphere As Built Report can be generated with read-only privileges, however the following sections will be skipped;
 
 * vSphere licensing information
 * VM Storage Policy information
@@ -142,20 +153,20 @@ There are 6 levels (0-5) of detail granularity for each section as follows;
 |    4    | Adv Detailed      | Provides detailed information for individual objects, as well as information for associated objects (Hosts, Clusters, Datastores, VMs etc) |
 |    5    | Comprehensive     | Provides comprehensive information for individual objects, such as advanced configuration settings                                         |
 
-The table below outlines the default, minimum and maximum **InfoLevel** settings for each section.
+The table below outlines the default and maximum **InfoLevel** settings for each section.
 
-| Sub-Schema   | Default Setting | Minimum Setting | Maximum Setting |
-|--------------|:---------------:|:---------------:|:---------------:|
-| vCenter      |        3        |        1        |        5        |
-| Cluster      |        3        |        1        |        4        |
-| ResourcePool |        3        |        1        |        4        |
-| VMHost       |        3        |        1        |        5        |
-| Network      |        3        |        1        |        4        |
-| vSAN         |        3        |        1        |        4        |
-| Datastore    |        3        |        1        |        4        |
-| DSCluster    |        3        |        1        |        4        |
-| VM           |        2        |        1        |        4        |
-| VUM          |        3        |        3        |        5        |
+| Sub-Schema   | Default Setting | Maximum Setting |
+|--------------|:---------------:|:---------------:|
+| vCenter      |        3        |        5        |
+| Cluster      |        3        |        4        |
+| ResourcePool |        3        |        4        |
+| VMHost       |        3        |        5        |
+| Network      |        3        |        4        |
+| vSAN         |        3        |        4        |
+| Datastore    |        3        |        4        |
+| DSCluster    |        3        |        4        |
+| VM           |        2        |        4        |
+| VUM          |        3        |        5        |
 
 ### Healthcheck
 The **Healthcheck** schema is used to toggle health checks on or off.
