@@ -1,6 +1,24 @@
 # :arrows_counterclockwise: VMware vSphere As Built Report Changelog
 
-## [1.2.1] - 2020-09-29
+## [[1.3.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.0)] - Unreleased
+### Fixed
+- Incorrect section reporting with certain InfoLevels
+- Datastore table now sorts by Datastore Name
+- vSAN advanced detailed reporting
+- VMkernel Adpater reporting
+- Distributed vSwitch advanced detailed reporting
+- Display issues with highlights in [README.md](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/README.md)
+
+### Added
+- PowerShell 7 compatibility
+- PSScriptAnalyzer & PublishPSModule GitHub Action workflows
+- Advanced detailed reporting for VI roles
+- Advanced detailed reporting for vSAN disks
+- Support for VMware Cloud environments (VCF, VMC, AVS, GVE) ([Fix #87](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/87))
+- Include release and issue links in [README.md](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/README.md)
+
+
+## [[1.2.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.2.1)] - 2020-09-29
 ### Fixed
 - Fixed sort order of VMHost PCI Devices
 - Fixed VMHost reporting for InfoLevels 1 & 2
@@ -10,7 +28,7 @@
 - Set fixed table column widths for improved formatting
 - Corrected section header colours in VMware default style
 
-## [1.2.0] - 2020-08-31
+## [[1.2.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.2.0)] - 2020-08-31
 ### Added
 - vCenter Server advanced system settings
 - vCenter Server alarm health check
@@ -28,13 +46,13 @@
 ### Fixed
 - Section error with vSAN InfoLevel 4 or above
 - Fixed text color for highlighted cells in default VMware style
-- Fixed reporting of stateless boot devices (Fix #76)
-- Fixed issue where script was failing trying to parse vSphere Tag data (Fix #77)
-- Fixed issue with reporting on PCI-E device drivers by adding additional filter (Fix #75)
+- Fixed reporting of stateless boot devices ([Fix #76](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/76))
+- Fixed issue where script was failing trying to parse vSphere Tag data ([Fix #77](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/77))
+- Fixed issue with reporting on PCI-E device drivers by adding additional filter ([Fix #75](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/75))
 
-## [1.1.3] - 2020-02-04
+## [[1.1.3](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.1.3)] - 2020-02-04
 ### Added
-- Added vCenter Server certificate information (Fix #31)
+- Added vCenter Server certificate information ([Fix #31](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/31))
 - Added VM summary information
 - Added VM disk and guest volume information
 - Added Virtual Switch to VMkernel adapter information
@@ -51,7 +69,7 @@
 
 ### Changed
 - Improved report formatting
-- Improved VMHost storage adapter reporting (Fix #32)
+- Improved VMHost storage adapter reporting ([Fix #32](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/32))
 - Improved VMHost network adapter CDP reporting
 - Improved VM SCSI controller reporting
 - Updated VMHost CPU & Memory totals/usage in Detailed level
@@ -59,17 +77,17 @@
 - Updated README with minimum required privileges to generate a VMware vSphere As Built Report. Full administrator privileges should no longer be required.
 
 ### Fixed
-- Resolved issue with VMHost PCI device reporting (Fix #33)
-- Resolved issue with reporting of ESXi boot device size (Fix #65)
-- Resolved issue with vSphere licensing (Fix #68 & #69)
-- Resolved vSwitch reporting issue with physical adpaters (Fix #27)
+- Resolved issue with VMHost PCI device reporting ([Fix #33](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/33))
+- Resolved issue with reporting of ESXi boot device size ([Fix #65](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/65))
+- Resolved issue with vSphere licensing ([Fix #68](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/68) & [Fix #69](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/69))
+- Resolved vSwitch reporting issue with physical adpaters ([Fix #27](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/27))
 - Resolved issue with VMHost uptime health check reporting
 
 ### Removed
-- Removed support for ESX/ESXi hosts prior to vSphere 5.0 (Fix #67)
+- Removed support for ESX/ESXi hosts prior to vSphere 5.0 ([Fix #67](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/67))
 - Removed VMHost CPU & Memory usage from Informative level
 
-## [1.0.7] - 2019-06-21
+## [[1.0.7](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.0.7)] - 2019-06-21
 ### Changed
 - Fixed font in default VMware style
 - Updated module manifest for icon and release notes
@@ -77,7 +95,7 @@
 ### Removed
 - Removed Services health check
 
-## [1.0.6] - 2019-05-16
+## [[1.0.6](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.0.6)] - 2019-05-16
 ### Changed
 - Fixed code errors which prevented a report from being generated
 - Improved code and report readability
@@ -88,11 +106,11 @@
 - Fixed VMHost reporting to exclude HCX Cloud Gateway host
 - Updated VMware default style to more closely align with Clarity
 
-## [1.0.0] - 2019-03-27
+## [[1.0.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.0.0)] - 2019-03-27
 ### Added
 - Added Update Manager Server name to vCenter Server detailed information
 
-### Changed 
+### Changed
 - Fixed VMHost count for Distributed Virtual Switches
 - Fixed vCenter Server licensing for vCenter Server 5.5/6.0
 - Fixed script termination where ESXi hosts do not have a datastore
@@ -136,7 +154,7 @@
 - Fixed issues with current working directory paths
 - Changed InfoLevel settings and definitions
 - Script formatting improvements to some sections to align with PowerShell best practice guidelines
-- vCenter Server SSL Certificate section removed temporarily   
+- vCenter Server SSL Certificate section removed temporarily
 
 ## [0.2.0]
 ### Added
