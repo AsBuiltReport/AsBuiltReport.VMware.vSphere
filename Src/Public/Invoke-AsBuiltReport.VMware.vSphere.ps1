@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/Text formats using PScribo.
     .NOTES
-        Version:        1.3.0
+        Version:        1.3.1
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -2422,7 +2422,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Physical Adapters
 
                                             #region ESXi Host Cisco Discovery Protocol
-                                            $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterCDP | Where-Object { $_.Status -eq 'Connected' } | Sort-Object Device
+                                            $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $_.Status -eq 'Connected' } | Sort-Object Device
                                             if ($VMHostNetworkAdapterCDP) {
                                                 Section -Style Heading5 'Cisco Discovery Protocol' {
                                                     Paragraph "The following section details the CDP information for $VMHost."
@@ -2476,6 +2476,61 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                             }
                                             #endregion ESXi Host Cisco Discovery Protocol
+
+                                            #region ESXi Host Link Layer Discovery Protocol
+                                            $VMHostNetworkAdapterLLDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $null -ne $_.ChassisId } | Sort-Object Device
+                                            if ($VMHostNetworkAdapterLLDP) {
+                                                Section -Style Heading5 'Link Layer Discovery Protocol' {
+                                                    Paragraph "The following section details the LLDP information for $VMHost."
+                                                    if ($InfoLevel.VMHost -ge 4) {
+                                                        foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterLLDP) {
+                                                            Section -Style Heading5 "$($VMHostNetworkAdapter.Device)" {
+                                                                $VMHostLLDP = [PSCustomObject]@{
+                                                                    'Chassis ID' = $VMHostNetworkAdapter.ChassisId
+                                                                    'Port ID' = $VMHostNetworkAdapter.PortId
+                                                                    'Time to live' = $VMHostNetworkAdapter.TimeToLive
+                                                                    'TimeOut' = $VMHostNetworkAdapter.TimeOut
+                                                                    'Samples' = $VMHostNetworkAdapter.Samples
+                                                                    'Management Address' = $VMHostNetworkAdapter.ManagementAddress
+                                                                    'Port Description' = $VMHostNetworkAdapter.PortDescription
+                                                                    'System Description' = $VMHostNetworkAdapter.SystemDescription
+                                                                    'System Name' = $VMHostNetworkAdapter.SystemName
+                                                                }
+                                                                $TableParams = @{
+                                                                    Name = "Network Adapter $($VMHostNetworkAdapter.Device) LLDP Information - $VMHost"
+                                                                    List = $true
+                                                                    ColumnWidths = 50, 50
+                                                                }
+                                                                if ($Report.ShowTableCaptions) {
+                                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                                }
+                                                                $VMHostLLDP | Table @TableParams
+                                                            }
+                                                        }
+                                                    } else {
+                                                        BlankLine
+                                                        $VMHostLLDP = foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterLLDP) {
+                                                            [PSCustomObject]@{
+                                                                'Adapter' = $VMHostNetworkAdapter.Device
+                                                                'Chassis ID' = $VMHostNetworkAdapter.ChassisId
+                                                                'Port ID' = $VMHostNetworkAdapter.PortId
+                                                                'Management Address' = $VMHostNetworkAdapter.ManagementAddress
+                                                                'Port Description' = $VMHostNetworkAdapter.PortDescription
+                                                                'System Name' = $VMHostNetworkAdapter.SystemName
+                                                            }
+                                                        }
+                                                        $TableParams = @{
+                                                            Name = "Network Adapter LLDP Information - $VMHost"
+                                                            ColumnWidths = 11, 19, 16, 19, 18, 17
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VMHostLLDP | Table @TableParams
+                                                    }
+                                                }
+                                            }
+                                            #endregion ESXi Host Link Layer Discovery Protocol
 
                                             #region ESXi Host VMkernel Adapaters
                                             Section -Style Heading5 'VMkernel Adapters' {
