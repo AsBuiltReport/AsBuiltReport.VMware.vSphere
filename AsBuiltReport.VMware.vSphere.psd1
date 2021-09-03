@@ -52,10 +52,6 @@
         @{
             ModuleName = 'AsBuiltReport.Core';
             ModuleVersion = '1.1.0'
-        },
-        @{
-            ModuleName = 'VMware.PowerCLI';
-            ModuleVersion = '12.3.0'
         }
     )
 
