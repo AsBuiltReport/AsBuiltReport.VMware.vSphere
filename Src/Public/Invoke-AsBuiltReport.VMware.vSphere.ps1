@@ -20,17 +20,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     )
 
     # Check if the required version of VMware PowerCLI is installed
-    $RequiredVersion = '12.1'
-    $RequiredModule = Get-Module -ListAvailable -Name 'VMware.PowerCLI' | Sort-Object -Property Version -Descending | Select-Object -First 1
-    $ModuleVersion = "$($RequiredModule.Version.Major)" + "." + "$($RequiredModule.Version.Minor)"
-    if ($null -eq $ModuleVersion)  {
-        Write-Warning -Message "VMware PowerCLI $RequiredVersion or higher is required to run the VMware vSphere As Built Report. Run 'Install-Module -Name VMware.PowerCLI -MinimumVersion $RequiredVersion' to install the required modules."
-        break
-    }
-    elseif ($ModuleVersion -lt $RequiredVersion) {
-        Write-Warning -Message "VMware PowerCLI $RequiredVersion or higher is required to run the VMware vSphere As Built Report. Run 'Update-Module -Name VMware.PowerCLI -MinimumVersion $RequiredVersion' to update PowerCLI."
-        break
-    }
+    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '12.3'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
