@@ -97,10 +97,10 @@ For a complete report, the following role assigned privileges are required;
 
 Open a PowerShell terminal window and install each of the required modules.
 
-:warning: VMware PowerCLI 12.1 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
+:warning: VMware PowerCLI 12.3 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
 
 ```powershell
-install-module VMware.PowerCLI -MinimumVersion 12.1 -AllowClobber
+install-module VMware.PowerCLI -MinimumVersion 12.3 -AllowClobber
 install-module AsBuiltReport.VMware.vSphere
 ```
 
