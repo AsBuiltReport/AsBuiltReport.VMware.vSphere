@@ -25,6 +25,16 @@
 
 # VMware vSphere As Built Report
 
+VMware vSphere As Built Report is a PowerShell module which works in conjunction with [AsBuiltReport.Core](https://github.com/AsBuiltReport/AsBuiltReport.Core).
+
+[AsBuiltReport](https://github.com/AsBuiltReport/AsBuiltReport) is an open-sourced community project which utilises PowerShell to produce as-built documentation in multiple document formats for multiple vendors and technologies.
+
+The VMware vSphere As Built Report module is used to generate as built documentation for VMware vSphere / vCenter Server environments.
+
+Please refer to the [VMware ESXi AsBuiltReport](https://github.com/AsBuiltReport/AsBuiltReport.VMware.ESXi) for reporting of standalone VMware ESXi servers.
+
+Please refer to the AsBuiltReport [website](https://www.asbuiltreport.com) for more detailed information about this project.
+
 ## :books: Sample Reports
 ### Sample Report 1 - Default Style
 Sample vSphere As Built report with health checks, using default report style.
@@ -264,7 +274,7 @@ The **VM** schema is used to configure health checks for virtual machines.
 PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Format Html,Word -OutputFolderPath 'C:\Users\Tim\Documents' -Timestamp
 
 # Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using specified credentials and report configuration file. Export report to Text, HTML & DOCX formats. Use default report style. Save reports to 'C:\Users\Tim\Documents'. Display verbose messages to the console.
-PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Format Text,Html,Word -OutputFolderPath 'C:\Users\Tim\Documents' -Verbose
+PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Format Text,Html,Word -OutputFolderPath 'C:\Users\Tim\Documents' -ReportConfigFilePath 'C:\Users\Tim\AsBuiltReport\AsBuiltReport.VMware.vSphere.json' -Verbose
 
 # Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using stored credentials. Export report to HTML & Text formats. Use default report style. Highlight environment issues within the report. Save reports to 'C:\Users\Tim\Documents'.
 PS C:\> $Creds = Get-Credential
