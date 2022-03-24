@@ -1,4 +1,12 @@
-# :arrows_counterclockwise: VMware vSphere As Built Report Changelog
+# :arrows_clockwise: VMware vSphere As Built Report Changelog
+
+## [[1.3.2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.2] - 2022-03-24
+
+### Added
+- Automated tweet release workflow
+
+### Fixed
+- Fix colour placeholders in `README.md`
 
 ## [[1.3.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.1)] - 2021-09-03
 
