@@ -1,6 +1,6 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [[1.3.2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.2] - 2022-03-24
+## [[1.3.2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.2)] - 2022-03-24
 
 ### Added
 - Automated tweet release workflow
