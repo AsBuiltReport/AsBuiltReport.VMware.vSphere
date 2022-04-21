@@ -1,4 +1,17 @@
-# :arrows_counterclockwise: VMware vSphere As Built Report Changelog
+# :arrows_clockwise: VMware vSphere As Built Report Changelog
+
+## [[1.3.3](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.3)] - 2022-04-21
+
+### Added
+- Added VMHost IPMI / BMC configuration information
+
+## [[1.3.2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.2)] - 2022-03-24
+
+### Added
+- Automated tweet release workflow
+
+### Fixed
+- Fix colour placeholders in `README.md`
 
 ## [[1.3.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.1)] - 2021-09-03
 
@@ -6,22 +19,20 @@
 - VMHost network adapter LLDP reporting
 
 ## [[1.3.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.0)] - 2021-08-29
-### Fixed
-- Incorrect section reporting with certain InfoLevels
-- Datastore table now sorts by Datastore Name
-- vSAN advanced detailed reporting
-- VMkernel Adpater reporting
-- Distributed vSwitch advanced detailed reporting
-- Display issues with highlights in [README.md](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/README.md)
-
 ### Added
 - PowerShell 7 compatibility
 - PSScriptAnalyzer & PublishPSModule GitHub Action workflows
 - Advanced detailed reporting for VI roles
 - Advanced detailed reporting for vSAN disks
 - Support for VMware Cloud environments (VCF, VMC, AVS, GVE) ([Fix #87](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/87))
-- Include release and issue links in [README.md](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/README.md)
-
+- NSX TCP/IP stacks for VMkernel Adpater reporting
+- Include release and issue links in `CHANGELOG.md`
+### Fixed
+- Incorrect section reporting with certain InfoLevels
+- Datastore table now sorts by Datastore Name
+- vSAN advanced detailed reporting
+- Distributed vSwitch advanced detailed reporting
+- Display issues with highlights in `README.md`
 
 ## [[1.2.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.2.1)] - 2020-09-29
 ### Fixed
