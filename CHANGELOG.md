@@ -1,9 +1,12 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [[1.3.3](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.3)] - 2022-04-21
+## [[1.3.3.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.3.1)] - 2022-04-21
 
 ### Added
-- Added VMHost IPMI / BMC configuration information
+- Add VMHost IPMI / BMC configuration information
+
+### Fixed
+- Fix GitHub Action release workflow
 
 ## [[1.3.2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.2)] - 2022-03-24
 
