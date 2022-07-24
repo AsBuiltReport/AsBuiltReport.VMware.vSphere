@@ -111,10 +111,10 @@ For a complete report, the following role assigned privileges are required;
 
 Open a PowerShell terminal window and install each of the required modules.
 
-:warning: VMware PowerCLI 12.3 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
+:warning: VMware PowerCLI 12.7 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
 
 ```powershell
-install-module VMware.PowerCLI -MinimumVersion 12.3 -AllowClobber
+install-module VMware.PowerCLI -MinimumVersion 12.7 -AllowClobber
 install-module AsBuiltReport.VMware.vSphere
 ```
 
@@ -151,7 +151,24 @@ The **Options** schema allows certain options within the report to be toggled on
 | Sub-Schema      | Setting      | Default | Description                                                                                                                                                                                 |
 |-----------------|--------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ShowLicenseKeys | true / false | false   | Toggle to mask/unmask vSphere license keys<br><br> **Masked License Key**<br>\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-56YDM-AS12K<br><br> **Unmasked License Key**<br>AKLU4-PFG8M-W2D8J-56YDM-AS12K |
-| ShowVMSnapshots | true / false | true    | Toggle to enable/disable reporting of VM snapshots                                                                                                                                          |
+| ShowVMSnapshots | true / false | true    | Toggle to enable/disable reporting of VM snapshots |
+| ApplianceBackupJobs | User defined | 7 | The number of vCenter Server appliance backup jobs to display |
+
+### Filter
+The **Filter** schema is used to filter information for specifically named vSphere clusters. The generated as-built will only provide information which are specific to these named clusters.
+
+#### Report on all clusters
+```json
+"Filter": {
+    "Cluster": ["*"]
+}
+```
+#### Report on specific named clusters, e.g. `Prod-Cluster` and `Test-Cluster`
+```json
+"Filter": {
+    "Cluster": ["Prod-Cluster","Test-Cluster"]
+}
+```
 
 ### InfoLevel
 The **InfoLevel** schema allows configuration of each section of the report at a granular level. The following sections can be set.

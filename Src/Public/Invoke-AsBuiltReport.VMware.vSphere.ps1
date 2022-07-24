@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/Text formats using PScribo.
     .NOTES
-        Version:        1.3.3
+        Version:        1.4.0
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -20,10 +20,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     )
 
     # Check if the required version of VMware PowerCLI is installed
-    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '12.3'
+    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '12.7'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
+    $Filter = $ReportConfig.Filter
     $InfoLevel = $ReportConfig.InfoLevel
     $Options = $ReportConfig.Options
     # Used to set values to TitleCase where required
@@ -34,11 +35,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     #                                         SCRIPT BODY                                         #
     #---------------------------------------------------------------------------------------------#
     # Connect to vCenter Server using supplied credentials
+    $Today = Get-Date
     foreach ($VIServer in $Target) {
-        try {
+        Try {
             Write-PScriboMessage "Connecting to vCenter Server '$VIServer'."
             $vCenter = Connect-VIServer $VIServer -Credential $Credential -ErrorAction Stop
-        } catch {
+        } Catch {
             Write-Error $_
         }
 
@@ -47,17 +49,40 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             # Check logged in user has sufficient privileges to generate an As Built Report
             Write-PScriboMessage 'Checking vCenter user privileges.'
             Try {
-                $UserPermission = Get-VIPermission | Where-Object {$_.Principal -eq $vCenter.User}
+                $UserPermission = (Get-VIPermission).Where{$_.Principal -eq $vCenter.User}
                 $AuthMgr = Get-View $($vCenter.ExtensionData.Content.AuthorizationManager)
-                $UserRole = $AuthMgr.RoleList | Where-Object {$_.Name -eq $($UserPermission.Role)}
+                $UserRole = ($AuthMgr.RoleList).Where{$_.Name -eq $($UserPermission.Role)}
             } Catch {
                 Write-PScriboMessage 'Unable to obtain vCenter user privileges.'
+            }
+
+            # Get Clusters
+            Write-PScriboMessage 'Collecting Cluster information.'
+            if ($Filter.Cluster -eq "*") {
+                $Clusters = Get-Cluster -Server $vCenter -ErrorAction SilentlyContinue | Sort-Object Name
+            } else {
+                $Clusters = foreach ($Cluster in $Filter.Cluster) {
+                    Get-Cluster -Name $Cluster -Server $vCenter -ErrorAction SilentlyContinue
+                }
+            }
+
+            # Get Resource Pools
+            Write-PScriboMessage 'Collecting Resource Pool information.'
+            if ($Filter.Cluster -eq "*") {
+                $ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
+            } else {
+                $ResourcePools = $Clusters | Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
             }
 
             # Create a lookup hashtable to quickly link VM MoRefs to Names
             # Exclude VMware Site Recovery Manager placeholder VMs
             Write-PScriboMessage 'Creating VM lookup hashtable.'
-            $VMs = Get-VM -Server $vCenter | Where-Object {
+            if ($Filter.Cluster -eq "*") {
+                $TotalVMs = Get-VM -Server $vCenter
+            } else {
+                $TotalVMs = $Clusters | Get-VM -Server $vCenter
+            }
+            $VMs = ($TotalVMs).Where{
                 $_.ExtensionData.Config.ManagedBy.ExtensionKey -notlike 'com.vmware.vcDr*'
             } | Sort-Object Name
             $VMLookup = @{ }
@@ -68,7 +93,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             # Create a lookup hashtable to link Host MoRefs to Names
             # Exclude VMware HCX hosts and ESX/ESXi versions prior to vSphere 5.0 from VMHost lookup
             Write-PScriboMessage 'Creating VMHost lookup hashtable.'
-            $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5 } | Sort-Object Name
+            if ($Filter.Cluster -eq "*") {
+                $TotalVMHosts = Get-VMHost -Server $vCenter
+            } else {
+                $TotalVMHosts = $Clusters | Get-VMHost -Server $vCenter
+            }
+            $VMHosts = ($TotalVMHosts).Where{ $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5 } | Sort-Object Name
             $VMHostLookup = @{ }
             foreach ($VMHost in $VMHosts) {
                 $VMHostLookup.($VMHost.Id) = $VMHost.Name
@@ -76,7 +106,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
             # Create a lookup hashtable to link Datastore MoRefs to Names
             Write-PScriboMessage 'Creating Datastore lookup hashtable.'
-            $Datastores = Get-Datastore -Server $vCenter | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+            if ($Filter.Cluster -eq "*") {
+                $Datastores = (Get-Datastore -Server $vCenter).Where{ ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+            } else {
+                $Datastores = ($Clusters | Get-Datastore -Server $vCenter).Where{ ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+            }
             $DatastoreLookup = @{ }
             foreach ($Datastore in $Datastores) {
                 $DatastoreLookup.($Datastore.Id) = $Datastore.Name
@@ -98,45 +132,49 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 $EvcModeLookup.($EvcMode.Key) = $EvcMode.Label
             }
 
+            # Collect Machine SSL Certificates
+            Write-PScriboMessage 'Collecting Machine SSL Certificate information.'
+            $VIMachineCertificates = Get-VIMachineCertificate -Server $vCenter
+
             $si = Get-View ServiceInstance -Server $vCenter
             $extMgr = Get-View -Id $si.Content.ExtensionManager -Server $vCenter
 
             #region VMware Update Manager Server Name
             Write-PScriboMessage 'Checking for VMware Update Manager Server.'
-            $VumServer = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.vcIntegrity' } |
+            $VumServer = ($extMgr.ExtensionList).Where{ $_.Key -eq 'com.vmware.vcIntegrity' } |
             Select-Object @{
                 N = 'Name';
-                E = { ($_.Server | Where-Object { $_.Type -eq 'SOAP' -and $_.Company -eq 'VMware, Inc.' } |
+                E = { (($_.Server).Where{ $_.Type -eq 'SOAP' -and $_.Company -eq 'VMware, Inc.' } |
                         Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0] }
             }
             #endregion VMware Update Manager Server Name
 
             #region VxRail Manager Server Name
             Write-PScriboMessage 'Checking for VxRail Manager Server.'
-            $VxRailMgr = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.vxrail' } |
+            $VxRailMgr = ($extMgr.ExtensionList).Where{ $_.Key -eq 'com.vmware.vxrail' } |
             Select-Object @{
                 N = 'Name';
-                E = { ($_.Server | Where-Object { $_.Type -eq 'HTTPS' } |
+                E = { (($_.Server).Where{ $_.Type -eq 'HTTPS' } |
                         Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0] }
             }
             #endregion VxRail Manager Server Name
 
             #region Site Recovery Manager Server Name
             Write-PScriboMessage 'Checking for VMware Site Recovery Manager Server.'
-            $SrmServer = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.vcDr' } |
+            $SrmServer = ($extMgr.ExtensionList).Where{ $_.Key -eq 'com.vmware.vcDr' } |
             Select-Object @{
                 N = 'Name';
-                E = { ($_.Server | Where-Object { $_.Company -eq 'VMware, Inc.' } |
+                E = { (($_.Server).Where{ $_.Company -eq 'VMware, Inc.' } |
                         Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0] }
             }
             #endregion Site Recovery Manager Server Name
 
             #region NSX-T Manager Server Name
             Write-PScriboMessage 'Checking for VMware NSX-T Manager Server.'
-            $NsxtServer = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.nsx.management.nsxt' } |
+            $NsxtServer = ($extMgr.ExtensionList).Where{ $_.Key -eq 'com.vmware.nsx.management.nsxt' } |
             Select-Object @{
                 N = 'Name';
-                E = { ($_.Server | Where-Object { ($_.Company -eq 'VMware') -and ($_.Type -eq 'VIP') } |
+                E = { (($_.Server).Where{ ($_.Company -eq 'VMware') -and ($_.Type -eq 'VIP') } |
                         Select-Object -ExpandProperty Url).Split('/')[2].Split(':')[0] }
             }
             #endregion NSX-T Manager Server Name
@@ -150,41 +188,85 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             #region vCenter Advanced Settings
             Write-PScriboMessage "Collecting $vCenter advanced settings."
             $vCenterAdvSettings = Get-AdvancedSetting -Entity $vCenter
-            $vCenterServerName = ($vCenterAdvSettings | Where-Object { $_.name -eq 'VirtualCenter.FQDN' }).Value
+            $vCenterServerName = (($vCenterAdvSettings).Where{ $_.name -eq 'VirtualCenter.FQDN' }).Value
             $vCenterServerName = $vCenterServerName.ToString().ToLower()
             #endregion vCenter Advanced Settings
 
             #region vCenter Server Heading1 Section
-            Section -Style Heading1 $vCenterServerName {
+            Section -Style Heading1 $($vCenterServerName) {
                 #region vCenter Server Section
                 Write-PScriboMessage "vCenter InfoLevel set at $($InfoLevel.vCenter)."
-                if ($InfoLevel.vCenter -ge 1) {
+                if ($InfoLevel.vCenter -gt 0) {
                     Section -Style Heading2 'vCenter Server' {
-                        Paragraph "The following sections detail the configuration of vCenter Server $vCenterServerName."
-                        BlankLine
                         # Gather basic vCenter Server Information
                         $vCenterServerInfo = [PSCustomObject]@{
                             'vCenter Server' = $vCenterServerName
-                            'IP Address' = ($vCenterAdvSettings | Where-Object { $_.name -like 'VirtualCenter.AutoManagedIPV4' }).Value
+                            'IP Address' = (($vCenterAdvSettings).Where{ $_.name -like 'VirtualCenter.AutoManagedIPV4' }).Value
                             'Version' = $vCenter.Version
                             'Build' = $vCenter.Build
                             'OS Type' = $vCenter.ExtensionData.Content.About.OsType
                         }
                         #region vCenter Server Summary & Advanced Summary
-                        if ($InfoLevel.vCenter -le 2) {
+                        if (($InfoLevel.vCenter -ge 1) -and ($InfoLevel.vCenter -le 2)) {
+                            Paragraph "The following section provides a configuration summary of vCenter Server $($vCenterServerName)."
+                            BlankLine
+
                             $TableParams = @{
-                                Name = "vCenter Server Summary - $vCenterServerName"
+                                Name = "vCenter Server Summary - $($vCenterServerName)"
                                 ColumnWidths = 20, 20, 20, 20, 20
                             }
                             if ($Report.ShowTableCaptions) {
                                 $TableParams['Caption'] = "- $($TableParams.Name)"
                             }
                             $vCenterServerInfo | Table @TableParams
+
+                            if ($InfoLevel.vCenter -eq 2) {
+                                BlankLine
+
+                                $vCenterResources = @(
+                                    [Ordered] @{ Resource = 'CPU'; Free = "$([math]::round((($vmhosts.CpuTotalMhz | Measure-Object -Sum).sum / 1000) - (($vmhosts.CpuUsageMhz | Measure-Object -Sum).sum / 1000),2)) GHz"; Used = "$([math]::round(($vmhosts.CpuUsageMhz | Measure-Object -Sum).sum / 1000,2)) GHz"; Total = "$([math]::round(($vmhosts.CpuTotalMhz | Measure-Object -Sum).sum / 1000,1)) GHz" }
+                                    [Ordered] @{ Resource = 'Memory'; Free = "$([math]::round((($vmhosts.MemoryTotalGB | Measure-Object -Sum).sum) - (($vmhosts.MemoryUsageGB | Measure-Object -Sum).sum),2)) GB"; Used = "$([math]::round(($vmhosts.MemoryUsageGB | Measure-Object -Sum).sum,2)) GB"; Total = "$([math]::round(($vmhosts.MemoryTotalGB | Measure-Object -Sum).sum,2)) GB" }
+                                    [Ordered] @{ Resource = 'Storage'; Free = "$([math]::round(((($Datastores).FreeSpaceMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB"; Used = "$([math]::Round(((($Datastores).CapacityMB | Measure-Object -sum).sum / 1024 / 1024) - ((($Datastores).FreeSpaceMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB"; Total = "$([math]::round(((($Datastores).CapacityMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB" }
+                                )
+
+                                $TableParams = @{
+                                    Name = "vCenter Resource Summary - $($vCenterServerName)"
+                                    ColumnWidths = 25, 25, 25, 25
+                                    List = $true
+                                    Key = 'Resource'
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                Table -Hashtable $vCenterResources @TableParams
+
+                                Blankline
+
+                                $vCenterObjects = [PSCustomObject]@{
+                                    'Clusters' = $Clusters.Count
+                                    'Hosts' = $TotalVMHosts.Count
+                                    'Virtual Machines' = $TotalVMs.Count
+                                }
+
+                                $TableParams = @{
+                                    Name = "vCenter Object Summary - $($vCenterServerName)"
+                                    ColumnWidths = 33, 34, 33
+                                    List = $false
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                $vCenterObjects | Table @TableParams
+
+                            }
                         }
                         #endregion vCenter Server Summary & Advanced Summary
 
                         #region vCenter Server Detailed Information
                         if ($InfoLevel.vCenter -ge 3) {
+                            Paragraph "The following sections detail the configuration of vCenter Server $($vCenterServerName)."
+                            BlankLine
+
                             $MemberProps = @{
                                 'InputObject' = $vCenterServerInfo
                                 'MemberType' = 'NoteProperty'
@@ -199,12 +281,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 Write-PScriboMessage "Insufficient user privileges to report vCenter Server licensing. Please ensure the user account has the 'Global > Licenses' privilege assigned."
                             }
 
-                            Add-Member @MemberProps -Name 'Instance ID' -Value ($vCenterAdvSettings | Where-Object { $_.name -eq 'instance.id' }).Value
+                            Add-Member @MemberProps -Name 'Instance ID' -Value (($vCenterAdvSettings).Where{ $_.name -eq 'instance.id' }).Value
 
                             if ($vCenter.Version -ge 6) {
-                                Add-Member @MemberProps -Name 'HTTP Port' -Value ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.rhttpproxy.httpport' }).Value
-                                Add-Member @MemberProps -Name 'HTTPS Port' -Value ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.rhttpproxy.httpsport' }).Value
-                                Add-Member @MemberProps -Name 'Platform Services Controller' -Value (($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.sso.admin.uri' }).Value -replace "^https://|/sso-adminserver/sdk/vsphere.local")
+                                Add-Member @MemberProps -Name 'HTTP Port' -Value (($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.rhttpproxy.httpport' }).Value
+                                Add-Member @MemberProps -Name 'HTTPS Port' -Value (($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.rhttpproxy.httpsport' }).Value
+                                Add-Member @MemberProps -Name 'Platform Services Controller' -Value ((($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.sso.admin.uri' }).Value -replace "^https://|/sso-adminserver/sdk/vsphere.local")
                             }
                             if ($VumServer.Name) {
                                 Add-Member @MemberProps -Name 'Update Manager Server' -Value $VumServer.Name
@@ -219,13 +301,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 Add-Member @MemberProps -Name 'VxRail Manager Server' -Value $VxRailMgr.Name
                             }
                             if ($Healthcheck.vCenter.Licensing) {
-                                $vCenterServerInfo | Where-Object { $_.'Product' -like '*Evaluation*' } | Set-Style -Style Warning -Property 'Product'
-                                $vCenterServerInfo | Where-Object { $null -eq $_.'Product' } | Set-Style -Style Warning -Property 'Product'
-                                $vCenterServerInfo | Where-Object { $_.'License Key' -like '*-00000-00000' } | Set-Style -Style Warning -Property 'License Key'
-                                $vCenterServerInfo | Where-Object { $_.'License Expiration' -eq 'Expired' } | Set-Style -Style Critical -Property 'License Expiration'
+                                ($vCenterServerInfo).Where{ $_.'Product' -like '*Evaluation*' } | Set-Style -Style Warning -Property 'Product'
+                                ($vCenterServerInfo).Where{ $null -eq $_.'Product' } | Set-Style -Style Warning -Property 'Product'
+                                ($vCenterServerInfo).Where{ $_.'License Key' -like '*-00000-00000' } | Set-Style -Style Warning -Property 'License Key'
+                                ($vCenterServerInfo).Where{ $_.'License Expiration' -eq 'Expired' } | Set-Style -Style Critical -Property 'License Expiration'
                             }
                             $TableParams = @{
-                                Name = "vCenter Server Configuration - $vCenterServerName"
+                                Name = "vCenter Server Configuration - $($vCenterServerName)"
                                 List = $true
                                 ColumnWidths = 50, 50
                             }
@@ -238,12 +320,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vCenter Server Database Settings
                             Section -Style Heading3 'Database Settings' {
                                 $vCenterDbInfo = [PSCustomObject]@{
-                                    'Database Type' = $TextInfo.ToTitleCase(($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dbtype' }).Value)
-                                    'Data Source Name' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.odbc.dsn' }).Value
-                                    'Maximum Database Connection' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'VirtualCenter.MaxDBConnection' }).Value
+                                    'Database Type' = $TextInfo.ToTitleCase((($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.odbc.dbtype' }).Value)
+                                    'Data Source Name' = (($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.odbc.dsn' }).Value
+                                    'Maximum Database Connection' = (($vCenterAdvSettings).Where{ $_.name -eq 'VirtualCenter.MaxDBConnection' }).Value
                                 }
                                 $TableParams = @{
-                                    Name = "Database Settings - $vCenterServerName"
+                                    Name = "Database Settings - $($vCenterServerName)"
                                     List = $true
                                     ColumnWidths = 50, 50
                                 }
@@ -257,17 +339,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vCenter Server Mail Settings
                             Section -Style Heading3 'Mail Settings' {
                                 $vCenterMailInfo = [PSCustomObject]@{
-                                    'SMTP Server' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'mail.smtp.server' }).Value
-                                    'SMTP Port' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'mail.smtp.port' }).Value
-                                    'Mail Sender' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'mail.sender' }).Value
+                                    'SMTP Server' = (($vCenterAdvSettings).Where{ $_.name -eq 'mail.smtp.server' }).Value
+                                    'SMTP Port' = (($vCenterAdvSettings).Where{ $_.name -eq 'mail.smtp.port' }).Value
+                                    'Mail Sender' = (($vCenterAdvSettings).Where{ $_.name -eq 'mail.sender' }).Value
                                 }
                                 if ($Healthcheck.vCenter.Mail) {
-                                    $vCenterMailInfo | Where-Object { !($_.'SMTP Server') } | Set-Style -Style Critical -Property 'SMTP Server'
-                                    $vCenterMailInfo | Where-Object { !($_.'SMTP Port') } | Set-Style -Style Critical -Property 'SMTP Port'
-                                    $vCenterMailInfo | Where-Object { !($_.'Mail Sender') } | Set-Style -Style Critical -Property 'Mail Sender'
+                                    ($vCenterMailInfo).Where{ !($_.'SMTP Server') } | Set-Style -Style Critical -Property 'SMTP Server'
+                                    ($vCenterMailInfo).Where{ !($_.'SMTP Port') } | Set-Style -Style Critical -Property 'SMTP Port'
+                                    ($vCenterMailInfo).Where{ !($_.'Mail Sender') } | Set-Style -Style Critical -Property 'Mail Sender'
                                 }
                                 $TableParams = @{
-                                    Name = "Mail Settings - $vCenterServerName"
+                                    Name = "Mail Settings - $($vCenterServerName)"
                                     List = $true
                                     ColumnWidths = 50, 50
                                 }
@@ -283,7 +365,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $vCenterHistoricalStats = Get-vCenterStats | Select-Object @{L = 'Interval Duration'; E = { $_.IntervalDuration } }, @{L = 'Interval Enabled'; E = { $_.IntervalEnabled } },
                                 @{L = 'Save Duration'; E = { $_.SaveDuration } }, @{L = 'Statistics Level'; E = { $_.StatsLevel } } -Unique
                                 $TableParams = @{
-                                    Name = "Historical Statistics - $vCenterServerName"
+                                    Name = "Historical Statistics - $($vCenterServerName)"
                                     ColumnWidths = 25, 25, 25, 25
                                 }
                                 if ($Report.ShowTableCaptions) {
@@ -298,11 +380,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 Section -Style Heading3 'Licensing' {
                                     $Licenses = Get-License -Licenses | Select-Object Product, @{L = 'License Key'; E = { ($_.LicenseKey) } }, Total, Used, @{L = 'Available'; E = { ($_.total) - ($_.Used) } }, Expiration -Unique
                                     if ($Healthcheck.vCenter.Licensing) {
-                                        $Licenses | Where-Object { $_.Product -eq 'Product Evaluation' } | Set-Style -Style Warning
-                                        $Licenses | Where-Object { $_.Expiration -eq 'Expired' } | Set-Style -Style Critical
+                                        ($Licenses).Where{ $_.Product -eq 'Product Evaluation' } | Set-Style -Style Warning
+                                        ($Licenses).Where{ $_.Expiration -eq 'Expired' } | Set-Style -Style Critical
                                     }
                                     $TableParams = @{
-                                        Name = "Licensing - $vCenterServerName"
+                                        Name = "Licensing - $($vCenterServerName)"
                                         ColumnWidths = 25, 25, 12, 12, 12, 14
                                     }
                                     if ($Report.ShowTableCaptions) {
@@ -315,39 +397,134 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             }
                             #endregion vCenter Server Licensing
 
+                            #region vCenter Server Appliance Backup
+                            Try {
+                                $ApplianceBackupJobs = Get-ApplianceBackupJob -Server $vCenter | Sort-Object EndTime -Descending
+                            } Catch {
+                                Write-PScriboMessage "Unable to collect vCenter Server appliance backup information."
+                            }
+                            if ($ApplianceBackupJobs) {
+                                $ApplianceBackupJobInfo = foreach ($ApplianceBackupJob in $ApplianceBackupJobs) {
+                                    [PSCustomObject]@{
+                                        'Id' = $ApplianceBackupJob.Id
+                                        'Location' = $ApplianceBackupJob.Location
+                                        'User' = $ApplianceBackupJob.LocationUser
+                                        'Start Type' = $TextInfo.ToTitleCase(($ApplianceBackupJob.StartType).ToString().ToLower())
+                                        'State' = $TextInfo.ToTitleCase(($ApplianceBackupJob.State).ToString().ToLower())
+                                        'Duration' = (New-TimeSpan -Start $ApplianceBackupJob.StartTime -end $ApplianceBackupJob.EndTime).ToString("hh\:mm\:ss")
+                                        'Start Time' = $ApplianceBackupJob.StartTime
+                                        'End Time' = $ApplianceBackupJob.EndTime
+                                        'Days Since Last Backup' = (New-TimeSpan -Start $ApplianceBackupJob.EndTime -End $Today).Days
+                                    }
+                                }
+                                if ([Int]$Options.ApplianceBackupJobs -lt $ApplianceBackupJobs.Count) {
+                                    $BackupHeading = "Backups (Last $($Options.ApplianceBackupJobs))"
+                                    $ApplianceBackupJobInfo = $ApplianceBackupJobInfo | Select-Object -First $($Options.ApplianceBackupJobs)
+                                } else {
+                                    $BackupHeading = "Backups"
+                                }
+                                if ($Healthcheck.vCenter.Backups) {
+                                    ($ApplianceBackupJobInfo).Where{ $_.'Days Since Last Backup' -ge 7 } | Set-Style -Style Warning -Property 'Days Since Last Backup'
+                                    ($ApplianceBackupJobInfo).Where{ $_.'Days Since Last Backup' -ge 31 } | Set-Style -Style Critical -Property 'Days Since Last Backup'
+                                    ($ApplianceBackupJobInfo).Where{ $_.State -ne 'Succeeded' } | Set-Style -Style Critical -Property State
+                                }
+                                if ($InfoLevel.vCenter -ge 4) {
+                                    Section -Style Heading3 $BackupHeading {
+                                        $ApplianceBackupJobInfo | ForEach-Object {
+                                            Section -Style Heading4 $($_.Id) {
+                                                $TableParams = @{
+                                                    Name = "Backup $($_.Id) - $($vCenterServerName)"
+                                                    List = $true
+                                                    ColumnWidths = 50, 50
+                                                }
+                                                if ($Report.ShowTableCaptions) {
+                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                }
+                                                $_ | Table @TableParams
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Section -Style Heading3 $BackupHeading {
+                                        $TableParams = @{
+                                            Name = "$($BackupHeading) - $($vCenterServerName)"
+                                            Columns = 'Location', 'Start Type', 'State', 'Duration', 'Days Since Last Backup'
+                                            ColumnWidths = 36, 16, 16 , 16, 16
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $ApplianceBackupJobInfo | Table @TableParams
+                                    }
+                                }
+                            }
+                            #endregion vCenter Server Appliance Backup
+
                             #region vCenter Server Certificate
                             if ($vCenter.Version -ge 6) {
-                                Section -Style Heading3 'Certificate' {
-                                    $VcenterCertMgmt = [PSCustomObject]@{
-                                        'Country' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.country' }).Value
-                                        'Email' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.email' }).Value
-                                        'Locality' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.localityName' }).Value
-                                        'State' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.state' }).Value
-                                        'Organization' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.organizationName' }).Value
-                                        'Organization Unit' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.organizationalUnitName' }).Value
-                                        'Validity' = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.daysValid'}).Value / 365) years"
-                                        'Mode' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.mode' }).Value
-                                        'Soft Threshold' = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.softThreshold'}).Value) days"
-                                        'Hard Threshold' = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.hardThreshold'}).Value) days"
-                                        'Minutes Before' = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.minutesBefore' }).Value
-                                        'Poll Interval' = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.pollIntervalDays'}).Value) days"
+                                Section -Style Heading3 'Certificates' {
+                                    $VCenterMachineCert = ($VIMachineCertificates).Where{ ($_.EntityType -eq 'VCenter') -and ($_.Entity.Name -eq $($vCenterServerName)) }
+                                    if ($VCenterMachineCert) {
+                                        Section -Style Heading4 'Machine SSL' {
+                                            $VCenterMachineCertInfo = [PSCustomObject]@{
+                                                'Entity' = $VCenterMachineCert.Entity
+                                                'Entity Type' = $VCenterMachineCert.EntityType
+                                                'Common Name' = $VCenterMachineCert.Subject
+                                                'Issued By' = $VCenterMachineCert.Issuer
+                                                'Valid From' = $VCenterMachineCert.NotValidBefore
+                                                'Valid Until' = $VCenterMachineCert.NotValidAfter
+                                                'Expiration Days' = (New-TimeSpan -Start $Today -end $VCenterMachineCert.NotValidAfter).days
+                                                'Signature Algorithm' = $VCenterMachineCert.Certificate.SignatureAlgorithm.FriendlyName
+                                                'Thumbprint' = $VCenterMachineCert.Certificate.Thumbprint
+                                            }
+                                            if ($Healthcheck.vCenter.Certificates) {
+                                                ($VCenterMachineCertInfo).Where{ $_.'Expiration Days' -le 90 } | Set-Style -Style Warning -Property 'Expiration Days'
+                                                ($VCenterMachineCertInfo).Where{ $_.'Expiration Days' -le 30 } | Set-Style -Style Critical -Property 'Expiration Days'
+                                            }
+                                            $TableParams = @{
+                                                Name = "Machine SSL Certificate - $($vCenterServerName)"
+                                                List = $true
+                                                ColumnWidths = 50, 50
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $VCenterMachineCertInfo | Table @TableParams
+                                        }
                                     }
-                                    $TableParams = @{
-                                        Name = "Certificate - $vCenterServerName"
-                                        List = $true
-                                        ColumnWidths = 50, 50
+
+                                    Section -Style Heading4 'VMware Certificate Authority' {
+                                        $VcenterCertMgmt = [PSCustomObject]@{
+                                            'Mode' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.mode' }).Value
+                                            'Email' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.email' }).Value
+                                            'Organization' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.organizationName' }).Value
+                                            'Organization Unit' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.organizationalUnitName' }).Value
+                                            'Validity' = "$((($vCenterAdvSettings).Where{$_.name -eq 'vpxd.certmgmt.certs.daysValid'}).Value / 365) years"
+                                            'Locality' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.localityName' }).Value
+                                            'State' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.state' }).Value
+                                            'Country' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.cn.country' }).Value
+                                            'Soft Threshold' = "$((($vCenterAdvSettings).Where{$_.name -eq 'vpxd.certmgmt.certs.softThreshold'}).Value) days"
+                                            'Hard Threshold' = "$((($vCenterAdvSettings).Where{$_.name -eq 'vpxd.certmgmt.certs.hardThreshold'}).Value) days"
+                                            'Minutes Before' = (($vCenterAdvSettings).Where{ $_.name -eq 'vpxd.certmgmt.certs.minutesBefore' }).Value
+                                            'Poll Interval' = "$((($vCenterAdvSettings).Where{$_.name -eq 'vpxd.certmgmt.certs.pollIntervalDays'}).Value) days"
+                                        }
+                                        $TableParams = @{
+                                            Name = "VMware Certificate Authority - $($vCenterServerName)"
+                                            List = $true
+                                            ColumnWidths = 50, 50
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $VcenterCertMgmt | Table @TableParams
                                     }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $VcenterCertMgmt | Table @TableParams
                                 }
                             }
                             #endregion vCenter Server Certificate
 
                             #region vCenter Server Roles
                             Section -Style Heading3 'Roles' {
-                                $VIRoles = Get-VIRole -Server $vCenter | Where-Object {$null -ne $_.PrivilegeList} | Sort-Object Name
+                                $VIRoles = (Get-VIRole -Server $vCenter).Where{$null -ne $_.PrivilegeList} | Sort-Object Name
                                 $VIRoleInfo = foreach ($VIRole in $VIRoles) {
                                     [PSCustomObject]@{
                                         'Role' = $VIRole.Name
@@ -362,7 +539,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $VIRoleInfo | ForEach-Object {
                                         Section -Style Heading4 $($_.Role) {
                                             $TableParams = @{
-                                                Name = "Role $($_.Role) - $vCenterServerName"
+                                                Name = "Role $($_.Role) - $($vCenterServerName)"
                                                 ColumnWidths = 35, 15, 50
                                             }
                                             if ($Report.ShowTableCaptions) {
@@ -373,7 +550,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 } else {
                                     $TableParams = @{
-                                        Name = "Roles - $vCenterServerName"
+                                        Name = "Roles - $($vCenterServerName)"
                                         Columns = 'Role','System Role'
                                         ColumnWidths = 50, 50
                                     }
@@ -402,7 +579,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                     }
                                     $TableParams = @{
-                                        Name = "Tags - $vCenterServerName"
+                                        Name = "Tags - $($vCenterServerName)"
                                         ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
@@ -430,7 +607,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                     }
                                     $TableParams = @{
-                                        Name = "Tag Categories - $vCenterServerName"
+                                        Name = "Tag Categories - $($vCenterServerName)"
                                         ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
@@ -452,7 +629,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                     }
                                     $TableParams = @{
-                                        Name = "Tag Assignments - $vCenterServerName"
+                                        Name = "Tag Assignments - $($vCenterServerName)"
                                         ColumnWidths = 30, 40, 30
                                     }
                                     if ($Report.ShowTableCaptions) {
@@ -475,7 +652,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             }
                                         }
                                         $TableParams = @{
-                                            Name = "VM Storage Policies - $vCenterServerName"
+                                            Name = "VM Storage Policies - $($vCenterServerName)"
                                             ColumnWidths = 50, 50
                                         }
                                         if ($Report.ShowTableCaptions) {
@@ -531,13 +708,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 }
                                 $Alarms = $Alarms | Sort-Object 'Alarm', 'Trigger'
                                 if ($Healthcheck.vCenter.Alarms) {
-                                    $Alarms | Where-Object { $_.'Enabled' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Enabled'
+                                    ($Alarms).Where{ $_.'Enabled' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Enabled'
                                 }
                                 if ($InfoLevel.vCenter -ge 5) {
                                     foreach ($Alarm in $Alarms) {
                                         Section -Style Heading4 $($Alarm.Alarm) {
                                             $TableParams = @{
-                                                Name = "$($Alarm.Alarm) - $vCenterServerName"
+                                                Name = "$($Alarm.Alarm) - $($vCenterServerName)"
                                                 List = $true
                                                 ColumnWidths = 25, 75
                                             }
@@ -549,7 +726,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 } else {
                                     $TableParams = @{
-                                        Name = "Alarms - $vCenterServerName"
+                                        Name = "Alarms - $($vCenterServerName)"
                                         Columns = 'Alarm', 'Description', 'Enabled', 'Entity', 'Trigger'
                                         ColumnWidths = 20, 20, 20, 20, 20
                                     }
@@ -568,7 +745,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vCenter Advanced System Settings
                             Section -Style Heading3 'Advanced System Settings' {
                                 $TableParams = @{
-                                    Name = "vCenter Advanced System Settings - $vCenterServerName"
+                                    Name = "vCenter Advanced System Settings - $($vCenterServerName)"
                                     Columns = 'Name', 'Value'
                                     ColumnWidths = 50, 50
                                 }
@@ -587,20 +764,19 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region Clusters
                 Write-PScriboMessage "Cluster InfoLevel set at $($InfoLevel.Cluster)."
                 if ($InfoLevel.Cluster -ge 1) {
-                    $Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
                     if ($Clusters) {
                         #region Cluster Section
                         Section -Style Heading2 'Clusters' {
-                            Paragraph "The following sections detail the configuration of vSphere HA/DRS clusters managed by vCenter Server $vCenterServerName."
                             #region Cluster Advanced Summary
                             if ($InfoLevel.Cluster -le 2) {
+                                Paragraph "The following section provides a configuration summary of vSphere HA/DRS clusters managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $ClusterInfo = foreach ($Cluster in $Clusters) {
                                     [PSCustomObject]@{
                                         'Cluster' = $Cluster.Name
                                         'Datacenter' = $Cluster | Get-Datacenter
                                         '# of Hosts' = $Cluster.ExtensionData.Host.Count
-                                        '# of VMs' = $Cluster.ExtensionData.VM.Count
+                                        '# of VMs' = ($Cluster | Get-VM).Count
                                         'vSphere HA' = Switch ($Cluster.HAEnabled) {
                                             $true { 'Enabled' }
                                             $false { 'Disabled' }
@@ -625,19 +801,19 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.Cluster.HAEnabled) {
-                                    $ClusterInfo | Where-Object { $_.'vSphere HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere HA'
+                                    ($ClusterInfo).Where{ $_.'vSphere HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere HA'
                                 }
                                 if ($Healthcheck.Cluster.DrsEnabled) {
-                                    $ClusterInfo | Where-Object { $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
+                                    ($ClusterInfo).Where{ $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
                                 }
                                 if ($Healthcheck.Cluster.VsanEnabled) {
-                                    $ClusterInfo | Where-Object { $_.'Virtual SAN' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Virtual SAN'
+                                    ($ClusterInfo).Where{ $_.'Virtual SAN' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Virtual SAN'
                                 }
                                 if ($Healthcheck.Cluster.EvcEnabled) {
-                                    $ClusterInfo | Where-Object { $_.'EVC Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'EVC Mode'
+                                    ($ClusterInfo).Where{ $_.'EVC Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'EVC Mode'
                                 }
                                 $TableParams = @{
-                                    Name = "Cluster Summary - $vCenterServerName"
+                                    Name = "Cluster Summary - $($vCenterServerName)"
                                     ColumnWidths = 15, 15, 7, 7, 11, 11, 11, 15, 8
                                 }
                                 if ($Report.ShowTableCaptions) {
@@ -650,6 +826,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region Cluster Detailed Information
                             # TODO: Test Tags
                             if ($InfoLevel.Cluster -ge 3) {
+                                Paragraph "The following sections detail the configuration of vSphere HA/DRS clusters managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 foreach ($Cluster in $Clusters) {
                                     $ClusterDasConfig = $Cluster.ExtensionData.Configuration.DasConfig
                                     $ClusterDrsConfig = $Cluster.ExtensionData.Configuration.DrsConfig
@@ -692,21 +870,21 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'MemberType' = 'NoteProperty'
                                         }
                                         <#
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $Cluster}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $Cluster}).Tag -join ',')
+                                        if (($TagAssignments).Where{$_.entity -eq $Cluster}) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{ $_.entity -eq $Cluster }).Tag -join ',')
                                         }
                                         #>
                                         if ($Healthcheck.Cluster.HAEnabled) {
-                                            $ClusterDetail | Where-Object { $_.'vSphere HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere HA'
+                                            ($ClusterDetail).Where{ $_.'vSphere HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere HA'
                                         }
                                         if ($Healthcheck.Cluster.DrsEnabled) {
-                                            $ClusterDetail | Where-Object { $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
+                                            ($ClusterDetail).Where{ $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
                                         }
                                         if ($Healthcheck.Cluster.VsanEnabled) {
-                                            $ClusterDetail | Where-Object { $_.'Virtual SAN' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Virtual SAN'
+                                            ($ClusterDetail).Where{ $_.'Virtual SAN' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Virtual SAN'
                                         }
                                         if ($Healthcheck.Cluster.EvcEnabled) {
-                                            $ClusterDetail | Where-Object { $_.'EVC Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'EVC Mode'
+                                            ($ClusterDetail).Where{ $_.'EVC Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'EVC Mode'
                                         }
                                         #region Cluster Advanced Detailed Information
                                         if ($InfoLevel.Cluster -ge 4) {
@@ -806,22 +984,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Cluster.HostFailureResponse) {
-                                                        $HAClusterResponses | Where-Object { $_.'Host Failure Response' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Host Failure Response'
+                                                        ($HAClusterResponses).Where{ $_.'Host Failure Response' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Host Failure Response'
                                                     }
                                                     if ($Healthcheck.Cluster.HostMonitoring) {
-                                                        $HAClusterResponses | Where-Object { $_.'Host Monitoring' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Host Monitoring'
+                                                        ($HAClusterResponses).Where{ $_.'Host Monitoring' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Host Monitoring'
                                                     }
                                                     if ($Healthcheck.Cluster.DatastoreOnPDL) {
-                                                        $HAClusterResponses | Where-Object { $_.'Datastore with Permanent Device Loss' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Datastore with Permanent Device Loss'
+                                                        ($HAClusterResponses).Where{ $_.'Datastore with Permanent Device Loss' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Datastore with Permanent Device Loss'
                                                     }
                                                     if ($Healthcheck.Cluster.DatastoreOnAPD) {
-                                                        $HAClusterResponses | Where-Object { $_.'Datastore with All Paths Down' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Datastore with All Paths Down'
+                                                        ($HAClusterResponses).Where{ $_.'Datastore with All Paths Down' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Datastore with All Paths Down'
                                                     }
                                                     if ($Healthcheck.Cluster.APDTimeout) {
-                                                        $HAClusterResponses | Where-Object { $_.'APD recovery after APD timeout' -eq 'Disabled' } | Set-Style -Style Warning -Property 'APD recovery after APD timeout'
+                                                        ($HAClusterResponses).Where{ $_.'APD recovery after APD timeout' -eq 'Disabled' } | Set-Style -Style Warning -Property 'APD recovery after APD timeout'
                                                     }
                                                     if ($Healthcheck.Cluster.vmMonitoring) {
-                                                        $HAClusterResponses | Where-Object { $_.'VM Monitoring' -eq 'Disabled' } | Set-Style -Style Warning -Property 'VM Monitoring'
+                                                        ($HAClusterResponses).Where{ $_.'VM Monitoring' -eq 'Disabled' } | Set-Style -Style Warning -Property 'VM Monitoring'
                                                     }
                                                     $TableParams = @{
                                                         Name = "vSphere HA Failures and Responses - $Cluster"
@@ -882,7 +1060,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Cluster.HAAdmissionControl) {
-                                                        $HAAdmissionControl | Where-Object { $_.'Admission Control' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Admission Control'
+                                                        ($HAAdmissionControl).Where{ $_.'Admission Control' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Admission Control'
                                                     }
                                                     $TableParams = @{
                                                         Name = "vSphere HA Admission Control - $Cluster"
@@ -905,9 +1083,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'userSelectedDs' { 'Use datastores only from the specified list' }
                                                             default { $ClusterDasConfig.HBDatastoreCandidatePolicy }
                                                         }
-                                                        'Heartbeat Datastores' = try {
+                                                        'Heartbeat Datastores' = Try {
                                                             (((Get-View -Id $ClusterDasConfig.HeartbeatDatastore -Property Name).Name | Sort-Object) -join ', ')
-                                                        } catch {
+                                                        } Catch {
                                                             'None specified'
                                                         }
                                                     }
@@ -924,7 +1102,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion vSphere HA Cluster Heartbeat Datastores
 
                                                 #region vSphere HA Cluster Advanced Options
-                                                $HAAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterHA' }
+                                                $HAAdvancedSettings = ($Cluster | Get-AdvancedSetting).Where{ $_.Type -eq 'ClusterHA' }
                                                 if ($HAAdvancedSettings) {
                                                     Section -Style Heading5 'vSphere HA Advanced Options' {
                                                         $HAAdvancedOptions = @()
@@ -989,7 +1167,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Cluster.ProactiveHA) {
-                                                        $ProactiveHa | Where-Object { $_.'Proactive HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Proactive HA'
+                                                        ($ProactiveHa).Where{ $_.'Proactive HA' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Proactive HA'
                                                     }
                                                     $TableParams = @{
                                                         Name = "Proactive HA - $Cluster"
@@ -1053,10 +1231,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 if ($Healthcheck.Cluster.DrsEnabled) {
-                                                    $DrsCluster | Where-Object { $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
+                                                    ($DrsCluster).Where{ $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
                                                 }
                                                 if ($Healthcheck.Cluster.DrsAutomationLevelFullyAuto) {
-                                                    $DrsCluster | Where-Object { $_.'Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'Automation Level'
+                                                    ($DrsCluster).Where{ $_.'Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'Automation Level'
                                                 }
                                                 $TableParams = @{
                                                     Name = "vSphere DRS Configuration - $Cluster"
@@ -1070,19 +1248,19 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion vSphere DRS Cluster Specfications
 
                                                 #region DRS Cluster Additional Options
-                                                $DrsAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterDRS' }
+                                                $DrsAdvancedSettings = ($Cluster | Get-AdvancedSetting).Where{ $_.Type -eq 'ClusterDRS' }
                                                 if ($DrsAdvancedSettings) {
                                                     Section -Style Heading5 'Additional Options' {
                                                         $DrsAdditionalOptions = [PSCustomObject] @{
-                                                            'VM Distribution' = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'TryBalanceVmsPerHost' }).Value) {
+                                                            'VM Distribution' = Switch ((($DrsAdvancedSettings).Where{ $_.name -eq 'TryBalanceVmsPerHost' }).Value) {
                                                                 '1' { 'Enabled' }
                                                                 $null { 'Disabled' }
                                                             }
-                                                            'Memory Metric for Load Balancing' = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'PercentIdleMBInMemDemand' }).Value) {
+                                                            'Memory Metric for Load Balancing' = Switch ((($DrsAdvancedSettings).Where{ $_.name -eq 'PercentIdleMBInMemDemand' }).Value) {
                                                                 '100' { 'Enabled' }
                                                                 $null { 'Disabled' }
                                                             }
-                                                            'CPU Over-Commitment' = if (($DrsAdvancedSettings | Where-Object { $_.name -eq 'MaxVcpusPerCore' }).Value) {
+                                                            'CPU Over-Commitment' = if ((($DrsAdvancedSettings).Where{ $_.name -eq 'MaxVcpusPerCore' }).Value) {
                                                                 'Enabled'
                                                             } else {
                                                                 'Disabled'
@@ -1092,11 +1270,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'InputObject' = $DrsAdditionalOptions
                                                             'MemberType' = 'NoteProperty'
                                                         }
-                                                        if (($DrsAdvancedSettings | Where-Object { $_.name -eq 'MaxVcpusPerCore' }).Value) {
-                                                            Add-Member @MemberProps -Name 'Over-Commitment Ratio' -Value "$(($DrsAdvancedSettings | Where-Object {$_.name -eq 'MaxVcpusPerCore'}).Value):1 (vCPU:pCPU)"
+                                                        if ((($DrsAdvancedSettings).Where{ $_.name -eq 'MaxVcpusPerCore' }).Value) {
+                                                            Add-Member @MemberProps -Name 'Over-Commitment Ratio' -Value "$((($DrsAdvancedSettings).Where{$_.name -eq 'MaxVcpusPerCore'}).Value):1 (vCPU:pCPU)"
                                                         }
-                                                        if (($DrsAdvancedSettings | Where-Object { $_.name -eq 'MaxVcpusPerClusterPct' }).Value) {
-                                                            Add-Member @MemberProps -Name 'Over-Commitment Ratio (% of cluster capacity)' -Value "$(($DrsAdvancedSettings | Where-Object {$_.name -eq 'MaxVcpusPerClusterPct'}).Value) %"
+                                                        if ((($DrsAdvancedSettings).Where{ $_.name -eq 'MaxVcpusPerClusterPct' }).Value) {
+                                                            Add-Member @MemberProps -Name 'Over-Commitment Ratio (% of cluster capacity)' -Value "$((($DrsAdvancedSettings).Where{$_.name -eq 'MaxVcpusPerClusterPct'}).Value) %"
                                                         }
                                                         $TableParams = @{
                                                             Name = "DRS Additional Options - $Cluster"
@@ -1149,7 +1327,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion vSphere DPM Configuration
 
                                                 #region vSphere DRS Cluster Advanced Options
-                                                $DrsAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterDRS' }
+                                                $DrsAdvancedSettings = ($Cluster | Get-AdvancedSetting).Where{ $_.Type -eq 'ClusterDRS' }
                                                 if ($DrsAdvancedSettings) {
                                                     Section -Style Heading5 'Advanced Options' {
                                                         $DrsAdvancedOptions = @()
@@ -1225,7 +1403,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 }
                                                             }
                                                             if ($Healthcheck.Cluster.DrsVMHostRules) {
-                                                                $DrsVMHostRuleDetail | Where-Object { $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
+                                                                ($DrsVMHostRuleDetail).Where{ $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
                                                             }
                                                             $TableParams = @{
                                                                 Name = "DRS VM/Host Rules - $Cluster"
@@ -1259,7 +1437,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'Virtual Machines' = ($DrsRule.VMIds | ForEach-Object { (Get-View -id $_).name }) -join ', '
                                                                 }
                                                                 if ($Healthcheck.Cluster.DrsRules) {
-                                                                    $DrsRuleDetail | Where-Object { $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
+                                                                    ($DrsRuleDetail).Where{ $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
                                                                 }
                                                             }
                                                             $TableParams = @{
@@ -1473,11 +1651,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region Cluster VUM Baselines
                                                 if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($VUMConnection) {
-                                                        if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                                                            $ClusterPatchBaselines = $Cluster | Get-PatchBaseline
-                                                        } else {
-                                                            Write-PScriboMessage 'Cluster VUM baseline information is not currently available with your version of PowerShell.'
-                                                        }
+                                                        $ClusterPatchBaselines = $Cluster | Get-PatchBaseline -ErrorAction SilentlyContinue
                                                         if ($ClusterPatchBaselines) {
                                                             Section -Style Heading4 'Update Manager Baselines' {
                                                                 $ClusterBaselines = foreach ($ClusterBaseline in $ClusterPatchBaselines) {
@@ -1501,8 +1675,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             }
                                                         }
                                                         if ($Healthcheck.Cluster.VUMCompliance) {
-                                                            $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Unknown' } | Set-Style -Style Warning
-                                                            $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
+                                                            ($ClusterComplianceInfo).Where{ $_.Status -eq 'Unknown' } | Set-Style -Style Warning
+                                                            ($ClusterComplianceInfo).Where{ $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
                                                         }
                                                         $TableParams = @{
                                                             Name = "Update Manager Compliance - $Cluster"
@@ -1521,11 +1695,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region Cluster VUM Compliance (Advanced Detail Information)
                                                 if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
-                                                        if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                                                            $ClusterCompliances = $Cluster | Get-Compliance
-                                                        } else {
-                                                            Write-PScriboMessage 'Cluster VUM compliance information is not currently available with your version of PowerShell.'
-                                                        }
+                                                        $ClusterCompliances = $Cluster | Get-Compliance -ErrorAction SilentlyContinue
                                                         if ($ClusterCompliances) {
                                                             Section -Style Heading4 'Update Manager Compliance' {
                                                                 $ClusterComplianceInfo = foreach ($ClusterCompliance in $ClusterCompliances) {
@@ -1539,8 +1709,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     }
                                                                 }
                                                                 if ($Healthcheck.Cluster.VUMCompliance) {
-                                                                    $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Unknown' } | Set-Style -Style Warning
-                                                                    $ClusterComplianceInfo | Where-Object { $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
+                                                                    ($ClusterComplianceInfo).Where{ $_.Status -eq 'Unknown' } | Set-Style -Style Warning
+                                                                    ($ClusterComplianceInfo).Where{ $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
                                                                 }
                                                                 $TableParams = @{
                                                                     Name = "Update Manager Compliance - $Cluster"
@@ -1606,13 +1776,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region Resource Pool Section
                 Write-PScriboMessage "ResourcePool InfoLevel set at $($InfoLevel.ResourcePool)."
                 if ($InfoLevel.ResourcePool -ge 1) {
-                    $ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
                     if ($ResourcePools) {
                         #region Resource Pools Section
                         Section -Style Heading2 'Resource Pools' {
-                            Paragraph "The following sections detail the configuration of resource pools managed by vCenter Server $vCenterServerName."
                             #region Resource Pool Advanced Summary
                             if ($InfoLevel.ResourcePool -le 2) {
+                                Paragraph "The following section provides a configuration summary of resource pools managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $ResourcePoolInfo = foreach ($ResourcePool in $ResourcePools) {
                                     [PSCustomObject]@{
@@ -1646,6 +1815,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region Resource Pool Detailed Information
                             # TODO: Test Tags
                             if ($InfoLevel.ResourcePool -ge 3) {
+                                Paragraph "The following sections detail the configuration of resource pools managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 foreach ($ResourcePool in $ResourcePools) {
                                     Section -Style Heading3 $ResourcePool.Name {
                                         $ResourcePoolDetail = [PSCustomObject]@{
@@ -1682,8 +1853,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'MemberType' = 'NoteProperty'
                                         }
 
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}).Tag -join ',')
+                                        if (($TagAssignments).Where{$_.entity -eq $ResourcePool}) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{ $_.entity -eq $ResourcePool }).Tag -join ',')
                                         }
                                         #>
                                         #region Resource Pool Advanced Detail Information
@@ -1691,7 +1862,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $ResourcePoolDetail | ForEach-Object {
                                                 # Query for VMs by resource pool Id
                                                 $ResourcePoolId = $_.Id
-                                                $ResourcePoolVMs = $VMs | Where-Object { $_.ResourcePoolId -eq $ResourcePoolId } | Sort-Object Name
+                                                $ResourcePoolVMs = ($VMs).Where{ $_.ResourcePoolId -eq $ResourcePoolId } | Sort-Object Name
                                                 Add-Member -InputObject $_ -MemberType NoteProperty -Name 'Virtual Machines' -Value ($ResourcePoolVMs.Name -join ', ')
                                             }
                                         }
@@ -1721,9 +1892,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($VMHosts) {
                         #region Hosts Section
                         Section -Style Heading2 'Hosts' {
-                            Paragraph "The following sections detail the configuration of VMware ESXi hosts managed by vCenter Server $vCenterServerName."
                             #region ESXi Host Advanced Summary
                             if ($InfoLevel.VMHost -le 2) {
+                                Paragraph "The following section provides a configuration summary of VMware ESXi hosts managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $VMHostInfo = foreach ($VMHost in $VMHosts) {
                                     [PSCustomObject]@{
@@ -1742,9 +1913,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.VMHost.ConnectionState) {
-                                    $VMHostInfo | Where-Object { $_.'Connection State' -eq 'Maintenance' } | Set-Style -Style Warning
-                                    $VMHostInfo | Where-Object { $_.'Connection State' -eq 'Not Responding' } | Set-Style -Style Critical
-                                    $VMHostInfo | Where-Object { $_.'Connection State' -eq 'Disconnected' } | Set-Style -Style Critical
+                                    ($VMHostInfo).Where{ $_.'Connection State' -eq 'Maintenance' } | Set-Style -Style Warning
+                                    ($VMHostInfo).Where{ $_.'Connection State' -eq 'Not Responding' } | Set-Style -Style Critical
+                                    ($VMHostInfo).Where{ $_.'Connection State' -eq 'Disconnected' } | Set-Style -Style Critical
                                 }
                                 $TableParams = @{
                                     Name = "Host Summary - $($vCenterServerName)"
@@ -1759,8 +1930,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region ESXi Host Detailed Information
                             if ($InfoLevel.VMHost -ge 3) {
+                                Paragraph "The following sections detail the configuration of VMware ESXi hosts managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 #region foreach VMHost Detailed Information loop
-                                foreach ($VMHost in ($VMHosts | Where-Object { $_.ConnectionState -eq 'Connected' -or $_.ConnectionState -eq 'Maintenance' })) {
+                                foreach ($VMHost in (($VMHosts).Where{ $_.ConnectionState -eq 'Connected' -or $_.ConnectionState -eq 'Maintenance' })) {
                                     #region VMHost Section
                                     Section -Style Heading3 $VMHost {
                                         # TODO: Host Certificate, Swap File Location
@@ -1773,7 +1946,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Specifications
                                             $VMHostUptime = Get-Uptime -VMHost $VMHost
                                             $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
-                                            $ScratchLocation = Get-AdvancedSetting -Entity $VMHost | Where-Object { $_.Name -eq 'ScratchConfig.CurrentScratchLocation' }
+                                            $ScratchLocation = (Get-AdvancedSetting -Entity $VMHost).Where{ $_.Name -eq 'ScratchConfig.CurrentScratchLocation' }
                                             $VMHostDetail = [PSCustomObject]@{
                                                 'Host' = $VMHost.Name
                                                 'Connection State' = Switch ($VMHost.ConnectionState) {
@@ -1835,27 +2008,27 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Write-PScriboMessage "Insufficient user privileges to report ESXi host licensing. Please ensure the user account has the 'Global > Licenses' privilege assigned."
                                             }
                                             <#
-                                            if ($TagAssignments | Where-Object {$_.entity -eq $VMHost}) {
-                                                Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VMHost}).Tag -join ',')
+                                            if (($TagAssignments).Where{$_.entity -eq $VMHost}) {
+                                                Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{$_.entity -eq $VMHost}).Tag -join ',')
                                             }
                                             #>
                                             if ($Healthcheck.VMHost.ConnectionState) {
-                                                $VMHostDetail | Where-Object { $_.'Connection State' -eq 'Maintenance' } | Set-Style -Style Warning -Property 'Connection State'
+                                                ($VMHostDetail).Where{ $_.'Connection State' -eq 'Maintenance' } | Set-Style -Style Warning -Property 'Connection State'
                                             }
                                             if ($Healthcheck.VMHost.HyperThreading) {
-                                                $VMHostDetail | Where-Object { $_.'HyperThreading' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Disabled'
+                                                ($VMHostDetail).Where{ $_.'HyperThreading' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Disabled'
                                             }
                                             if ($Healthcheck.VMHost.Licensing) {
-                                                $VMHostDetail | Where-Object { $_.'Product' -like '*Evaluation*' } | Set-Style -Style Warning -Property 'Product'
-                                                $VMHostDetail | Where-Object { $_.'License Key' -like '*-00000-00000' } | Set-Style -Style Warning -Property 'License Key'
-                                                $VMHostDetail | Where-Object { $_.'License Expiration' -eq 'Expired' } | Set-Style -Style Critical -Property 'License Expiration'
+                                                ($VMHostDetail).Where{ $_.'Product' -like '*Evaluation*' } | Set-Style -Style Warning -Property 'Product'
+                                                ($VMHostDetail).Where{ $_.'License Key' -like '*-00000-00000' } | Set-Style -Style Warning -Property 'License Key'
+                                                ($VMHostDetail).Where{ $_.'License Expiration' -eq 'Expired' } | Set-Style -Style Critical -Property 'License Expiration'
                                             }
                                             if ($Healthcheck.VMHost.ScratchLocation) {
-                                                $VMHostDetail | Where-Object { $_.'Scratch Location' -eq '/tmp/scratch' } | Set-Style -Style Warning -Property 'Scratch Location'
+                                                ($VMHostDetail).Where{ $_.'Scratch Location' -eq '/tmp/scratch' } | Set-Style -Style Warning -Property 'Scratch Location'
                                             }
                                             if ($Healthcheck.VMHost.UpTimeDays) {
-                                                $VMHostDetail | Where-Object { $_.'Uptime Days' -ge 275 -and $_.'Uptime Days' -lt 365 } | Set-Style -Style Warning -Property 'Uptime Days'
-                                                $VMHostDetail | Where-Object { $_.'Uptime Days' -ge 365 } | Set-Style -Style Critical -Property 'Uptime Days'
+                                                ($VMHostDetail).Where{ $_.'Uptime Days' -ge 275 -and $_.'Uptime Days' -lt 365 } | Set-Style -Style Warning -Property 'Uptime Days'
+                                                ($VMHostDetail).Where{ $_.'Uptime Days' -ge 365 } | Set-Style -Style Critical -Property 'Uptime Days'
                                             }
                                             $TableParams = @{
                                                 Name = "Hardware Configuration - $VMHost"
@@ -1872,7 +2045,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Try {
                                                 $VMHostIPMI = $esxcli.hardware.ipmi.bmc.get.invoke()
                                             } Catch {
-                                                Write-PScriboMessage -IsWarning "Unable to collect IPMI / BMC  configuration from $VMHost"
+                                                Write-PScriboMessage -IsWarning "Unable to collect IPMI / BMC configuration from $VMHost."
                                             }
                                             if ($VMHostIPMI) {
                                                 Section -Style Heading5 'IPMI / BMC' {
@@ -1929,7 +2102,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host PCI Devices
                                             Section -Style Heading5 'PCI Devices' {
-                                                $PciHardwareDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -match 'vmhba|vmnic|vmgfx' -and $_.ModuleName -ne 'None'} | Sort-Object -Property VMkernelName
+                                                $PciHardwareDevices = ($esxcli.hardware.pci.list.Invoke()).Where{ $_.VMkernelName -match 'vmhba|vmnic|vmgfx' -and $_.ModuleName -ne 'None'} | Sort-Object -Property VMkernelName
                                                 $VMHostPciDevices = foreach ($PciHardwareDevice in $PciHardwareDevices) {
                                                     [PSCustomObject]@{
                                                         'Device' = $PciHardwareDevice.VMkernelName
@@ -2015,14 +2188,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style Heading5 'Time Configuration' {
                                                 $VMHostTimeSettings = [PSCustomObject]@{
                                                     'Time Zone' = $VMHost.timezone
-                                                    'NTP Service' = Switch ((Get-VMHostService -VMHost $VMHost | Where-Object { $_.key -eq 'ntpd' }).Running) {
+                                                    'NTP Service' = Switch (((Get-VMHostService -VMHost $VMHost).Where{ $_.key -eq 'ntpd' }).Running) {
                                                         $true { 'Running' }
                                                         $false { 'Stopped' }
                                                     }
                                                     'NTP Server(s)' = (Get-VMHostNtpServer -VMHost $VMHost | Sort-Object) -join ', '
                                                 }
                                                 if ($Healthcheck.VMHost.NTP) {
-                                                    $VMHostTimeSettings | Where-Object { $_.'NTP Service' -eq 'Stopped' } | Set-Style -Style Critical -Property 'NTP Service'
+                                                    ($VMHostTimeSettings).Where{ $_.'NTP Service' -eq 'Stopped' } | Set-Style -Style Critical -Property 'NTP Service'
                                                 }
                                                 $TableParams = @{
                                                     Name = "Time Configuration - $VMHost"
@@ -2056,11 +2229,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Update Manager Baseline Information
                                             if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
-                                                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                                                        $VMHostPatchBaselines = $VMHost | Get-PatchBaseline
-                                                    } else {
-                                                        Write-PScriboMessage 'ESXi VUM baseline information is not currently available with your version of PowerShell.'
-                                                    }
+                                                    $VMHostPatchBaselines = $VMHost | Get-PatchBaseline -ErrorAction SilentlyContinue
                                                     if ($VMHostPatchBaselines) {
                                                         Section -Style Heading5 'Update Manager Baselines' {
                                                             $VMHostBaselines = foreach ($VMHostBaseline in $VMHostPatchBaselines) {
@@ -2092,11 +2261,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Update Manager Compliance Information
                                             if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
-                                                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                                                        $VMHostCompliances = $VMHost | Get-Compliance
-                                                    } else {
-                                                        Write-PScriboMessage 'ESXi VUM compliance information is not currently available with your version of PowerShell.'
-                                                    }
+                                                    $VMHostCompliances = $VMHost | Get-Compliance -ErrorAction SilentlyContinue
                                                     if ($VMHostCompliances) {
                                                         Section -Style Heading5 'Update Manager Compliance' {
                                                             $VMHostComplianceInfo = foreach ($VMHostCompliance in $VMHostCompliances) {
@@ -2109,8 +2274,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 }
                                                             }
                                                             if ($Healthcheck.VMHost.VUMCompliance) {
-                                                                $VMHostComplianceInfo | Where-Object { $_.Status -eq 'Unknown' } | Set-Style -Style Warning
-                                                                $VMHostComplianceInfo | Where-Object { $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
+                                                                ($VMHostComplianceInfo).Where{ $_.Status -eq 'Unknown' } | Set-Style -Style Warning
+                                                                ($VMHostComplianceInfo).Where{ $_.Status -eq 'Not Compliant' -or $_.Status -eq 'Incompatible' } | Set-Style -Style Critical
                                                             }
                                                             $TableParams = @{
                                                                 Name = "Update Manager Compliance - $VMHost"
@@ -2178,7 +2343,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Paragraph "The following section details the host storage configuration for $VMHost."
 
                                             #region ESXi Host Datastore Specifications
-                                            $VMHostDatastores = $VMHost | Get-Datastore | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+                                            $VMHostDatastores = ($VMHost | Get-Datastore).Where{ ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
                                             if ($VMHostDatastores) {
                                                 Section -Style Heading5 'Datastores' {
                                                     $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
@@ -2197,8 +2362,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Datastore.CapacityUtilization) {
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning
+                                                        ($VMHostDsSpecs).Where{ $_.'% Used' -ge 90 } | Set-Style -Style Critical
+                                                        ($VMHostDsSpecs).Where{ $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning
                                                     }
                                                     $TableParams = @{
                                                         Name = "Datastores - $VMHost"
@@ -2219,7 +2384,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Section -Style Heading5 'Storage Adapters' {
                                                     Paragraph "The following section details the storage adapter configuration for $VMHost."
                                                     foreach ($VMHostHba in $VMHostHbas) {
-                                                        $Target = ((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | Where-Object { $_.Adapter -eq $VMHostHba.Key }).Target
+                                                        $Target = (((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter).Where{ $_.Adapter -eq $VMHostHba.Key }).Target
                                                         $LUNs = Get-ScsiLun -Hba $VMHostHba -LunType "disk" -ErrorAction SilentlyContinue
                                                         $Paths = ($Target | foreach { $_.Lun.Count } | Measure-Object -Sum)
                                                         Section -Style Heading5 "$($VMHostHba.Device)" {
@@ -2290,13 +2455,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 }
                                                             }
                                                             if ($VMHostStorageAdapter.Type -eq 'Fibre Channel') {
-                                                                Add-Member @MemberProps -Name 'Node WWN' -Value (([String]::Format("{0:X}", $VMHostHba.NodeWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
-                                                                Add-Member @MemberProps -Name 'Port WWN' -Value (([String]::Format("{0:X}", $VMHostHba.PortWorldWideName) -split "(\w{2})" | Where-Object { $_ -ne "" }) -join ":")
+                                                                Add-Member @MemberProps -Name 'Node WWN' -Value ((([String]::Format("{0:X}", $VMHostHba.NodeWorldWideName) -split "(\w{2})").Where{ $_ -ne "" }) -join ":")
+                                                                Add-Member @MemberProps -Name 'Port WWN' -Value ((([String]::Format("{0:X}", $VMHostHba.PortWorldWideName) -split "(\w{2})").Where{ $_ -ne "" }) -join ":")
                                                                 Add-Member @MemberProps -Name 'Speed' -Value $VMHostHba.Speed
                                                             }
                                                             if ($Healthcheck.VMHost.StorageAdapter) {
-                                                                $VMHostStorageAdapter | Where-Object { $_.'Status' -ne 'Online' } | Set-Style -Style Warning -Property 'Status'
-                                                                $VMHostStorageAdapter | Where-Object { $_.'Status' -eq 'Offline' } | Set-Style -Style Critical -Property 'Status'
+                                                                ($VMHostStorageAdapter).Where{ $_.'Status' -ne 'Online' } | Set-Style -Style Warning -Property 'Status'
+                                                                ($VMHostStorageAdapter).Where{ $_.'Status' -eq 'Offline' } | Set-Style -Style Critical -Property 'Status'
                                                             }
                                                             $TableParams = @{
                                                                 Name = "Storage Adapter $($VMHostStorageAdapter.Adapter) - $VMHost"
@@ -2349,7 +2514,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Search Domain' = ($VMHostNetwork.DnsConfig.SearchDomain | Sort-Object) -join ', '
                                             }
                                             if ($Healthcheck.VMHost.IPv6) {
-                                                $VMHostNetworkDetail | Where-Object { $_.'IPv6' -eq $false } | Set-Style -Style Warning -Property 'IPv6'
+                                                ($VMHostNetworkDetail).Where{ $_.'IPv6' -eq $false } | Set-Style -Style Warning -Property 'IPv6'
                                             }
                                             $TableParams = @{
                                                 Name = "Network Configuration - $VMHost"
@@ -2375,9 +2540,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                         'Virtual Switch' = $(
                                                             if ($VMHost.ExtensionData.Config.Network.Vswitch.Pnic -contains $PhysicalNetAdapter.Key) {
-                                                                ($VMHost.ExtensionData.Config.Network.Vswitch | Where-Object { $_.Pnic -eq $PhysicalNetAdapter.Key }).Name
+                                                                (($VMHost.ExtensionData.Config.Network.Vswitch).Where{ $_.Pnic -eq $PhysicalNetAdapter.Key }).Name
                                                             } elseif ($VMHost.ExtensionData.Config.Network.ProxySwitch.Pnic -contains $PhysicalNetAdapter.Key) {
-                                                                ($VMHost.ExtensionData.Config.Network.ProxySwitch | Where-Object { $_.Pnic -eq $PhysicalNetAdapter.Key }).DvsName
+                                                                (($VMHost.ExtensionData.Config.Network.ProxySwitch).Where{ $_.Pnic -eq $PhysicalNetAdapter.Key }).DvsName
                                                             } else {
                                                                 '--'
                                                             }
@@ -2410,8 +2575,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 if ($Healthcheck.VMHost.NetworkAdapter) {
-                                                    $VMHostPhysicalNetAdapters | Where-Object { $_.'Status' -ne 'Connected' } | Set-Style -Style Critical -Property 'Status'
-                                                    $VMHostPhysicalNetAdapters | Where-Object { $_.'Actual Speed, Duplex' -eq 'Down' } | Set-Style -Style Critical -Property 'Actual Speed, Duplex'
+                                                    ($VMHostPhysicalNetAdapters).Where{ $_.'Status' -ne 'Connected' } | Set-Style -Style Critical -Property 'Status'
+                                                    ($VMHostPhysicalNetAdapters).Where{ $_.'Actual Speed, Duplex' -eq 'Down' } | Set-Style -Style Critical -Property 'Actual Speed, Duplex'
                                                 }
                                                 if ($InfoLevel.VMHost -ge 4) {
                                                     foreach ($VMHostPhysicalNetAdapter in $VMHostPhysicalNetAdapters) {
@@ -2442,7 +2607,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Physical Adapters
 
                                             #region ESXi Host Cisco Discovery Protocol
-                                            $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $_.Status -eq 'Connected' } | Sort-Object Device
+                                            $VMHostNetworkAdapterCDP = ($VMHost | Get-VMHostNetworkAdapterDP).Where{ $_.Status -eq 'Connected' } | Sort-Object Device
                                             if ($VMHostNetworkAdapterCDP) {
                                                 Section -Style Heading5 'Cisco Discovery Protocol' {
                                                     Paragraph "The following section details the CDP information for $VMHost."
@@ -2498,7 +2663,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Cisco Discovery Protocol
 
                                             #region ESXi Host Link Layer Discovery Protocol
-                                            $VMHostNetworkAdapterLLDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $null -ne $_.ChassisId } | Sort-Object Device
+                                            $VMHostNetworkAdapterLLDP = ($VMHost | Get-VMHostNetworkAdapterDP).Where{ $null -ne $_.ChassisId } | Sort-Object Device
                                             if ($VMHostNetworkAdapterLLDP) {
                                                 Section -Style Heading5 'Link Layer Discovery Protocol' {
                                                     Paragraph "The following section details the LLDP information for $VMHost."
@@ -2615,39 +2780,39 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $null { '--' }
                                                                 default { $_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway }
                                                             }
-                                                            'vMotion' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vmotion' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vMotion' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vmotion' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'Provisioning' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereProvisioning' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'Provisioning' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vSphereProvisioning' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'FT Logging' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'faultToleranceLogging' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'FT Logging' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'faultToleranceLogging' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'Management' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'management' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'Management' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'management' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSphere Replication' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplication' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vSphere Replication' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vSphereReplication' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSphere Replication NFC' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplicationNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vSphere Replication NFC' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vSphereReplicationNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSAN' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsan' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vSAN' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vsan' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSAN Witness' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsanWitness' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vSAN Witness' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vsanWitness' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
-                                                            'vSphere Backup NFC' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereBackupnNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                            'vSphere Backup NFC' = Switch (((($vnicMgr.Info.NetConfig).Where{ $_.NicType -eq 'vSphereBackupnNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
                                                                 $true { 'Enabled' }
                                                                 $false { 'Disabled' }
                                                             }
@@ -2958,7 +3123,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.VMHost.LockdownMode) {
-                                                        $LockdownMode | Where-Object { $_.'Lockdown Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Lockdown Mode'
+                                                        ($LockdownMode).Where{ $_.'Lockdown Mode' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Lockdown Mode'
                                                     }
                                                     $TableParams = @{
                                                         Name = "Lockdown Mode - $VMHost"
@@ -2992,16 +3157,16 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 if ($Healthcheck.VMHost.NTP) {
-                                                    $Services | Where-Object { ($_.'Service' -eq 'NTP Daemon') -and ($_.Daemon -eq 'Stopped') } | Set-Style -Style Critical -Property 'Daemon'
-                                                    $Services | Where-Object { ($_.'Service' -eq 'NTP Daemon') -and ($_.'Startup Policy' -ne 'Start and stop with host') } | Set-Style -Style Critical -Property 'Startup Policy'
+                                                    ($Services).Where{ ($_.'Service' -eq 'NTP Daemon') -and ($_.Daemon -eq 'Stopped') } | Set-Style -Style Critical -Property 'Daemon'
+                                                    ($Services).Where{ ($_.'Service' -eq 'NTP Daemon') -and ($_.'Startup Policy' -ne 'Start and stop with host') } | Set-Style -Style Critical -Property 'Startup Policy'
                                                 }
                                                 if ($Healthcheck.VMHost.SSH) {
-                                                    $Services | Where-Object { ($_.'Service' -eq 'SSH') -and ($_.Daemon -eq 'Running') } | Set-Style -Style Warning -Property 'Daemon'
-                                                    $Services | Where-Object { ($_.'Service' -eq 'SSH') -and ($_.'Startup Policy' -ne 'Start and stop manually') } | Set-Style -Style Warning -Property 'Startup Policy'
+                                                    ($Services).Where{ ($_.'Service' -eq 'SSH') -and ($_.Daemon -eq 'Running') } | Set-Style -Style Warning -Property 'Daemon'
+                                                    ($Services).Where{ ($_.'Service' -eq 'SSH') -and ($_.'Startup Policy' -ne 'Start and stop manually') } | Set-Style -Style Warning -Property 'Startup Policy'
                                                 }
                                                 if ($Healthcheck.VMHost.ESXiShell) {
-                                                    $Services | Where-Object { ($_.'Service' -eq 'ESXi Shell') -and ($_.Daemon -eq 'Running') } | Set-Style -Style Warning -Property 'Daemon'
-                                                    $Services | Where-Object { ($_.'Service' -eq 'ESXi Shell') -and ($_.'Startup Policy' -ne 'Start and stop manually') } | Set-Style -Style Warning -Property 'Startup Policy'
+                                                    ($Services).Where{ ($_.'Service' -eq 'ESXi Shell') -and ($_.Daemon -eq 'Running') } | Set-Style -Style Warning -Property 'Daemon'
+                                                    ($Services).Where{ ($_.'Service' -eq 'ESXi Shell') -and ($_.'Startup Policy' -ne 'Start and stop manually') } | Set-Style -Style Warning -Property 'Startup Policy'
                                                 }
                                                 $TableParams = @{
                                                     Name = "Services - $VMHost"
@@ -3111,10 +3276,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.VM.VMToolsStatus) {
-                                                        $VMHostVMInfo | Where-Object { $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                                        ($VMHostVMInfo).Where{ $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
                                                     }
                                                     if ($Healthcheck.VM.PowerState) {
-                                                        $VMHostVMInfo | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
+                                                        ($VMHostVMInfo).Where{ $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
                                                     }
                                                     $TableParams = @{
                                                         Name = "Virtual Machines - $VMHost"
@@ -3127,7 +3292,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     #endregion ESXi Host Virtual Machine Information
 
                                                     #region ESXi Host VM Startup/Shutdown Information
-                                                    $VMStartPolicy = $VMHost | Get-VMStartPolicy | Where-Object { $_.StartAction -ne 'None' }
+                                                    $VMStartPolicy = ($VMHost | Get-VMStartPolicy).Where{ $_.StartAction -ne 'None' }
                                                     if ($VMStartPolicy) {
                                                         #region VM Startup/Shutdown Section
                                                         Section -Style Heading5 'VM Startup/Shutdown' {
@@ -3189,9 +3354,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VDSwitches = Get-VDSwitch -Server $vCenter | Sort-Object Name
                     if ($VDSwitches) {
                         Section -Style Heading2 'Distributed Switches' {
-                            Paragraph "The following sections detail the configuration of distributed switches managed by vCenter Server $vCenterServerName."
                             #region Distributed Switch Advanced Summary
                             if ($InfoLevel.Network -le 2) {
+                                Paragraph "The following section provides a configuration summary of distributed switches managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $VDSInfo = foreach ($VDS in $VDSwitches) {
                                     [PSCustomObject]@{
@@ -3218,6 +3383,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region Distributed Switch Detailed Information
                             if ($InfoLevel.Network -ge 3) {
+                                Paragraph "The following sections detail the configuration of distributed switches managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 # TODO: LACP, NetFlow, NIOC
                                 # TODO: Test Tags
                                 foreach ($VDS in ($VDSwitches)) {
@@ -3248,8 +3415,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'InputObject' = $VDSwitchDetail
                                             'MemberType' = 'NoteProperty'
                                         }
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $VDS}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VDS}).Tag -join ',')
+                                        if (($TagAssignments).Where{ $_.entity -eq $VDS }) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{ $_.entity -eq $VDS }).Tag -join ',')
                                         }
                                         #>
                                         #region Network Advanced Detail Information
@@ -3274,7 +3441,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #endregion Distributed Switch General Properties
 
                                         #region Distributed Switch Uplink Ports
-                                        $VdsUplinks = $VDS | Get-VDPortgroup | Where-Object { $_.IsUplink -eq $true } | Get-VDPort
+                                        $VdsUplinks = ($VDS | Get-VDPortgroup).Where{ $_.IsUplink -eq $true } | Get-VDPort
                                         if ($VdsUplinks) {
                                             Section -Style Heading4 'Distributed Switch Uplink Ports' {
                                                 $VdsUplinkDetail = foreach ($VdsUplink in $VdsUplinks) {
@@ -3381,8 +3548,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         <#
                                                         # Tags on portgroups cause Get-TagAssignments to error
                                                         'Tags' = & {
-                                                            if ($TagAssignments | Where-Object {$_.entity -eq $VDSPortgroup}) {
-                                                                ($TagAssignments | Where-Object {$_.entity -eq $VDSPortgroup}).Tag -join ','
+                                                            if (($TagAssignments).Where{ $_.entity -eq $VDSPortgroup }) {
+                                                                (($TagAssignments).Where{ $_.entity -eq $VDSPortgroup }).Tag -join ','
                                                             } else {
                                                                 '--'
                                                             }
@@ -3551,12 +3718,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region vSAN Section
                 Write-PScriboMessage "vSAN InfoLevel set at $($InfoLevel.vSAN)."
                 if (($InfoLevel.vSAN -ge 1) -and ($vCenter.Version -gt 6)) {
-                    $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
+                    $VsanClusters = (Get-VsanClusterConfiguration -Server $vCenter).Where{ $_.vsanenabled -eq $true } | Sort-Object Name
                     if ($VsanClusters) {
                         Section -Style Heading2 'vSAN' {
-                            Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
                             #region vSAN Cluster Advanced Summary
                             if ($InfoLevel.vSAN -le 2) {
+                                Paragraph "The following section provides a configuration summary of vSAN managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $VsanClusterInfo = foreach ($VsanCluster in $VsanClusters) {
                                     [PSCustomObject]@{
@@ -3595,6 +3762,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region vSAN Cluster Detailed Information
                             if ($InfoLevel.vSAN -ge 3) {
+                                Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 foreach ($VsanCluster in $VsanClusters) {
                                     #region vSAN Cluster Section
                                     Section -Style Heading3 $VsanCluster.Name {
@@ -3602,8 +3771,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $NumVsanDiskGroup = $VsanDiskGroup.Count
                                         $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
                                         $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
-                                        $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
-                                        $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
+                                        $NumVsanSsd = (($VsanDisk).Where{ $_.IsSsd -eq $true }).Count
+                                        $NumVsanHdd = (($VsanDisk).Where{ $_.IsSsd -eq $false }).Count
                                         if ($NumVsanHdd -gt 0) {
                                             $VsanClusterType = "Hybrid"
                                         } else {
@@ -3823,9 +3992,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 if ($InfoLevel.Datastore -ge 1) {
                     if ($Datastores) {
                         Section -Style Heading2 'Datastores' {
-                            Paragraph "The following sections detail the configuration of datastores managed by vCenter Server $vCenterServerName."
                             #region Datastore Infomative Information
                             if ($InfoLevel.Datastore -le 2) {
+                                Paragraph "The following sections detail the configuration of datastores managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $DatastoreInfo = foreach ($Datastore in $Datastores) {
                                     [PSCustomObject]@{
@@ -3844,8 +4013,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.Datastore.CapacityUtilization) {
-                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
-                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 75 -and
+                                    ($DatastoreInfo).Where{ $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                    ($DatastoreInfo).Where{ $_.'% Used' -ge 75 -and
                                         $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
                                 }
                                 $TableParams = @{
@@ -3861,6 +4030,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region Datastore Detailed Information
                             if ($InfoLevel.Datastore -ge 3) {
+                                Paragraph "The following sections detail the configuration of datastores managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 foreach ($Datastore in $Datastores) {
                                     # TODO: Test Tags
                                     #region Datastore Section
@@ -3891,8 +4062,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             '% Used' = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
                                         }
                                         if ($Healthcheck.Datastore.CapacityUtilization) {
-                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
-                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 75 -and
+                                            ($DatastoreDetail).Where{ $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                            ($DatastoreDetail).Where{ $_.'% Used' -ge 75 -and
                                                 $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
                                         }
                                         $MemberProps = @{
@@ -3900,8 +4071,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'MemberType' = 'NoteProperty'
                                         }
                                         <#
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $Datastore}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $Datastore}).Tag -join ',')
+                                        if (($TagAssignments).Where{ $_.entity -eq $Datastore }) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{ $_.entity -eq $Datastore }).Tag -join ',')
                                         }
                                         #>
 
@@ -3979,9 +4150,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     if ($DSClusters) {
                         #region Datastore Clusters Section
                         Section -Style Heading2 'Datastore Clusters' {
-                            Paragraph "The following sections detail the configuration of datastore clusters managed by vCenter Server $vCenterServerName."
                             #region Datastore Cluster Advanced Summary
                             if ($InfoLevel.DSCluster -le 2) {
+                                Paragraph "The following section provides a configuration summary of datastore clusters managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $DSClusterInfo = foreach ($DSCluster in $DSClusters) {
                                     [PSCustomObject]@{
@@ -4000,7 +4171,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.DSCluster.SDRSAutomationLevelFullyAuto) {
-                                    $DSClusterInfo | Where-Object { $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
+                                    ($DSClusterInfo).Where{ $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
                                 }
                                 $TableParams = @{
                                     Name = "Datastore Cluster Configuration - $($DSCluster.Name)"
@@ -4015,6 +4186,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region Datastore Cluster Detailed Information
                             if ($InfoLevel.DSCluster -ge 3) {
+                                Paragraph "The following sections detail the configuration of datastore clusters managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 foreach ($DSCluster in $DSClusters) {
                                     # TODO: Space Load Balance Config, IO Load Balance Config, Rules
                                     # TODO: Test Tags
@@ -4049,16 +4222,16 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'MemberType' = 'NoteProperty'
                                         }
                                         <#
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $DSCluster}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $DSCluster}).Tag -join ',')
+                                        if (($TagAssignments).Where{$_.entity -eq $DSCluster}) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{$_.entity -eq $DSCluster}).Tag -join ',')
                                         }
                                         #>
                                         if ($Healthcheck.DSCluster.CapacityUtilization) {
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property '% Used'
+                                            ($DSClusterDetail).Where{ $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                            ($DSClusterDetail).Where{ $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property '% Used'
                                         }
                                         if ($Healthcheck.DSCluster.SDRSAutomationLevel) {
-                                            $DSClusterDetail | Where-Object { $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
+                                            ($DSClusterDetail).Where{ $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
                                         }
                                         $TableParams = @{
                                             Name = "Datastore Cluster Configuration - $($DSCluster.Name)"
@@ -4087,7 +4260,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $true { $DefaultIntraVmAffinity = "Default (Yes)" }
                                                 $false { $DefaultIntraVmAffinity = "Default (No)" }
                                             }
-                                            $VMOverrides = $StoragePod.PodStorageDrsEntry.StorageDrsConfig.VmConfig | Where-Object {
+                                            $VMOverrides = ($StoragePod.PodStorageDrsEntry.StorageDrsConfig.VmConfig).Where{
                                                 -not (
                                                     ($null -eq $_.Enabled) -and
                                                     ($null -eq $_.IntraVmAffinity)
@@ -4138,9 +4311,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 if ($InfoLevel.VM -ge 1) {
                     if ($VMs) {
                         Section -Style Heading2 'Virtual Machines' {
-                            Paragraph "The following sections detail the configuration of virtual machines managed by vCenter Server $vCenterServerName."
                             #region Virtual Machine Summary Information
                             if ($InfoLevel.VM -eq 1) {
+                                Paragraph "The following section provides a configuration summary of virtual machines managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $VMSummary = [PSCustomObject]@{
                                     'Total VMs' = $VMs.Count
@@ -4148,17 +4321,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     'Total Memory' = "$([math]::Round(($VMs | Measure-Object -Property MemoryGB -Sum).Sum, 2)) GB"
                                     'Total Provisioned Space' = "$([math]::Round(($VMs | Measure-Object -Property ProvisionedSpaceGB -Sum).Sum, 2)) GB"
                                     'Total Used Space' = "$([math]::Round(($VMs | Measure-Object -Property UsedSpaceGB -Sum).Sum, 2)) GB"
-                                    'VMs Powered On' = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
-                                    'VMs Powered Off' = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
-                                    'VMs Orphaned' = ($VMs | Where-Object { $_.ExtensionData.Runtime.ConnectionState -eq 'Orphaned' }).Count
-                                    'VMs Inaccessible' = ($VMs | Where-Object { $_.ExtensionData.Runtime.ConnectionState -eq 'Inaccessible' }).Count
-                                    'VMs Suspended' = ($VMs | Where-Object { $_.PowerState -eq 'Suspended' }).Count
-                                    'VMs with Snapshots' = ($VMs | Where-Object { $_.ExtensionData.Snapshot }).Count
+                                    'VMs Powered On' = (($VMs).Where{ $_.PowerState -eq 'PoweredOn' }).Count
+                                    'VMs Powered Off' = (($VMs).Where{ $_.PowerState -eq 'PoweredOff' }).Count
+                                    'VMs Orphaned' = (($VMs).Where{ $_.ExtensionData.Runtime.ConnectionState -eq 'Orphaned' }).Count
+                                    'VMs Inaccessible' = (($VMs).Where{ $_.ExtensionData.Runtime.ConnectionState -eq 'Inaccessible' }).Count
+                                    'VMs Suspended' = (($VMs).Where{ $_.PowerState -eq 'Suspended' }).Count
+                                    'VMs with Snapshots' = (($VMs).Where{ $_.ExtensionData.Snapshot }).Count
                                     'Guest Operating System Types' = (($VMs | Get-View).Summary.Config.GuestFullName | Select-Object -Unique).Count
-                                    'VM Tools OK' = ($VMs | Where-Object { $_.ExtensionData.Guest.ToolsStatus -eq 'toolsOK' }).Count
-                                    'VM Tools Old' = ($VMs | Where-Object { $_.ExtensionData.Guest.ToolsStatus -eq 'toolsOld' }).Count
-                                    'VM Tools Not Running' = ($VMs | Where-Object { $_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotRunning' }).Count
-                                    'VM Tools Not Installed' = ($VMs | Where-Object { $_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotInstalled' }).Count
+                                    'VM Tools OK' = (($VMs).Where{ $_.ExtensionData.Guest.ToolsStatus -eq 'toolsOK' }).Count
+                                    'VM Tools Old' = (($VMs).Where{ $_.ExtensionData.Guest.ToolsStatus -eq 'toolsOld' }).Count
+                                    'VM Tools Not Running' = (($VMs).Where{ $_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotRunning' }).Count
+                                    'VM Tools Not Installed' = (($VMs).Where{ $_.ExtensionData.Guest.ToolsStatus -eq 'toolsNotInstalled' }).Count
                                 }
                                 $TableParams = @{
                                     Name = "VM Summary - $($vCenterServerName)"
@@ -4174,6 +4347,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region Virtual Machine Advanced Summary
                             if ($InfoLevel.VM -eq 2) {
+                                Paragraph "The following section provides an advanced configuration summary of virtual machines managed by vCenter Server $($vCenterServerName)."
                                 BlankLine
                                 $VMSnapshotList = $VMs.Extensiondata.Snapshot.RootSnapshotList
                                 $VMInfo = foreach ($VM in $VMs) {
@@ -4204,10 +4378,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.VM.VMToolsStatus) {
-                                    $VMInfo | Where-Object { $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                    ($VMInfo).Where{ $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
                                 }
                                 if ($Healthcheck.VM.PowerState) {
-                                    $VMInfo | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
+                                    ($VMInfo).Where{ $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
                                 }
                                 $TableParams = @{
                                     Name = "VM Advanced Summary - $($vCenterServerName)"
@@ -4230,8 +4404,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             }
                                         }
                                         if ($Healthcheck.VM.VMSnapshots) {
-                                            $VMSnapshotInfo | Where-Object { $_.'Days Old' -ge 7 } | Set-Style -Style Warning
-                                            $VMSnapshotInfo | Where-Object { $_.'Days Old' -ge 14 } | Set-Style -Style Critical
+                                            ($VMSnapshotInfo).Where{ $_.'Days Old' -ge 7 } | Set-Style -Style Warning
+                                            ($VMSnapshotInfo).Where{ $_.'Days Old' -ge 14 } | Set-Style -Style Critical
                                         }
                                         $TableParams = @{
                                             Name = "VM Snapshot Summary - $($vCenterServerName)"
@@ -4250,8 +4424,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region Virtual Machine Detailed Information
                             # TODO: Test Tags
                             if ($InfoLevel.VM -ge 3) {
+                                Paragraph "The following sections detail the configuration of virtual machines managed by vCenter Server $($vCenterServerName)."
+                                BlankLine
                                 if ($UserRole.Privilege -contains 'StorageProfile.View') {
-                                    $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $null -ne $_.StoragePolicy }
+                                    $VMSpbmConfig = (Get-SpbmEntityConfiguration -VM ($VMs)).Where{ $null -ne $_.StoragePolicy }
                                 } else {
                                     Write-PScriboMessage "Insufficient user privileges to report VM storage policies. Please ensure the user account has the 'Storage Profile > View' privilege assigned."
                                 }
@@ -4261,7 +4437,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 foreach ($VM in $VMs) {
                                     Section -Style Heading3 $VM.name {
                                         $VMUptime = Get-Uptime -VM $VM
-                                        $VMSpbmPolicy = $VMSpbmConfig | Where-Object { $_.entity -eq $vm }
+                                        $VMSpbmPolicy = ($VMSpbmConfig).Where{ $_.entity -eq $vm }
                                         $VMView = $VM | Get-View
                                         $VMSnapshotList = $vmview.Snapshot.RootSnapshotList
                                         $VMDetail = [PSCustomObject]@{
@@ -4321,17 +4497,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 '--'
                                             }
                                             'Networks' = if ($VMView.Guest.Net.Network) {
-                                                (($VMView.Guest.Net | Where-Object { $null -ne $_.Network } | Select-Object Network | Sort-Object Network).Network -join ', ')
+                                                ((($VMView.Guest.Net).Where{ $null -ne $_.Network } | Select-Object Network | Sort-Object Network).Network -join ', ')
                                             } else {
                                                 '--'
                                             }
                                             'IP Address' = if ($VMView.Guest.Net.IpAddress) {
-                                                (($VMView.Guest.Net | Where-Object { ($null -ne $_.Network) -and ($null -ne $_.IpAddress) } | Select-Object IpAddress | Sort-Object IpAddress).IpAddress -join ', ')
+                                                ((($VMView.Guest.Net).Where{ ($null -ne $_.Network) -and ($null -ne $_.IpAddress) } | Select-Object IpAddress | Sort-Object IpAddress).IpAddress -join ', ')
                                             } else {
                                                 '--'
                                             }
                                             'MAC Address' = if ($VMView.Guest.Net.MacAddress) {
-                                                (($VMView.Guest.Net | Where-Object { $null -ne $_.Network } | Select-Object -Property MacAddress).MacAddress -join ', ')
+                                                ((($VMView.Guest.Net).Where{ $null -ne $_.Network } | Select-Object -Property MacAddress).MacAddress -join ', ')
                                             } else {
                                                 '--'
                                             }
@@ -4362,8 +4538,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime()
                                         #}
                                         <#
-                                        if ($TagAssignments | Where-Object {$_.entity -eq $VM}) {
-                                            Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VM}).Tag -join ',')
+                                        if (($TagAssignments).Where{ $_.entity -eq $VM }) {
+                                            Add-Member @MemberProps -Name 'Tags' -Value $((($TagAssignments).Where{ $_.entity -eq $VM }).Tag -join ',')
                                         }
                                         #>
                                         if ($VM.Notes) {
@@ -4378,29 +4554,29 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                         #region VM Health Checks
                                         if ($Healthcheck.VM.VMToolsStatus) {
-                                            $VMDetail | Where-Object { $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
+                                            ($VMDetail).Where{ $_.'VM Tools Status' -ne 'OK' } | Set-Style -Style Warning -Property 'VM Tools Status'
                                         }
                                         if ($Healthcheck.VM.PowerState) {
-                                            $VMDetail | Where-Object { $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
+                                            ($VMDetail).Where{ $_.'Power State' -ne 'On' } | Set-Style -Style Warning -Property 'Power State'
                                         }
                                         if ($Healthcheck.VM.ConnectionState) {
-                                            $VMDetail | Where-Object { $_.'Connection State' -ne 'Connected' } | Set-Style -Style Critical -Property 'Connection State'
+                                            ($VMDetail).Where{ $_.'Connection State' -ne 'Connected' } | Set-Style -Style Critical -Property 'Connection State'
                                         }
                                         if ($Healthcheck.VM.CpuHotAdd) {
-                                            $VMDetail | Where-Object { $_.'CPU Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Add'
+                                            ($VMDetail).Where{ $_.'CPU Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Add'
                                         }
                                         if ($Healthcheck.VM.CpuHotRemove) {
-                                            $VMDetail | Where-Object { $_.'CPU Hot Remove' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Remove'
+                                            ($VMDetail).Where{ $_.'CPU Hot Remove' -eq 'Enabled' } | Set-Style -Style Warning -Property 'CPU Hot Remove'
                                         }
                                         if ($Healthcheck.VM.MemoryHotAdd) {
-                                            $VMDetail | Where-Object { $_.'Memory Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'Memory Hot Add'
+                                            ($VMDetail).Where{ $_.'Memory Hot Add' -eq 'Enabled' } | Set-Style -Style Warning -Property 'Memory Hot Add'
                                         }
                                         if ($Healthcheck.VM.ChangeBlockTracking) {
-                                            $VMDetail | Where-Object { $_.'Changed Block Tracking' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Changed Block Tracking'
+                                            ($VMDetail).Where{ $_.'Changed Block Tracking' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Changed Block Tracking'
                                         }
                                         if ($Healthcheck.VM.SpbmPolicyCompliance) {
-                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Unknown' } | Set-Style -Style Warning -Property 'Storage Based Policy Compliance'
-                                            $VMDetail | Where-Object { $_.'Storage Based Policy Compliance' -eq 'Non Compliant' } | Set-Style -Style Critical -Property 'Storage Based Policy Compliance'
+                                            ($VMDetail).Where{ $_.'Storage Based Policy Compliance' -eq 'Unknown' } | Set-Style -Style Warning -Property 'Storage Based Policy Compliance'
+                                            ($VMDetail).Where{ $_.'Storage Based Policy Compliance' -eq 'Non Compliant' } | Set-Style -Style Critical -Property 'Storage Based Policy Compliance'
                                         }
                                         #endregion VM Health Checks
                                         $TableParams = @{
@@ -4414,9 +4590,57 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $VMDetail | Table @TableParams
 
                                         if ($InfoLevel.VM -ge 4) {
-                                            $VMnics = $VM.Guest.Nics | Where-Object { $null -ne $_.Device } | Sort-Object Device
-                                            $VMHdds = $VMHardDisks | Where-Object { $_.ParentId -eq $VM.Id } | Sort-Object Name
-                                            $SCSIControllers = $VMView.Config.Hardware.Device | Where-Object { $_.DeviceInfo.Label -match "SCSI Controller" }
+                                            Section -Style Heading4 "VM Options" {
+                                                $VMMigrateEncryption = $VM.ExtensionData.Config.MigrateEncryption
+                                                $VMFtEncryption = $VM.ExtensionData.Config.FtEncryptionMode
+
+                                                Section -Style Heading4 -ExcludeFromTOC "VMware Tools" {
+                                                    $VMToolsInfo = [PSCustomObject]@{
+                                                        'Tools Upgrades' = $VM.ExtensionData.Config.Tools.ToolsUpgradePolicy
+                                                        <#
+                                                        Switch ($VM.ExtensionData.Config.Tools.ToolsUpgradePolicy) {
+                                                            'manual' { 'Disabled' }
+                                                            default { $VM.ExtensionData.Config.Tools.ToolsUpgradePolicy}
+                                                        }
+                                                        #>
+                                                        'Synchronize Time with Host' = Switch ($VM.ExtensionData.Config.Tools.SyncTimeWithHostAllowed) {
+                                                            $true { 'Synchronize at startup and resume' }
+                                                            $false { 'Disabled' }
+                                                        }
+                                                    }
+                                                    $TableParams = @{
+                                                        Name = "VMware Tools - $($VM.Name)"
+                                                        ColumnWidths = 50, 50
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $VMToolsInfo | Table @TableParams
+                                                }
+
+                                                if ($VMMigrateEncryption -and $VMFtEncryption) {
+                                                    Section -Style Heading4 -ExcludeFromTOC "Encryption" {
+                                                        $VMEncrptionInfo = "" | Select-Object 'Encrypted vMotion', 'Encrypted FT'
+                                                        $VMEncrptionInfo.'Encrypted vMotion' = $TextInfo.ToTitleCase($VMMigrateEncryption)
+                                                        $VMEncrptionInfo.'Encrypted FT' = Switch ($VMFtEncryption) {
+                                                            'ftEncryptionOpportunistic' { 'Opportunistic' }
+                                                            'ftEncryptionRequired' { 'Required' }
+                                                            'ftEncryptionDisabled' { 'Disabled' }
+                                                        }
+                                                        $TableParams = @{
+                                                            Name = "Encryption - $($VM.Name)"
+                                                            ColumnWidths = 50, 50
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VMEncrptionInfo | Table @TableParams
+                                                    }
+                                                }
+                                            }
+                                            $VMnics = ($VM.Guest.Nics).Where{ $null -ne $_.Device } | Sort-Object Device
+                                            $VMHdds = ($VMHardDisks).Where{ $_.ParentId -eq $VM.Id } | Sort-Object Name
+                                            $SCSIControllers = ($VMView.Config.Hardware.Device).Where{ $_.DeviceInfo.Label -match "SCSI Controller" }
                                             $VMGuestVols = $VM.Guest.Disks | Sort-Object Path
                                             if ($VMnics) {
                                                 Section -Style Heading4 "Network Adapters" {
@@ -4469,8 +4693,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Section -Style Heading4 "Hard Disks" {
                                                     If ($InfoLevel.VM -eq 4) {
                                                         $VMHardDiskInfo = foreach ($VMHdd in $VMHdds) {
-                                                            $SCSIDevice = $VMView.Config.Hardware.Device | Where-Object { $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
-                                                            $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
+                                                            $SCSIDevice = ($VMView.Config.Hardware.Device).Where{ $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
+                                                            $SCSIController = ($SCSIControllers).Where{ $SCSIDevice.ControllerKey -eq $_.Key }
                                                             [PSCustomObject]@{
                                                                 'Disk' = $VMHdd.Name
                                                                 'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[") + 1, $VMHdd.Filename.IndexOf("]") - 1)
@@ -4506,8 +4730,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     } else {
                                                         foreach ($VMHdd in $VMHdds) {
                                                             Section -Style Heading5 "$($VMHdd.Name)" {
-                                                                $SCSIDevice = $VMView.Config.Hardware.Device | Where-Object { $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
-                                                                $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
+                                                                $SCSIDevice = ($VMView.Config.Hardware.Device).Where{ $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
+                                                                $SCSIController = ($SCSIControllers).Where{ $SCSIDevice.ControllerKey -eq $_.Key }
                                                                 $VMHardDiskInfo = [PSCustomObject]@{
                                                                     'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[") + 1, $VMHdd.Filename.IndexOf("]") - 1)
                                                                     'Capacity' = "$([math]::Round(($VMHdd.CapacityGB), 2)) GB"
@@ -4581,12 +4805,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     [PSCustomObject]@{
                                                         'Snapshot Name' = $VMSnapshot.Name
                                                         'Description' = $VMSnapshot.Description
-                                                        'Days Old' = ((Get-Date).ToUniversalTime() - $VMSnapshot.CreateTime).Days
+                                                        'Days Old' = (($Today).ToUniversalTime() - $VMSnapshot.CreateTime).Days
                                                     }
                                                 }
                                                 if ($Healthcheck.VM.VMSnapshots) {
-                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 7 } | Set-Style -Style Warning
-                                                    $VMSnapshots | Where-Object { $_.'Days Old' -ge 14 } | Set-Style -Style Critical
+                                                    ($VMSnapshots).Where{ $_.'Days Old' -ge 7 } | Set-Style -Style Warning
+                                                    ($VMSnapshots).Where{ $_.'Days Old' -ge 14 } | Set-Style -Style Critical
                                                 }
                                                 $TableParams = @{
                                                     Name = "VM Snapshots - $($VM.Name)"
@@ -4610,14 +4834,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region VMware Update Manager Section
                 Write-PScriboMessage "VUM InfoLevel set at $($InfoLevel.VUM)."
                 if (($InfoLevel.VUM -ge 1) -and ($VumServer.Name)) {
-                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                        $VUMBaselines = Get-PatchBaseline -Server $vCenter
-                    } else {
-                        Write-PScriboMessage 'VUM patch baseline information is not currently available with your version of PowerShell.'
-                    }
+                    $VUMBaselines = Get-PatchBaseline -Server $vCenter -ErrorAction SilentlyContinue
                     if ($VUMBaselines) {
                         Section -Style Heading2 'VMware Update Manager' {
-                            Paragraph "The following sections detail the configuration of VMware Update Manager managed by vCenter Server $vCenterServerName."
+                            Paragraph "The following sections detail the configuration of VMware Update Manager managed by vCenter Server $($vCenterServerName)."
                             #region VUM Baseline Detailed Information
                             Section -Style Heading3 'Baselines' {
                                 $VUMBaselineInfo = foreach ($VUMBaseline in $VUMBaselines) {
@@ -4642,11 +4862,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion VUM Baseline Detailed Information
 
                             #region VUM Comprehensive Information
-                            if ("Desktop" -eq $PSVersionTable.PsEdition) {
-                                $VUMPatches = Get-Patch -Server $vCenter | Sort-Object -Descending ReleaseDate
-                            } else {
-                                Write-PScriboMessage 'VUM patch information is not currently available with your version of PowerShell.'
-                            }
+                            $VUMPatches = Get-Patch -Server $vCenter -ErrorAction SilentlyContinue | Sort-Object -Descending ReleaseDate
                             if ($VUMPatches -and $InfoLevel.VUM -ge 5) {
                                 BlankLine
                                 Section -Style Heading3 'Patches' {
