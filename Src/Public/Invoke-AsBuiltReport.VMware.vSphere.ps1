@@ -220,44 +220,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             }
                             $vCenterServerInfo | Table @TableParams
 
-                            if ($InfoLevel.vCenter -eq 2) {
-                                BlankLine
-
-                                $vCenterResources = @(
-                                    [Ordered] @{ Resource = 'CPU'; Free = "$([math]::round((($vmhosts.CpuTotalMhz | Measure-Object -Sum).sum / 1000) - (($vmhosts.CpuUsageMhz | Measure-Object -Sum).sum / 1000),2)) GHz"; Used = "$([math]::round(($vmhosts.CpuUsageMhz | Measure-Object -Sum).sum / 1000,2)) GHz"; Total = "$([math]::round(($vmhosts.CpuTotalMhz | Measure-Object -Sum).sum / 1000,1)) GHz" }
-                                    [Ordered] @{ Resource = 'Memory'; Free = "$([math]::round((($vmhosts.MemoryTotalGB | Measure-Object -Sum).sum) - (($vmhosts.MemoryUsageGB | Measure-Object -Sum).sum),2)) GB"; Used = "$([math]::round(($vmhosts.MemoryUsageGB | Measure-Object -Sum).sum,2)) GB"; Total = "$([math]::round(($vmhosts.MemoryTotalGB | Measure-Object -Sum).sum,2)) GB" }
-                                    [Ordered] @{ Resource = 'Storage'; Free = "$([math]::round(((($Datastores).FreeSpaceMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB"; Used = "$([math]::Round(((($Datastores).CapacityMB | Measure-Object -sum).sum / 1024 / 1024) - ((($Datastores).FreeSpaceMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB"; Total = "$([math]::round(((($Datastores).CapacityMB | Measure-Object -sum).sum / 1024 / 1024),2)) GB" }
-                                )
-
-                                $TableParams = @{
-                                    Name = "vCenter Resource Summary - $($vCenterServerName)"
-                                    ColumnWidths = 25, 25, 25, 25
-                                    List = $true
-                                    Key = 'Resource'
-                                }
-                                if ($Report.ShowTableCaptions) {
-                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                }
-                                Table -Hashtable $vCenterResources @TableParams
-
-                                Blankline
-
-                                $vCenterObjects = [PSCustomObject]@{
-                                    'Clusters' = $Clusters.Count
-                                    'Hosts' = $TotalVMHosts.Count
-                                    'Virtual Machines' = $TotalVMs.Count
-                                }
-
-                                $TableParams = @{
-                                    Name = "vCenter Object Summary - $($vCenterServerName)"
-                                    ColumnWidths = 33, 34, 33
-                                    List = $false
-                                }
-                                if ($Report.ShowTableCaptions) {
-                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                }
-                                $vCenterObjects | Table @TableParams
-
+                            if ($InfoLevel.vCenter -ge 2) {
+                                Get-AbrvSphereVCResources
                             }
                         }
                         #endregion vCenter Server Summary & Advanced Summary
@@ -316,6 +280,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             }
                             $vCenterServerInfo | Table @TableParams
                             #endregion vCenter Server Detail
+
+                            Get-AbrvSphereVCResources
 
                             #region vCenter Server Database Settings
                             Section -Style Heading3 'Database Settings' {
@@ -463,7 +429,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vCenter Server Certificate
                             if ($vCenter.Version -ge 6) {
                                 Section -Style Heading3 'Certificates' {
-                                    $VCenterMachineCert = ($VIMachineCertificates).Where{ ($_.EntityType -eq 'VCenter') -and ($_.Entity.Name -eq $($vCenterServerName)) }
+                                    $VCenterMachineCert = ($VIMachineCertificates).Where{($_.EntityType -eq 'VCenter') -and ( ($_.Entity.Name -eq $($vCenterServerName)) -or ($_.Entity.Name -eq $($VIServer)) )}
                                     if ($VCenterMachineCert) {
                                         Section -Style Heading4 'Machine SSL' {
                                             $VCenterMachineCertInfo = [PSCustomObject]@{

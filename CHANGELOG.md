@@ -1,10 +1,10 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [[1.4.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.4.0)] - 2022-07-24
+## [[1.4.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.4.0)] - 2022-07-25
 ### Added
 - Add filter functionality to report on specifically named clusters ([Fix #96](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/96))
-- Add vCenter Resource Summary
-- Add vCenter Machine SSL Certificate information
+- Add vCenter Resource Summary ([Fix #97](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/97))
+- Add vCenter Machine SSL Certificate information ([Fix #98](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/98))
 - Add VMHost Machine SSL Certificate information
 - Add vCenter & VMHost certificate healthcheck
 - Add vCenter Server backup information
