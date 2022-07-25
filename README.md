@@ -69,11 +69,9 @@ The following VMware vSphere versions are no longer being tested and/or supporte
 ### PowerShell
 This report is compatible with the following PowerShell versions;
 
-| Windows PowerShell 5.1 |     PowerShell 7 ^    |
+| Windows PowerShell 5.1 |     PowerShell 7    |
 |:----------------------:|:--------------------:|
 |   :white_check_mark:   | :white_check_mark: |
-
-^ _Due to compatibility issues, VMware Update Manager information will not be reported when using PowerShell 7_
 
 ## :wrench: System Requirements
 PowerShell 5.1 or PowerShell 7, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
