@@ -221,7 +221,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $vCenterServerInfo | Table @TableParams
 
                             if ($InfoLevel.vCenter -ge 2) {
+                                Blankline
                                 Get-AbrvSphereVCResources
+                                Blankline
+                                Get-AbrvSphereVCObjects
                             }
                         }
                         #endregion vCenter Server Summary & Advanced Summary
@@ -281,7 +284,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $vCenterServerInfo | Table @TableParams
                             #endregion vCenter Server Detail
 
+                            Blankline
                             Get-AbrvSphereVCResources
+                            Blankline
+                            Get-AbrvSphereVCObjects
 
                             #region vCenter Server Database Settings
                             Section -Style Heading3 'Database Settings' {
