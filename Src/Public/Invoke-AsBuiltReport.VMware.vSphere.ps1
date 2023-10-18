@@ -1934,7 +1934,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Create an array with PCI Address and VMware Devices (vmnic,vmhba,?vmgfx?) 
                                                 #>
                                                 $PciToDeviceMapping = @{}
-                                                
                                                 $NetworkAdapters  = Get-VMHostNetworkAdapter -VMHost $VMHost -Physical
                                                 foreach ($adapter in $NetworkAdapters) {
                                                     $PciToDeviceMapping[$adapter.PciId] = $adapter.DeviceName
@@ -1943,7 +1942,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 foreach ($adapter in $hbAdapters) {
                                                     $PciToDeviceMapping[$adapter.Pci] = $adapter.Device
                                                 }
-                                                
                                                 <# Data Object - HostGraphicsInfo(vim.host.GraphicsInfo)
                                                 This function has been available since version 5.5, but we can't be sure if it is still valid.
                                                 I don't have access to a vGPU-enabled system.
