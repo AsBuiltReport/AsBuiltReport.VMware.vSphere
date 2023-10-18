@@ -1928,21 +1928,56 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Boot Devices
 
                                             #region ESXi Host PCI Devices
-                                            Section -Style Heading5 'PCI Devices' {
-                                                $PciHardwareDevices = $esxcli.hardware.pci.list.Invoke() | Where-Object { $_.VMkernelName -match 'vmhba|vmnic|vmgfx' -and $_.ModuleName -ne 'None'} | Sort-Object -Property VMkernelName
-                                                $VMHostPciDevices = foreach ($PciHardwareDevice in $PciHardwareDevices) {
-                                                    [PSCustomObject]@{
-                                                        'Device' = $PciHardwareDevice.VMkernelName
-                                                        'PCI Address' = $PciHardwareDevice.Address
-                                                        'Device Class' = $PciHardwareDevice.DeviceClassName
-                                                        'Device Name' = $PciHardwareDevice.DeviceName
-                                                        'Vendor Name' = $PciHardwareDevice.VendorName
-                                                        'Slot Description' = $PciHardwareDevice.SlotDescription
+                                            Section -Style Heading5 'PCI Devices' {                                                
+                                                <# Move away from esxcli.v2 implementation to be compatible with 8.x branch.
+                                                'Slot Description' information does not seem to be available through the API
+                                                Create an array with PCI Address and VMware Devices (vmnic,vmhba,?vmgfx?) 
+                                                #>
+                                                $PciToDeviceMapping = @{}
+                                                
+                                                $NetworkAdapters  = Get-VMHostNetworkAdapter -VMHost $VMHost -Physical
+                                                foreach ($adapter in $NetworkAdapters) {
+                                                    $PciToDeviceMapping[$adapter.PciId] = $adapter.DeviceName
+                                                }
+                                                $hbAdapters = Get-VMHostHba -VMHost $VMHost
+                                                foreach ($adapter in $hbAdapters) {
+                                                    $PciToDeviceMapping[$adapter.Pci] = $adapter.Device
+                                                }
+                                                
+                                                <# Data Object - HostGraphicsInfo(vim.host.GraphicsInfo)
+                                                This function has been available since version 5.5, but we can't be sure if it is still valid.
+                                                I don't have access to a vGPU-enabled system.
+                                                #>
+                                                $GpuAdapters = (Get-VMHost $VMhost | Get-View -Property Config).Config.GraphicsInfo
+                                                foreach ($adapter in $GpuAdapters) {
+                                                    $PciToDeviceMapping[$adapter.pciId] = $adapter.deviceName
+                                                }
+                                                
+                                                $VMHostPciDevice = @{
+                                                    VMHost      = $VMHost
+                                                    DeviceClass = @('MassStorageController', 'NetworkController', 'DisplayController', 'SerialBusController')
+                                                }
+                                                $PciDevices = Get-VMHostPciDevice @VMHostPciDevice
+                                                
+                                                # Combine PciDevices and PciToDeviceMapping
+                                                
+                                                $VMHostPciDevices = $PciDevices | ForEach-Object {
+                                                    $PciDevice = $_
+                                                    $device = $PCIToDeviceMapping[$pciDevice.Id]
+                                                    
+                                                    if ($device) {
+                                                        [PSCustomObject]@{
+                                                            'Device'       = $device
+                                                            'PCI Address'   = $PciDevice.Id
+                                                            'Device Class'  = $PciDevice.DeviceClass -replace ('Controller',"")
+                                                            'Device Name'   = $PciDevice.DeviceName
+                                                            'Vendor Name'   = $PciDevice.VendorName
+                                                        }
                                                     }
                                                 }
                                                 $TableParams = @{
                                                     Name = "PCI Devices - $VMHost"
-                                                    ColumnWidths = 12, 13, 15, 25, 20, 15
+                                                    ColumnWidths = 17, 18, 15, 30, 20
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
