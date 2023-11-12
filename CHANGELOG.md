@@ -1,6 +1,6 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [[1.3.4](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4)] - 2023-10-??
+## [[1.3.4](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4)] - 2023-11-12
 
 ### Changed
 - Improved bug and feature request templates.
