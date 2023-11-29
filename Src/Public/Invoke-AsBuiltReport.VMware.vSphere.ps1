@@ -20,7 +20,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     )
 
     # Check if the required version of VMware PowerCLI is installed
-    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.1'
+    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.2'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
@@ -168,13 +168,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             'IP Address' = ($vCenterAdvSettings | Where-Object { $_.name -like 'VirtualCenter.AutoManagedIPV4' }).Value
                             'Version' = $vCenter.Version
                             'Build' = $vCenter.Build
-                            #'OS Type' = $vCenter.ExtensionData.Content.About.OsType
                         }
                         #region vCenter Server Summary & Advanced Summary
                         if ($InfoLevel.vCenter -le 2) {
                             $TableParams = @{
                                 Name = "vCenter Server Summary - $vCenterServerName"
-                                ColumnWidths = 20, 20, 20, 20, 20
+                                ColumnWidths = 25, 25, 25, 25
                             }
                             if ($Report.ShowTableCaptions) {
                                 $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1928,13 +1927,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Boot Devices
 
                                             #region ESXi Host PCI Devices
-                                            Section -Style Heading5 'PCI Devices' {                                                
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'PCI Devices' {
                                                 <# Move away from esxcli.v2 implementation to be compatible with 8.x branch.
                                                 'Slot Description' information does not seem to be available through the API
-                                                Create an array with PCI Address and VMware Devices (vmnic,vmhba,?vmgfx?) 
+                                                Create an array with PCI Address and VMware Devices (vmnic,vmhba,?vmgfx?)
                                                 #>
                                                 $PciToDeviceMapping = @{}
-                                                $NetworkAdapters  = Get-VMHostNetworkAdapter -VMHost $VMHost -Physical
+                                                $NetworkAdapters = Get-VMHostNetworkAdapter -VMHost $VMHost -Physical
                                                 foreach ($adapter in $NetworkAdapters) {
                                                     $PciToDeviceMapping[$adapter.PciId] = $adapter.DeviceName
                                                 }
@@ -1950,31 +1949,30 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 foreach ($adapter in $GpuAdapters) {
                                                     $PciToDeviceMapping[$adapter.pciId] = $adapter.deviceName
                                                 }
-                                                
+
                                                 $VMHostPciDevice = @{
-                                                    VMHost      = $VMHost
+                                                    VMHost = $VMHost
                                                     DeviceClass = @('MassStorageController', 'NetworkController', 'DisplayController', 'SerialBusController')
                                                 }
                                                 $PciDevices = Get-VMHostPciDevice @VMHostPciDevice
-                                                
+
                                                 # Combine PciDevices and PciToDeviceMapping
-                                                
+
                                                 $VMHostPciDevices = $PciDevices | ForEach-Object {
                                                     $PciDevice = $_
                                                     $device = $PCIToDeviceMapping[$pciDevice.Id]
-                                                    
+
                                                     if ($device) {
                                                         [PSCustomObject]@{
-                                                            'Device'       = $device
-                                                            'PCI Address'   = $PciDevice.Id
-                                                            'Device Class'  = $PciDevice.DeviceClass -replace ('Controller',"")
-                                                            'Device Name'   = $PciDevice.DeviceName
-                                                            'Vendor Name'   = $PciDevice.VendorName
+                                                            'Device' = $device
+                                                            'PCI Address' = $PciDevice.Id
+                                                            'Device Class' = $PciDevice.DeviceClass -replace ('Controller', "")
+                                                            'Device Name' = $PciDevice.DeviceName
+                                                            'Vendor Name' = $PciDevice.VendorName
                                                         }
                                                     }
-                                                } Catch {
-                                                    Write-PScriboMessage -IsWarning "Unable to collect PCI Devices configuration from $VMhost."
                                                 }
+
                                                 $TableParams = @{
                                                     Name = "PCI Devices - $VMHost"
                                                     ColumnWidths = 17, 18, 15, 30, 20
@@ -1982,7 +1980,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
                                                 }
-                                                $VMHostPciDevices | Table @TableParams
+                                                $VMHostPciDevices | Sort-Object 'Device' | Table @TableParams
                                             }
                                             #endregion ESXi Host PCI Devices
 

@@ -12,7 +12,7 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.3.3.1'
+    ModuleVersion = '1.3.4'
 
     # Supported PSEditions
     # CompatiblePSEditions = 'Desktop'
@@ -111,7 +111,7 @@
             ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
 
             # Prerelease string of this module
-            # Prerelease = ''
+            Prerelease = 'rc1'
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
