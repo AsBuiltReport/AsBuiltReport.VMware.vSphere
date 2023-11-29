@@ -20,7 +20,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     )
 
     # Check if the required version of VMware PowerCLI is installed
-    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '12.3'
+    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.1'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
@@ -47,9 +47,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             # Check logged in user has sufficient privileges to generate an As Built Report
             Write-PScriboMessage 'Checking vCenter user privileges.'
             Try {
-                $UserPermission = Get-VIPermission | Where-Object {$_.Principal -eq $vCenter.User}
+                $UserPermission = Get-VIPermission | Where-Object { $_.Principal -eq $vCenter.User }
                 $AuthMgr = Get-View $($vCenter.ExtensionData.Content.AuthorizationManager)
-                $UserRole = $AuthMgr.RoleList | Where-Object {$_.Name -eq $($UserPermission.Role)}
+                $UserRole = $AuthMgr.RoleList | Where-Object { $_.Name -eq $($UserPermission.Role) }
             } Catch {
                 Write-PScriboMessage 'Unable to obtain vCenter user privileges.'
             }
@@ -168,7 +168,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             'IP Address' = ($vCenterAdvSettings | Where-Object { $_.name -like 'VirtualCenter.AutoManagedIPV4' }).Value
                             'Version' = $vCenter.Version
                             'Build' = $vCenter.Build
-                            'OS Type' = $vCenter.ExtensionData.Content.About.OsType
+                            #'OS Type' = $vCenter.ExtensionData.Content.About.OsType
                         }
                         #region vCenter Server Summary & Advanced Summary
                         if ($InfoLevel.vCenter -le 2) {
@@ -204,7 +204,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             if ($vCenter.Version -ge 6) {
                                 Add-Member @MemberProps -Name 'HTTP Port' -Value ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.rhttpproxy.httpport' }).Value
                                 Add-Member @MemberProps -Name 'HTTPS Port' -Value ($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.rhttpproxy.httpsport' }).Value
-                                Add-Member @MemberProps -Name 'Platform Services Controller' -Value (($vCenterAdvSettings | Where-Object { $_.name -eq 'config.vpxd.sso.admin.uri' }).Value -replace "^https://|/sso-adminserver/sdk/vsphere.local")
+                                Add-Member @MemberProps -Name 'Platform Services Controller' -Value ((($vCenterAdvSettings).Where{ $_.name -eq 'config.vpxd.sso.admin.uri' }).Value).Split('/')[2]
                             }
                             if ($VumServer.Name) {
                                 Add-Member @MemberProps -Name 'Update Manager Server' -Value $VumServer.Name
@@ -347,7 +347,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                             #region vCenter Server Roles
                             Section -Style Heading3 'Roles' {
-                                $VIRoles = Get-VIRole -Server $vCenter | Where-Object {$null -ne $_.PrivilegeList} | Sort-Object Name
+                                $VIRoles = Get-VIRole -Server $vCenter | Where-Object { $null -ne $_.PrivilegeList } | Sort-Object Name
                                 $VIRoleInfo = foreach ($VIRole in $VIRoles) {
                                     [PSCustomObject]@{
                                         'Role' = $VIRole.Name
@@ -355,12 +355,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $true { 'Yes' }
                                             $false { 'No' }
                                         }
-                                        'Privilege List' = ($VIRole.PrivilegeList).Replace("."," > ") | Select-Object -Unique
+                                        'Privilege List' = ($VIRole.PrivilegeList).Replace(".", " > ") | Select-Object -Unique
                                     }
                                 }
                                 if ($InfoLevel.vCenter -ge 4) {
                                     $VIRoleInfo | ForEach-Object {
-                                        Section -Style Heading4 $($_.Role) {
+                                        Section -Style NOTOCHeading5 -ExcludeFromTOC $($_.Role) {
                                             $TableParams = @{
                                                 Name = "Role $($_.Role) - $vCenterServerName"
                                                 ColumnWidths = 35, 15, 50
@@ -374,7 +374,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 } else {
                                     $TableParams = @{
                                         Name = "Roles - $vCenterServerName"
-                                        Columns = 'Role','System Role'
+                                        Columns = 'Role', 'System Role'
                                         ColumnWidths = 50, 50
                                     }
                                     if ($Report.ShowTableCaptions) {
@@ -529,13 +529,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                     }
                                 }
-                                $Alarms = $Alarms | Sort-Object 'Alarm', 'Trigger'
+                                $Alarms = ($Alarms).Where{ $_.alarm -ne "" } | Sort-Object 'Alarm', 'Trigger'
                                 if ($Healthcheck.vCenter.Alarms) {
                                     $Alarms | Where-Object { $_.'Enabled' -eq 'Disabled' } | Set-Style -Style Warning -Property 'Enabled'
                                 }
                                 if ($InfoLevel.vCenter -ge 5) {
                                     foreach ($Alarm in $Alarms) {
-                                        Section -Style Heading4 $($Alarm.Alarm) {
+                                        Section -Style NOTOCHeading5 -ExcludeFromTOC $($Alarm.Alarm) {
                                             $TableParams = @{
                                                 Name = "$($Alarm.Alarm) - $vCenterServerName"
                                                 List = $true
@@ -734,7 +734,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style Heading4 'vSphere HA Configuration' {
                                                 Paragraph "The following section details the vSphere HA configuration for $Cluster cluster."
                                                 #region vSphere HA Cluster Failures and Responses
-                                                Section -Style Heading5 'Failures and Responses' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Failures and Responses' {
                                                     $HAClusterResponses = [PSCustomObject]@{
                                                         'Host Monitoring' = $TextInfo.ToTitleCase($ClusterDasConfig.HostMonitoring)
                                                     }
@@ -836,7 +836,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion vSphere HA Cluster Failures and Responses
 
                                                 #region vSphere HA Cluster Admission Control
-                                                Section -Style Heading5 'Admission Control' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Admission Control' {
                                                     $HAAdmissionControl = [PSCustomObject]@{
                                                         'Admission Control' = Switch ($Cluster.HAAdmissionControlEnabled) {
                                                             $true { 'Enabled' }
@@ -897,7 +897,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion vSphere HA Cluster Admission Control
 
                                                 #region vSphere HA Cluster Heartbeat Datastores
-                                                Section -Style Heading5 'Heartbeat Datastores' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Heartbeat Datastores' {
                                                     $HeartbeatDatastores = [PSCustomObject]@{
                                                         'Heartbeat Selection Policy' = Switch ($ClusterDasConfig.HBDatastoreCandidatePolicy) {
                                                             'allFeasibleDsWithUserPreference' { 'Use datastores from the specified list and complement automatically if needed' }
@@ -926,7 +926,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region vSphere HA Cluster Advanced Options
                                                 $HAAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterHA' }
                                                 if ($HAAdvancedSettings) {
-                                                    Section -Style Heading5 'vSphere HA Advanced Options' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'vSphere HA Advanced Options' {
                                                         $HAAdvancedOptions = @()
                                                         foreach ($HAAdvancedSetting in $HAAdvancedSettings) {
                                                             $HAAdvancedOption = [PSCustomObject]@{
@@ -957,7 +957,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style Heading4 'Proactive HA' {
                                                 Paragraph "The following section details the Proactive HA configuration for $Cluster cluster."
                                                 #region Proactive HA Failures and Responses Section
-                                                Section -Style Heading5 'Failures and Responses' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Failures and Responses' {
                                                     $ProactiveHa = [PSCustomObject]@{
                                                         'Proactive HA' = Switch ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
                                                             $true { 'Enabled' }
@@ -1072,7 +1072,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region DRS Cluster Additional Options
                                                 $DrsAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterDRS' }
                                                 if ($DrsAdvancedSettings) {
-                                                    Section -Style Heading5 'Additional Options' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Additional Options' {
                                                         $DrsAdditionalOptions = [PSCustomObject] @{
                                                             'VM Distribution' = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'TryBalanceVmsPerHost' }).Value) {
                                                                 '1' { 'Enabled' }
@@ -1113,7 +1113,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                                 #region vSphere DPM Configuration
                                                 if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
-                                                    Section -Style Heading5 'Power Management' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Power Management' {
                                                         $DpmConfig = [PSCustomObject]@{
                                                             'DPM' = Switch ($ClusterConfigEx.DpmConfigInfo.Enabled) {
                                                                 $true { 'Enabled' }
@@ -1151,7 +1151,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region vSphere DRS Cluster Advanced Options
                                                 $DrsAdvancedSettings = $Cluster | Get-AdvancedSetting | Where-Object { $_.Type -eq 'ClusterDRS' }
                                                 if ($DrsAdvancedSettings) {
-                                                    Section -Style Heading5 'Advanced Options' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Advanced Options' {
                                                         $DrsAdvancedOptions = @()
                                                         foreach ($DrsAdvancedSetting in $DrsAdvancedSettings) {
                                                             $DrsAdvancedOption = [PSCustomObject]@{
@@ -1176,7 +1176,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $DrsClusterGroups = $Cluster | Get-DrsClusterGroup
                                                 if ($DrsClusterGroups) {
                                                     #region vSphere DRS Cluster Group Section
-                                                    Section -Style Heading5 'DRS Cluster Groups' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'DRS Cluster Groups' {
                                                         $DrsGroups = foreach ($DrsClusterGroup in $DrsClusterGroups) {
                                                             [PSCustomObject]@{
                                                                 'DRS Cluster Group' = $DrsClusterGroup.Name
@@ -1205,7 +1205,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     #region vSphere DRS Cluster VM/Host Rules
                                                     $DrsVMHostRules = $Cluster | Get-DrsVMHostRule
                                                     if ($DrsVMHostRules) {
-                                                        Section -Style Heading5 'DRS VM/Host Rules' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'DRS VM/Host Rules' {
                                                             $DrsVMHostRuleDetail = foreach ($DrsVMHostRule in $DrsVMHostRules) {
                                                                 [PSCustomObject]@{
                                                                     'DRS VM/Host Rule' = $DrsVMHostRule.Name
@@ -1243,7 +1243,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $DrsRules = $Cluster | Get-DrsRule
                                                     if ($DrsRules) {
                                                         #region vSphere DRS Cluster Rules Section
-                                                        Section -Style Heading5 'DRS Rules' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'DRS Rules' {
                                                             $DrsRuleDetail = foreach ($DrsRule in $DrsRules) {
                                                                 [PSCustomObject]@{
                                                                     'DRS Rule' = $DrsRule.Name
@@ -1256,7 +1256,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         $False { 'No' }
                                                                     }
                                                                     'Mandatory' = $DrsRule.Mandatory
-                                                                    'Virtual Machines' = ($DrsRule.VMIds | ForEach-Object { (Get-View -id $_).name }) -join ', '
+                                                                    'Virtual Machines' = ($DrsRule.VMIds | ForEach-Object { (Get-View -Id $_).name }) -join ', '
                                                                 }
                                                                 if ($Healthcheck.Cluster.DrsRules) {
                                                                     $DrsRuleDetail | Where-Object { $_.Enabled -eq 'No' } | Set-Style -Style Warning -Property 'Enabled'
@@ -1282,10 +1282,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $DasVmOverrides = $Cluster.ExtensionData.Configuration.DasVmConfig
                                                 if ($DrsVmOverrides -or $DasVmOverrides) {
                                                     #region VM Overrides Section
-                                                    Section -Style Heading4 'VM Overrides' {
+                                                    Section -Style NOTOCHeading4 -ExcludeFromTOC 'VM Overrides' {
                                                         #region vSphere DRS VM Overrides
                                                         if ($DrsVmOverrides) {
-                                                            Section -Style Heading5 'vSphere DRS' {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'vSphere DRS' {
                                                                 $DrsVmOverrideDetails = foreach ($DrsVmOverride in $DrsVmOverrides) {
                                                                     [PSCustomObject]@{
                                                                         'Virtual Machine' = $VMLookup."$($DrsVmOverride.Key.Type)-$($DrsVmOverride.Key.Value)"
@@ -1315,7 +1315,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                                         #region vSphere HA VM Overrides
                                                         if ($DasVmOverrides) {
-                                                            Section -Style Heading5 'vSphere HA' {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'vSphere HA' {
                                                                 $DasVmOverrideDetails = foreach ($DasVmOverride in $DasVmOverrides) {
                                                                     [PSCustomObject]@{
                                                                         'Virtual Machine' = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
@@ -1353,7 +1353,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $DasVmOverrideDetails | Sort-Object 'Virtual Machine' | Table @TableParams
 
                                                                 #region PDL/APD Protection Settings Section
-                                                                Section -Style Heading5 'PDL/APD Protection Settings' {
+                                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'PDL/APD Protection Settings' {
                                                                     $DasVmOverridePdlApd = foreach ($DasVmOverride in $DasVmOverrides) {
                                                                         $DasVmComponentProtection = $DasVmOverride.DasSettings.VmComponentProtectionSettings
                                                                         [PSCustomObject]@{
@@ -1398,7 +1398,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 #endregion PDL/APD Protection Settings Section
 
                                                                 #region VM Monitoring Section
-                                                                Section -Style Heading5 'VM Monitoring' {
+                                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'VM Monitoring' {
                                                                     $DasVmOverrideVmMonitoring = foreach ($DasVmOverride in $DasVmOverrides) {
                                                                         $DasVmMonitoring = $DasVmOverride.DasSettings.VmToolsMonitoringSettings
                                                                         [PSCustomObject]@{
@@ -1519,7 +1519,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VUM Baselines
 
                                                 #region Cluster VUM Compliance (Advanced Detail Information)
-                                                if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                                if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
                                                         if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                             $ClusterCompliances = $Cluster | Get-Compliance
@@ -1560,7 +1560,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VUM Compliance (Advanced Detail Information)
 
                                                 #region Cluster Permissions
-                                                Section -Style Heading4 'Permissions' {
+                                                Section -Style NOTOCHeading4 -ExcludeFromTOC 'Permissions' {
                                                     Paragraph "The following table details the permissions assigned to cluster $Cluster."
                                                     BlankLine
                                                     $VIPermissions = $Cluster | Get-VIPermission
@@ -1790,7 +1790,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 'Asset Tag' = Switch ($VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue) {
                                                     '' { 'Unknown' }
-                                                    $null  { 'Unknown' }
+                                                    $null { 'Unknown' }
                                                     default { $VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue }
                                                 }
                                                 'Processor Type' = $VMHost.Processortype
@@ -1810,7 +1810,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Number of VMs' = $VMHost.ExtensionData.VM.Count
                                                 'Maximum EVC Mode' = $EvcModeLookup."$($VMHost.MaxEVCMode)"
                                                 'EVC Graphics Mode' = Switch ($VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey) {
-                                                    $null { 'Not applicable'}
+                                                    $null { 'Not applicable' }
                                                     default { $VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey }
                                                 }
                                                 'Power Management Policy' = $VMHost.ExtensionData.Hardware.CpuPowerManagementInfo.CurrentPolicy
@@ -1872,10 +1872,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Try {
                                                 $VMHostIPMI = $esxcli.hardware.ipmi.bmc.get.invoke()
                                             } Catch {
-                                                Write-PScriboMessage -IsWarning "Unable to collect IPMI / BMC  configuration from $VMHost"
+                                                Write-PScriboMessage -IsWarning "Unable to collect IPMI / BMC configuration from $VMHost."
                                             }
                                             if ($VMHostIPMI) {
-                                                Section -Style Heading5 'IPMI / BMC' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'IPMI / BMC' {
                                                     $VMHostIPMIInfo = [PSCustomObject]@{
                                                         'Manufacturer' = $VMHostIPMI.Manufacturer
                                                         'MAC Address' = $VMHostIPMI.MacAddress
@@ -1899,7 +1899,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi IPMI/BMC Settings
 
                                             #region ESXi Host Boot Device
-                                            Section -Style Heading5 'Boot Device' {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Boot Device' {
                                                 $ESXiBootDevice = Get-ESXiBootDevice -VMHost $VMHost
                                                 $VMHostBootDevice = [PSCustomObject]@{
                                                     'Host' = $ESXiBootDevice.Host
@@ -1972,6 +1972,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'Vendor Name'   = $PciDevice.VendorName
                                                         }
                                                     }
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Unable to collect PCI Devices configuration from $VMhost."
                                                 }
                                                 $TableParams = @{
                                                     Name = "PCI Devices - $VMHost"
@@ -1985,16 +1987,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host PCI Devices
 
                                             #region ESXi Host PCI Devices Drivers & Firmware
-                                            Section -Style Heading5 'PCI Devices Drivers & Firmware' {
-                                                $VMHostPciDevicesDetails = Get-PciDeviceDetail -Server $vCenter -esxcli $esxcli | Sort-Object 'Device'
-                                                $TableParams = @{
-                                                    Name = "PCI Devices Drivers & Firmware - $VMHost"
-                                                    ColumnWidths = 12, 20, 11, 19, 11, 11, 16
+                                            $VMHostPciDevicesDetails = Get-PciDeviceDetail -Server $vCenter -esxcli $esxcli | Sort-Object 'Device'
+                                            if ($VMHostPciDevicesDetails) {
+                                                Try {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'PCI Devices Drivers & Firmware' {
+                                                        $TableParams = @{
+                                                            Name = "PCI Devices Drivers & Firmware - $VMHost"
+                                                            ColumnWidths = 12, 20, 11, 19, 11, 11, 16
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VMHostPciDevicesDetails | Table @TableParams
+                                                    }
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Unable to collect PCI Devices Drivers & Firmware configuration from $VMhost."
                                                 }
-                                                if ($Report.ShowTableCaptions) {
-                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                }
-                                                $VMHostPciDevicesDetails | Table @TableParams
                                             }
                                             #endregion ESXi Host PCI Devices Drivers & Firmware
                                         }
@@ -2005,7 +2013,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Paragraph "The following section details the host system configuration for $VMHost."
                                             #region ESXi Host Profile Information
                                             if ($VMHost | Get-VMHostProfile) {
-                                                Section -Style Heading5 'Host Profile' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Host Profile' {
                                                     $VMHostProfile = $VMHost | Get-VMHostProfile | Select-Object Name, Description
                                                     $TableParams = @{
                                                         Name = "Host Profile - $VMHost"
@@ -2021,7 +2029,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host Image Profile Information
                                             if ($UserRole.Privilege -contains 'Host.Config.Settings') {
-                                                Section -Style Heading5 'Image Profile' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Image Profile' {
                                                     $installdate = Get-InstallDate
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
                                                     $ImageProfile = $esxcli.software.profile.get.Invoke()
@@ -2045,7 +2053,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Image Profile Information
 
                                             #region ESXi Host Time Configuration
-                                            Section -Style Heading5 'Time Configuration' {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Time Configuration' {
                                                 $VMHostTimeSettings = [PSCustomObject]@{
                                                     'Time Zone' = $VMHost.timezone
                                                     'NTP Service' = Switch ((Get-VMHostService -VMHost $VMHost | Where-Object { $_.key -eq 'ntpd' }).Running) {
@@ -2071,7 +2079,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Syslog Configuration
                                             $SyslogConfig = $VMHost | Get-VMHostSysLogServer
                                             if ($SyslogConfig) {
-                                                Section -Style Heading5 'Syslog Configuration' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Syslog Configuration' {
                                                     # TODO: Syslog Rotate & Size, Log Directory (Adv Settings)
                                                     $SyslogConfig = $SyslogConfig | Select-Object @{L = 'SysLog Server'; E = { $_.Host } }, Port
                                                     $TableParams = @{
@@ -2095,7 +2103,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         Write-PScriboMessage 'ESXi VUM baseline information is not currently available with your version of PowerShell.'
                                                     }
                                                     if ($VMHostPatchBaselines) {
-                                                        Section -Style Heading5 'Update Manager Baselines' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Update Manager Baselines' {
                                                             $VMHostBaselines = foreach ($VMHostBaseline in $VMHostPatchBaselines) {
                                                                 [PSCustomObject]@{
                                                                     'Baseline' = $VMHostBaseline.Name
@@ -2123,7 +2131,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Update Manager Baseline Information
 
                                             #region ESXi Update Manager Compliance Information
-                                            if  ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                            if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
                                                     if ("Desktop" -eq $PSVersionTable.PsEdition) {
                                                         $VMHostCompliances = $VMHost | Get-Compliance
@@ -2131,7 +2139,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         Write-PScriboMessage 'ESXi VUM compliance information is not currently available with your version of PowerShell.'
                                                     }
                                                     if ($VMHostCompliances) {
-                                                        Section -Style Heading5 'Update Manager Compliance' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Update Manager Compliance' {
                                                             $VMHostComplianceInfo = foreach ($VMHostCompliance in $VMHostCompliances) {
                                                                 [PSCustomObject]@{
                                                                     'Baseline' = $VMHostCompliance.Baseline.Name
@@ -2164,7 +2172,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Comprehensive Information Section
                                             if ($InfoLevel.VMHost -ge 5) {
                                                 #region ESXi Host Advanced System Settings
-                                                Section -Style Heading5 'Advanced System Settings' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Advanced System Settings' {
                                                     $AdvSettings = $VMHost | Get-AdvancedSetting | Select-Object Name, Value
                                                     $TableParams = @{
                                                         Name = "Advanced System Settings - $VMHost"
@@ -2178,7 +2186,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion ESXi Host Advanced System Settings
 
                                                 #region ESXi Host Software VIBs
-                                                Section -Style Heading5 'Software VIBs' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Software VIBs' {
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
                                                     $VMHostVibs = $esxcli.software.vib.list.Invoke()
                                                     $VMHostVibs = foreach ($VMHostVib in $VMHostVibs) {
@@ -2213,7 +2221,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Datastore Specifications
                                             $VMHostDatastores = $VMHost | Get-Datastore | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
                                             if ($VMHostDatastores) {
-                                                Section -Style Heading5 'Datastores' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Datastores' {
                                                     $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
                                                         [PSCustomObject]@{
                                                             'Datastore' = $VMHostDatastore.Name
@@ -2249,13 +2257,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $VMHostHbas = $VMHost | Get-VMHostHba | Sort-Object Device
                                             if ($VMHostHbas) {
                                                 #region ESXi Host Storage Adapters Section
-                                                Section -Style Heading5 'Storage Adapters' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Storage Adapters' {
                                                     Paragraph "The following section details the storage adapter configuration for $VMHost."
                                                     foreach ($VMHostHba in $VMHostHbas) {
                                                         $Target = ((Get-View $VMHostHba.VMhost).Config.StorageDevice.ScsiTopology.Adapter | Where-Object { $_.Adapter -eq $VMHostHba.Key }).Target
                                                         $LUNs = Get-ScsiLun -Hba $VMHostHba -LunType "disk" -ErrorAction SilentlyContinue
-                                                        $Paths = ($Target | foreach { $_.Lun.Count } | Measure-Object -Sum)
-                                                        Section -Style Heading5 "$($VMHostHba.Device)" {
+                                                        $Paths = ($Target | ForEach-Object { $_.Lun.Count } | Measure-Object -Sum)
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMHostHba.Device)" {
                                                             $VMHostStorageAdapter = [PSCustomObject]@{
                                                                 'Adapter' = $VMHostHba.Device
                                                                 'Type' = Switch ($VMHostHba.Type) {
@@ -2396,7 +2404,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Network Configuration
 
                                             #region ESXi Host Physical Adapters
-                                            Section -Style Heading5 'Physical Adapters' {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Physical Adapters' {
                                                 Paragraph "The following section details the physical network adapter configuration for $VMHost."
                                                 $PhysicalNetAdapters = $VMHost.ExtensionData.Config.Network.Pnic | Sort-Object Device
                                                 $VMHostPhysicalNetAdapters = foreach ($PhysicalNetAdapter in $PhysicalNetAdapters) {
@@ -2448,7 +2456,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 }
                                                 if ($InfoLevel.VMHost -ge 4) {
                                                     foreach ($VMHostPhysicalNetAdapter in $VMHostPhysicalNetAdapters) {
-                                                        Section -Style Heading5 "$($VMHostPhysicalNetAdapter.Adapter)" {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMHostPhysicalNetAdapter.Adapter)" {
                                                             $TableParams = @{
                                                                 Name = "Physical Adapter $($VMHostPhysicalNetAdapter.Adapter) - $VMHost"
                                                                 List = $true
@@ -2477,11 +2485,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Cisco Discovery Protocol
                                             $VMHostNetworkAdapterCDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $_.Status -eq 'Connected' } | Sort-Object Device
                                             if ($VMHostNetworkAdapterCDP) {
-                                                Section -Style Heading5 'Cisco Discovery Protocol' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Cisco Discovery Protocol' {
                                                     Paragraph "The following section details the CDP information for $VMHost."
                                                     if ($InfoLevel.VMHost -ge 4) {
                                                         foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterCDP) {
-                                                            Section -Style Heading5 "$($VMHostNetworkAdapter.Device)" {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMHostNetworkAdapter.Device)" {
                                                                 $VMHostCDP = [PSCustomObject]@{
                                                                     'Status' = $VMHostNetworkAdapter.Status
                                                                     'System Name' = $VMHostNetworkAdapter.SystemName
@@ -2533,11 +2541,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #region ESXi Host Link Layer Discovery Protocol
                                             $VMHostNetworkAdapterLLDP = $VMHost | Get-VMHostNetworkAdapterDP | Where-Object { $null -ne $_.ChassisId } | Sort-Object Device
                                             if ($VMHostNetworkAdapterLLDP) {
-                                                Section -Style Heading5 'Link Layer Discovery Protocol' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Link Layer Discovery Protocol' {
                                                     Paragraph "The following section details the LLDP information for $VMHost."
                                                     if ($InfoLevel.VMHost -ge 4) {
                                                         foreach ($VMHostNetworkAdapter in $VMHostNetworkAdapterLLDP) {
-                                                            Section -Style Heading5 "$($VMHostNetworkAdapter.Device)" {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMHostNetworkAdapter.Device)" {
                                                                 $VMHostLLDP = [PSCustomObject]@{
                                                                     'Chassis ID' = $VMHostNetworkAdapter.ChassisId
                                                                     'Port ID' = $VMHostNetworkAdapter.PortId
@@ -2586,7 +2594,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Link Layer Discovery Protocol
 
                                             #region ESXi Host VMkernel Adapaters
-                                            Section -Style Heading5 'VMkernel Adapters' {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'VMkernel Adapters' {
                                                 Paragraph "The following section details the VMkernel adapter configuration for $VMHost"
                                                 $VMkernelAdapters = $VMHost | Get-View | ForEach-Object -Process {
                                                     $esx = $_
@@ -2688,7 +2696,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 foreach ($VMkernelAdapter in ($VMkernelAdapters | Sort-Object 'Adapter')) {
-                                                    Section -Style Heading5 "$($VMkernelAdapter.Adapter)" {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMkernelAdapter.Adapter)" {
                                                         $TableParams = @{
                                                             Name = "VMkernel Adapter $($VMkernelAdapter.Adapter) - $VMHost"
                                                             List = $true
@@ -2707,7 +2715,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $VSSwitches = $VMHost | Get-VirtualSwitch -Standard | Sort-Object Name
                                             if ($VSSwitches) {
                                                 #region Section Standard Virtual Switches
-                                                Section -Style Heading5 'Standard Virtual Switches' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Standard Virtual Switches' {
                                                     Paragraph "The following section details the standard virtual switch configuration for $VMHost."
                                                     BlankLine
                                                     $VSSwitchNicTeaming = $VSSwitches | Get-NicTeamingPolicy
@@ -2734,7 +2742,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $VssSecurity = $VSSwitches | Get-SecurityPolicy
                                                     if ($VssSecurity) {
                                                         #region Virtual Switch Security Policy
-                                                        Section -Style Heading5 'Virtual Switch Security' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Security' {
                                                             $VssSecurity = foreach ($VssSec in $VssSecurity) {
                                                                 [PSCustomObject]@{
                                                                     'Virtual Switch' = $VssSec.VirtualSwitch
@@ -2766,7 +2774,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     #endregion ESXi Host Virtual Switch Security Policy
 
                                                     #region ESXi Host Virtual Switch Traffic Shaping Policy
-                                                    Section -Style Heading5 'Virtual Switch Traffic Shaping' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Traffic Shaping' {
                                                         $VssTrafficShapingPolicy = foreach ($VSSwitch in $VSSwitches) {
                                                             [PSCustomObject]@{
                                                                 'Virtual Switch' = $VSSwitch.Name
@@ -2794,7 +2802,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $VssNicTeamingPolicy = $VSSwitches | Get-NicTeamingPolicy
                                                     if ($VssNicTeamingPolicy) {
                                                         #region Virtual Switch Teaming & Failover Section
-                                                        Section -Style Heading5 'Virtual Switch Teaming & Failover' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Teaming & Failover' {
                                                             $VssNicTeaming = foreach ($VssNicTeam in $VssNicTeamingPolicy) {
                                                                 [PSCustomObject]@{
                                                                     'Virtual Switch' = $VssNicTeam.VirtualSwitch
@@ -2839,7 +2847,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     #region ESXi Host Virtual Switch Port Groups
                                                     $VssPortgroups = $VSSwitches | Get-VirtualPortGroup -Standard
                                                     if ($VssPortgroups) {
-                                                        Section -Style Heading5 'Virtual Switch Port Groups' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Port Groups' {
                                                             $VssPortgroups = foreach ($VssPortgroup in $VssPortgroups) {
                                                                 [PSCustomObject]@{
                                                                     'Port Group' = $VssPortgroup.Name
@@ -2863,7 +2871,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VssPortgroupSecurity = $VSSwitches | Get-VirtualPortGroup | Get-SecurityPolicy
                                                         if ($VssPortgroupSecurity) {
                                                             #region Virtual Port Group Security Policy Section
-                                                            Section -Style Heading5 'Virtual Switch Port Group Security' {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Port Group Security' {
                                                                 $VssPortgroupSecurity = foreach ($VssPortgroupSec in $VssPortgroupSecurity) {
                                                                     [PSCustomObject]@{
                                                                         'Port Group' = $VssPortgroupSec.VirtualPortGroup
@@ -2896,7 +2904,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         #endregion ESXi Host Virtual Switch Port Group Security Policy
 
                                                         #region ESXi Host Virtual Switch Port Group Traffic Shaping Policy
-                                                        Section -Style Heading5 'Virtual Switch Port Group Traffic Shaping' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Port Group Traffic Shaping' {
                                                             $VssPortgroupTrafficShapingPolicy = foreach ($VssPortgroup in $VssPortgroups) {
                                                                 [PSCustomObject]@{
                                                                     'Port Group' = $VssPortgroup.Name
@@ -2926,7 +2934,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VssPortgroupNicTeaming = $VSSwitches | Get-VirtualPortGroup | Get-NicTeamingPolicy
                                                         if ($VssPortgroupNicTeaming) {
                                                             #region Virtual Switch Port Group Teaming & Failover Section
-                                                            Section -Style Heading5 'Virtual Switch Port Group Teaming & Failover' {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Virtual Switch Port Group Teaming & Failover' {
                                                                 $VssPortgroupNicTeaming = foreach ($VssPortgroupNicTeam in $VssPortgroupNicTeaming) {
                                                                     [PSCustomObject]@{
                                                                         'Port Group' = $VssPortgroupNicTeam.VirtualPortGroup
@@ -2981,7 +2989,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Paragraph "The following section details the host security configuration for $VMHost."
                                             #region ESXi Host Lockdown Mode
                                             if ($null -ne $VMHost.ExtensionData.Config.LockdownMode) {
-                                                Section -Style Heading5 'Lockdown Mode' {
+                                                Section -Style NOTOCHeading5 -ExcludeFromTOC 'Lockdown Mode' {
                                                     $LockdownMode = [PSCustomObject]@{
                                                         'Lockdown Mode' = Switch ($VMHost.ExtensionData.Config.LockdownMode) {
                                                             'lockdownDisabled' { 'Disabled' }
@@ -3007,7 +3015,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Lockdown Mode
 
                                             #region ESXi Host Services
-                                            Section -Style Heading5 'Services' {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC 'Services' {
                                                 $VMHostServices = $VMHost | Get-VMHostService
                                                 $Services = foreach ($VMHostService in $VMHostServices) {
                                                     [PSCustomObject]@{
@@ -3053,7 +3061,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $VMHostFirewallExceptions = $VMHost | Get-VMHostFirewallException
                                                 if ($VMHostFirewallExceptions) {
                                                     #region Friewall Section
-                                                    Section -Style Heading5 'Firewall' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Firewall' {
                                                         $VMHostFirewall = foreach ($VMHostFirewallException in $VMHostFirewallExceptions) {
                                                             [PScustomObject]@{
                                                                 'Service' = $VMHostFirewallException.Name
@@ -3088,7 +3096,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region ESXi Host Authentication
                                                 $AuthServices = $VMHost | Get-VMHostAuthentication
                                                 if ($AuthServices.DomainMembershipStatus) {
-                                                    Section -Style Heading5 'Authentication Services' {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC 'Authentication Services' {
                                                         $AuthServices = $AuthServices | Select-Object Domain, @{L = 'Domain Membership'; E = { $_.DomainMembershipStatus } }, @{L = 'Trusted Domains'; E = { $_.TrustedDomains } }
                                                         $TableParams = @{
                                                             Name = "Authentication Services - $VMHost"
@@ -3163,7 +3171,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $VMStartPolicy = $VMHost | Get-VMStartPolicy | Where-Object { $_.StartAction -ne 'None' }
                                                     if ($VMStartPolicy) {
                                                         #region VM Startup/Shutdown Section
-                                                        Section -Style Heading5 'VM Startup/Shutdown' {
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC 'VM Startup/Shutdown' {
                                                             $VMStartPolicies = foreach ($VMStartPol in $VMStartPolicy) {
                                                                 [PSCustomObject]@{
                                                                     'Start Order' = $VMStartPol.StartOrder
@@ -3438,7 +3446,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #region Distributed Switch Port Group Security
                                         $VDSPortgroupSecurity = $VDS | Get-VDPortgroup | Get-VDSecurityPolicy
                                         if ($VDSPortgroupSecurity) {
-                                            Section -Style Heading5 "Distributed Switch Port Group Security" {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "Distributed Switch Port Group Security" {
                                                 $VDSSecurityPolicies = foreach ($VDSSecurityPolicy in $VDSPortgroupSecurity) {
                                                     [PSCustomObject]@{
                                                         'Port Group' = $VDSSecurityPolicy.VDPortgroup
@@ -3476,7 +3484,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $VDSPortgroupTrafficShaping += $VDSPortgroupTrafficShapingIn
                                         $VDSPortgroupTrafficShaping += $VDSPortgroupTrafficShapingOut
                                         if ($VDSPortgroupTrafficShaping) {
-                                            Section -Style Heading5 "Distributed Switch Port Group Traffic Shaping" {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "Distributed Switch Port Group Traffic Shaping" {
                                                 $VDSPortgroupTrafficShapingDetail = foreach ($VDSPortgroupTrafficShape in $VDSPortgroupTrafficShaping) {
                                                     [PSCustomObject]@{
                                                         'Port Group' = $VDSPortgroupTrafficShape.VDPortgroup
@@ -3507,7 +3515,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         #region Distributed Switch Port Group Teaming & Failover
                                         $VDUplinkTeamingPolicy = $VDS | Get-VDPortgroup | Get-VDUplinkTeamingPolicy
                                         if ($VDUplinkTeamingPolicy) {
-                                            Section -Style Heading5 "Distributed Switch Port Group Teaming & Failover" {
+                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "Distributed Switch Port Group Teaming & Failover" {
                                                 $VDSPortgroupNICTeaming = foreach ($VDUplink in $VDUplinkTeamingPolicy) {
                                                     [PSCustomObject]@{
                                                         'Port Group' = $VDUplink.VDPortgroup
@@ -3740,7 +3748,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             if ($InfoLevel.vSAN -ge 4) {
                                                 $vDisks | Sort-Object Host | ForEach-Object {
-                                                    Section -Style Heading4 "$($_.Disk) - $($_.Host)" {
+                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC "$($_.Disk) - $($_.Host)" {
                                                         $TableParams = @{
                                                             Name = "Disk $($_.Disk) - $($_.Host)"
                                                             List = $true
@@ -4538,7 +4546,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VMHardDiskInfo | Table @TableParams
                                                     } else {
                                                         foreach ($VMHdd in $VMHdds) {
-                                                            Section -Style Heading5 "$($VMHdd.Name)" {
+                                                            Section -Style NOTOCHeading5 -ExcludeFromTOC "$($VMHdd.Name)" {
                                                                 $SCSIDevice = $VMView.Config.Hardware.Device | Where-Object { $_.Key -eq $VMHdd.ExtensionData.Key -and $_.Backing.FileName -eq $VMHdd.FileName }
                                                                 $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
                                                                 $VMHardDiskInfo = [PSCustomObject]@{

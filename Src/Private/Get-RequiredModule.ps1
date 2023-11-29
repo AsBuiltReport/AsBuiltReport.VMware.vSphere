@@ -26,9 +26,9 @@ function Get-RequiredModule {
     $RequiredModule = Get-Module -ListAvailable -Name $Name | Sort-Object -Property Version -Descending | Select-Object -First 1
     $ModuleVersion = "$($RequiredModule.Version.Major)" + "." + "$($RequiredModule.Version.Minor)"
     if ($ModuleVersion -eq ".")  {
-        throw "VMware PowerCLI $Version or higher is required to run the VMware vSphere As Built Report. Run 'Install-Module -Name $Name -MinimumVersion $Version' to install the required modules."
+        throw "VMware PowerCLI $Version or higher is required to run the VMware vSphere As Built Report. Run 'Install-Module -Name $Name -MinimumVersion $Version -Force' to install the required modules."
     }
     if ($ModuleVersion -lt $Version) {
-        throw "VMware PowerCLI $Version or higher is required to run the VMware vSphere As Built Report. Run 'Update-Module -Name $Name -MinimumVersion $Version' to update the required modules."
+        throw "VMware PowerCLI $Version or higher is required to run the VMware vSphere As Built Report. Run 'Update-Module -Name $Name -MinimumVersion $Version -Force' to update the required modules."
     }
 }
