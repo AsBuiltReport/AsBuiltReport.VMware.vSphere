@@ -1,6 +1,6 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [1.3.4-RC1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4-RC1)] - 2023-11-30
+## [[1.3.4-RC1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4-RC1)] - 2023-11-30
 
 ### Changed
 - Updated VMware PowerCLI requirements to version 13.2
