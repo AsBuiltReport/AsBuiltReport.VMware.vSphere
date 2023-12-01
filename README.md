@@ -60,6 +60,7 @@ The VMware vSphere As Built Report supports the following vSphere versions;
 - vSphere 6.5
 - vSphere 6.7
 - vSphere 7.0
+- vSphere 8.0
 
 #### End of Support
 The following VMware vSphere versions are no longer being tested and/or supported;
