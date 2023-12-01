@@ -1,5 +1,22 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
+## [[1.3.4-RC1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4-RC1)] - 2023-12-01
+
+### Changed
+- Updated VMware PowerCLI requirements to version 13.2 ([Fix #107](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/107))
+- Improved bug and feature request templates (@rebelinux)
+- Improved TOC structure
+- Updated VMware style script for improved TOC structure
+
+### Fixed
+- Updated VMHost PCI Devices reporting to fix issues with ESXi 8.x hosts (@orb71) ([Fix #105](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/105)) & ([Fix #111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111))
+- Added Try/Catch stated PCI Drivers and Firmware section to provide a workaround for ESXi 8.x hosts ([Fix #116](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/116))
+- Updated vCenter Server alarms reporting ([Fix #106](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/106))
+- Fixed issue with Platform Services Controller reporting ([Fix #103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103))
+
+### Removed
+- Removed reporting of vCenter Server OS type
+
 ## [[1.3.3.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.3.1)] - 2022-04-21
 
 ### Added
