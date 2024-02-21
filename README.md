@@ -57,8 +57,6 @@ Below are the instructions on how to install, configure and generate a VMware vS
 
 ### VMware vSphere
 The VMware vSphere As Built Report supports the following vSphere versions;
-- vSphere 6.5
-- vSphere 6.7
 - vSphere 7.0
 - vSphere 8.0
 
@@ -66,6 +64,8 @@ The VMware vSphere As Built Report supports the following vSphere versions;
 The following VMware vSphere versions are no longer being tested and/or supported;
 - vSphere 5.5
 - vSphere 6.0
+- vSphere 6.5
+- vSphere 6.7
 
 ### PowerShell
 This report is compatible with the following PowerShell versions;
