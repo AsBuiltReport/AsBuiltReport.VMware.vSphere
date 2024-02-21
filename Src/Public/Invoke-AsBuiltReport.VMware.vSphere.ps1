@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/Text formats using PScribo.
     .NOTES
-        Version:        1.3.4-RC1
+        Version:        1.3.4-RC2
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -19,6 +19,26 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         [PSCredential] $Credential
     )
 
+    Write-PScriboMessage -IsWarning "Please refer to www.asbuiltreport.com for more detailed information about this project."
+    Write-PScriboMessage -IsWarning "Do not forget to update your report configuration file after each new version release."
+    Write-PScriboMessage -IsWarning "Documentation: https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere"
+    Write-PScriboMessage -IsWarning "Issues or bug reporting: https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues"
+
+    # Check the current AsBuiltReport.VMware.vSphere module
+    Try {
+        $InstalledVersion = Get-Module -ListAvailable -Name AsBuiltReport.VMware.vSphere -ErrorAction SilentlyContinue | Sort-Object -Property Version -Descending | Select-Object -First 1 -ExpandProperty Version
+
+        if ($InstalledVersion) {
+            Write-PScriboMessage -IsWarning "AsBuiltReport.VMware.vSphere $($InstalledVersion.ToString()) is currently installed."
+            $LatestVersion = Find-Module -Name AsBuiltReport.VMware.vSphere -Repository PSGallery -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Version
+            if ($LatestVersion -gt $InstalledVersion) {
+                Write-PScriboMessage -IsWarning "AsBuiltReport.VMware.vSphere $($LatestVersion.ToString()) is available."
+                Write-PScriboMessage -IsWarning "Run 'Update-Module -Name AsBuiltReport.VMware.vSphere -Force' to install the latest version."
+            }
+        }
+    } Catch {
+        Write-PscriboMessage -IsWarning $_.Exception.Message
+    }
     # Check if the required version of VMware PowerCLI is installed
     Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.2'
 
@@ -2595,7 +2615,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style NOTOCHeading5 -ExcludeFromTOC 'VMkernel Adapters' {
                                                 Paragraph "The following section details the VMkernel adapter configuration for $VMHost"
                                                 $VMkernelAdapters = $VMHost | Get-View | ForEach-Object -Process {
-                                                    $esx = $_
+                                                    #$esx = $_
                                                     $netSys = Get-View -Id $_.ConfigManager.NetworkSystem
                                                     $vnicMgr = Get-View -Id $_.ConfigManager.VirtualNicManager
                                                     $netSys.NetworkInfo.Vnic |
@@ -2606,17 +2626,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'Network Label' = & {
                                                                 if ($_.Spec.Portgroup) {
                                                                     $script:pg = $_.Spec.Portgroup
+                                                                    $script:pg
+                                                                } elseif ($_.Spec.DistributedVirtualPort.Portgroupkey) {
+                                                                    $script:pg = Get-View -ViewType DistributedVirtualPortgroup -Property Name, Key -Filter @{'Key' = "$($_.Spec.DistributedVirtualPort.PortgroupKey)" } | Select-Object -ExpandProperty Name
+                                                                    $script:pg
                                                                 } else {
-                                                                    $script:pg = Get-View -ViewType DistributedVirtualPortgroup -Property Name, Key -Filter @{'Key' = "$($_.Spec.DistributedVirtualPort.PortgroupKey)" } |
-                                                                    Select-Object -ExpandProperty Name
+                                                                    '--'
                                                                 }
-                                                                $script:pg
                                                             }
                                                             'Virtual Switch' = & {
                                                                 if ($_.Spec.Portgroup) {
                                                                     (Get-VirtualPortGroup -Standard -Name $script:pg -VMHost $VMHost).VirtualSwitchName
-                                                                } else {
+                                                                } elseif ($_.Spec.DistributedVirtualPort.Portgroupkey) {
                                                                     (Get-VDPortgroup -Name $script:pg).VDSwitch.Name | Select-Object -Unique
+                                                                } else {
+                                                                    # Haven't figured out how to gather this yet!
+                                                                    '--'
                                                                 }
                                                             }
                                                             'TCP/IP Stack' = Switch ($_.Spec.NetstackInstanceKey) {

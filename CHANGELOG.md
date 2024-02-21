@@ -1,18 +1,25 @@
 # :arrows_clockwise: VMware vSphere As Built Report Changelog
 
-## [[1.3.4-RC1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4-RC1)] - 2023-12-01
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [[1.3.4-RC2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4-RC2)] - 2024-02-21
 
 ### Changed
-- Updated VMware PowerCLI requirements to version 13.2 ([Fix #107](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/107))
-- Improved bug and feature request templates (@rebelinux)
-- Improved TOC structure
-- Updated VMware style script for improved TOC structure
+- Update VMware PowerCLI requirements to version 13.2 ([Fix #107](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/107))
+- Improve bug and feature request templates (@rebelinux)
+- Improve TOC structure
+- Update VMware style script for improved TOC structure
 
 ### Fixed
-- Updated VMHost PCI Devices reporting to fix issues with ESXi 8.x hosts (@orb71) ([Fix #105](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/105)) & ([Fix #111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111))
-- Added Try/Catch stated PCI Drivers and Firmware section to provide a workaround for ESXi 8.x hosts ([Fix #116](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/116))
-- Updated vCenter Server alarms reporting ([Fix #106](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/106))
-- Fixed issue with Platform Services Controller reporting ([Fix #103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103))
+- Update VMHost PCI Devices reporting to fix issues with ESXi 8.x hosts (@orb71) ([Fix #105](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/105)) & ([Fix #111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111))
+- Add Try/Catch stated PCI Drivers and Firmware section to provide a workaround for ESXi 8.x hosts ([Fix #116](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/116))
+- Update vCenter Server alarms reporting ([Fix #106](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/106))
+- Fix issue with Platform Services Controller reporting ([Fix #103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103))
+- Fix NSX-T virtual switch network labels ([Fix #118](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/118))
+- Fix [#103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103)
 
 ### Removed
 - Removed reporting of vCenter Server OS type
