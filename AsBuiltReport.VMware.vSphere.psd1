@@ -51,7 +51,7 @@
     RequiredModules = @(
         @{
             ModuleName = 'AsBuiltReport.Core';
-            ModuleVersion = '1.2.0'
+            ModuleVersion = '1.3.0'
         }
     )
 
@@ -111,7 +111,7 @@
             ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
 
             # Prerelease string of this module
-            Prerelease = 'rc2'
+            # Prerelease = ''
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
