@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve bug and feature request templates (@rebelinux)
 - Improve TOC structure
 - Update VMware style script for improved TOC structure
+- Update GitHub action workflows
 
 ### Fixed
 - Update VMHost PCI Devices reporting to fix issues with ESXi 8.x hosts (@orb71) ([Fix #105](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/105)) & ([Fix #111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111))
