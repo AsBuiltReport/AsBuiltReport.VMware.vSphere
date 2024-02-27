@@ -27,7 +27,7 @@
     # CompanyName = ''
 
     # Copyright statement for this module
-    Copyright = '(c) 2018 Tim Carman. All rights reserved.'
+    Copyright = '(c) 2024 Tim Carman. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
@@ -51,7 +51,7 @@
     RequiredModules = @(
         @{
             ModuleName = 'AsBuiltReport.Core';
-            ModuleVersion = '1.2.0'
+            ModuleVersion = '1.3.0'
         }
     )
 
@@ -111,7 +111,7 @@
             ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
 
             # Prerelease string of this module
-            Prerelease = 'rc1'
+            # Prerelease = ''
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
