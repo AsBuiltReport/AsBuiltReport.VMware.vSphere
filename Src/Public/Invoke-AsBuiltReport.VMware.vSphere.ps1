@@ -3618,6 +3618,25 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
                     if ($VsanClusters) {
                         Section -Style Heading2 'vSAN' {
+                            BlankLine
+                            foreach ($VsanCluster in $VsanClusters) {
+                                $VsanSpaceUsage = Get-Cluster | Where-Object {$_.Name -eq $VsanCluster.Name}
+                                $VsanUsedCapacity = [math]::Round($VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB),2
+                                $VsanSpaceInfo = [PSCustomObject]@{
+                                    'Total Capacity' = "$([math]::Round($VsanSpaceUsage.CapacityGB,2)) GB"
+                                    'Used Capacity' = "$($VsanUsedCapacity) GB"
+                                    'Free Capacity' = "$([math]::Round($VsanSpaceUsage.FreeSpaceGB,2)) GB"
+                                }
+                                $TableParams = @{
+                                    Name = "vSAN Capacity Overview - $($vCenterServerName)"
+                                    ColumnWidths = 34, 33, 33
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                $VsanSpaceInfo | Table @TableParams
+                            }
+
                             Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
                             #region vSAN Cluster Advanced Summary
                             if ($InfoLevel.vSAN -le 2) {
@@ -3625,7 +3644,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $VsanClusterInfo = foreach ($VsanCluster in $VsanClusters) {
                                     [PSCustomObject]@{
                                         'Cluster' = $VsanCluster.Name
-                                        'vSAN Enabled' = $VsanCluster.VsanEnabled
+                                        'vSAN Enabled' = Switch ($VsanCluster.VsanEnabled) {
+                                            $true { 'Yes' }
+                                            $false { 'No' }
+                                        }
                                         'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
                                             $true { 'Yes' }
                                             $false { 'No' }
@@ -3634,6 +3656,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
                                             $true { 'Enabled' }
                                             $false { 'Disabled' }
+                                            $null { 'Disabled' }
                                         }
                                         'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
                                             $true { 'Enabled' }
@@ -3643,6 +3666,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
                                             $true { 'Enabled' }
                                             $false { 'Disabled' }
+                                            $null { 'Disabled' }
                                         }
                                     }
                                 }
@@ -3662,138 +3686,257 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 foreach ($VsanCluster in $VsanClusters) {
                                     #region vSAN Cluster Section
                                     Section -Style Heading3 $VsanCluster.Name {
-                                        $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
-                                        $NumVsanDiskGroup = $VsanDiskGroup.Count
-                                        $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
-                                        $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
-                                        $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
-                                        $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
-                                        if ($NumVsanHdd -gt 0) {
-                                            $VsanClusterType = "Hybrid"
-                                        } else {
-                                            $VsanClusterType = "All Flash"
-                                        }
-                                        $VsanClusterDetail = [PSCustomObject]@{
-                                            'Cluster' = $VsanCluster.Name
-                                            'ID' = $VsanCluster.Id
-                                            'Type' = $VsanClusterType
-                                            'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
-                                                $true { 'Yes' }
-                                                $false { 'No' }
-                                            }
-                                            'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
-                                            'Disk Format Version' = $VsanDiskFormat
-                                            'Total Number of Disks' = $NumVsanSsd + $NumVsanHdd
-                                            'Total Number of Disk Groups' = $NumVsanDiskGroup
-                                            'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
-                                            'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            }
-                                            'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                                $null { 'Disabled' }
-                                            }
-                                            'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
-                                            }
-                                            'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
-                                        }
-
-                                        if ($InfoLevel.vSAN -ge 4) {
-                                            $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
-                                        }
-                                        $TableParams = @{
-                                            Name = "vSAN Configuration - $($VsanCluster.Name)"
-                                            List = $true
-                                            ColumnWidths = 50, 50
-                                        }
-                                        if ($Report.ShowTableCaptions) {
-                                            $TableParams['Caption'] = "- $($TableParams.Name)"
-                                        }
-                                        $VsanClusterDetail | Table @TableParams
-
-                                        # TODO: vSAN Services
-
-                                        Section -Style Heading4 'Disk Groups' {
-                                            $VsanDiskGroups = foreach ($DiskGroup in $VsanDiskGroup) {
-                                                $Disks = $DiskGroup | Get-VsanDisk
-                                                [PSCustomObject]@{
-                                                    'Disk Group' = $DiskGroup.Uuid
-                                                    'Host' = $Diskgroup.VMHost
-                                                    '# of Disks' = $Disks.Count
-                                                    'State' = Switch ($DiskGroup.IsMounted) {
-                                                        $true { 'Mounted' }
-                                                        $False { 'Unmounted' }
-                                                    }
-                                                    'Type' = Switch ($DiskGroup.DiskGroupType) {
-                                                        'AllFlash' { 'All Flash' }
-                                                        default { $DiskGroup.DiskGroupType }
-                                                    }
-                                                    'Disk Format Version' = $DiskGroup.DiskFormatVersion
+                                        if ($VsanCluster.VsanEsaEnabled) {
+                                            $VsanStoragePoolDisk = Get-VsanStoragePoolDisk -Cluster $VsanCluster.Cluster
+                                            $VsanDiskFormat = $VsanStoragePoolDisk.DiskFormatVersion | Select-Object -First 1 -Unique
+                                            $VsanClusterDetail = [PSCustomObject]@{
+                                                'Cluster' = $VsanCluster.Name
+                                                'ID' = $VsanCluster.Id
+                                                'vSAN Type' = Switch ($VsanCluster.VsanEsaEnabled) {
+                                                    $true { 'vSAN ESA' }
+                                                    $null { 'vSAN OSA' }
                                                 }
+                                                'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
+                                                    $true { 'Yes' }
+                                                    $false { 'No' }
+                                                }
+                                                'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
+                                                'Number of Disks' = $VsanStoragePoolDisk.Count
+                                                'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
+                                                'Disk Format Version' = $VsanDiskFormat
+                                                'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
                                             }
+
+                                            if ($InfoLevel.vSAN -ge 4) {
+                                                $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanStoragePoolDisk.Host | Select-Object -Unique | Sort-Object Name) -join ', ')
+                                            }
+
                                             $TableParams = @{
-                                                Name = "vSAN Disk Groups - $($VsanCluster.Name)"
-                                                ColumnWidths = 35, 28, 7, 10, 10, 10
+                                                Name = "vSAN Configuration - $($VsanCluster.Name)"
+                                                List = $true
+                                                ColumnWidths = 50, 50
                                             }
                                             if ($Report.ShowTableCaptions) {
                                                 $TableParams['Caption'] = "- $($TableParams.Name)"
                                             }
-                                            $VsanDiskGroups | Sort-Object Host | Table @TableParams
-                                        }
+                                            $VsanClusterDetail | Table @TableParams
 
-                                        Section -Style Heading4 'Disks' {
-                                            $vDisks = foreach ($Disk in $VsanDisk) {
-                                                [PSCustomObject]@{
-                                                    'Disk' = $Disk.Name
-                                                    'Name' = $Disk.ExtensionData.DisplayName
-                                                    'Drive Type' = Switch ($Disk.IsSsd) {
-                                                        $true { 'Flash' }
-                                                        $false { 'HDD' }
+                                            Section -Style Heading4 'Disks' {
+                                                $vDisks = foreach ($Disk in $VsanStoragePoolDisk) {
+                                                    [PSCustomObject]@{
+                                                        'Disk' = $Disk.Name
+                                                        'Name' = $Disk.ExtensionData.DisplayName
+                                                        'Drive Type' = Switch ($Disk.IsSsd) {
+                                                            $true { 'Flash' }
+                                                            $false { 'HDD' }
+                                                        }
+                                                        'Host' = $Disk.Host.Name
+                                                        'State' = Switch ($Disk.IsMounted) {
+                                                            $True { 'Mounted' }
+                                                            $False { 'Unmounted' }
+                                                        }
+                                                        'Encrypted' = Switch ($Disk.IsEncryped) {
+                                                            $true { 'Yes' }
+                                                            $false { 'No' }
+                                                        }
+                                                        'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
+                                                        'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
+                                                        'Serial Number' = $Disk.ExtensionData.SerialNumber
+                                                        'Vendor' = $Disk.ExtensionData.Vendor
+                                                        'Model' = $Disk.ExtensionData.Model
+                                                        'Disk Type' = $Disk.DiskType
+                                                        'Disk Format Version' = $Disk.DiskFormatVersion
                                                     }
-                                                    'Host' = $Disk.VsanDiskGroup.VMHost.Name
-                                                    'Claimed As' = Switch ($Disk.IsCacheDisk) {
-                                                        $true { 'Cache' }
-                                                        $false { 'Capacity' }
-                                                    }
-                                                    'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
-                                                    'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
-                                                    'Serial Number' = $Disk.ExtensionData.SerialNumber
-                                                    'Vendor' = $Disk.ExtensionData.Vendor
-                                                    'Model' = $Disk.ExtensionData.Model
-                                                    'Disk Group' = $Disk.VsanDiskGroup.Uuid
-                                                    'Disk Format Version' = $Disk.DiskFormatVersion
                                                 }
+
+                                                if ($InfoLevel.vSAN -ge 4) {
+                                                    $vDisks | Sort-Object Host | ForEach-Object {
+                                                        $vDisk = $_
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
+                                                            $TableParams = @{
+                                                                Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
+                                                                List = $true
+                                                                Columns = 'Name', 'State', 'Drive Type', 'Encrypted', 'Capacity', 'Host', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version', 'Disk Type'
+                                                                ColumnWidths = 50, 50
+                                                            }
+                                                            if ($Report.ShowTableCaptions) {
+                                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                            }
+                                                            $vDisk | Table @TableParams
+                                                        }
+                                                    }
+                                                } else {
+                                                    $TableParams = @{
+                                                        Name = "vSAN Disks - $($VsanCluster.Name)"
+                                                        Columns = 'Disk', 'Capacity GB', 'State', 'Host'
+                                                        ColumnWidths = 40, 15, 15, 30
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $vDisks | Sort-Object Host | Table @TableParams
+                                                }
+                                            }
+                                        } else {
+                                            $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
+                                            $NumVsanDiskGroup = $VsanDiskGroup.Count
+                                            $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
+                                            $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
+                                            $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
+                                            $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
+                                            if ($NumVsanHdd -gt 0) {
+                                                $VsanClusterType = "Hybrid"
+                                            } else {
+                                                $VsanClusterType = "All Flash"
+                                            }
+                                            $VsanClusterDetail = [PSCustomObject]@{
+                                                'Cluster' = $VsanCluster.Name
+                                                'ID' = $VsanCluster.Id
+                                                'vSAN Type' = Switch ($VsanCluster.VsanEsaEnabled) {
+                                                    $true { 'vSAN ESA' }
+                                                    $null { 'vSAN OSA' }
+                                                }
+                                                'Storage Type' = $VsanClusterType
+                                                'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
+                                                    $true { 'Yes' }
+                                                    $false { 'No' }
+                                                }
+                                                'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
+                                                'Number of Disks' = $NumVsanSsd + $NumVsanHdd
+                                                'Number of Disk Groups' = $NumVsanDiskGroup
+                                                'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
+                                                'Disk Format Version' = $VsanDiskFormat
+                                                'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
+                                                    $true { 'Enabled' }
+                                                    $false { 'Disabled' }
+                                                    $null { 'Disabled' }
+                                                }
+                                                'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
                                             }
 
                                             if ($InfoLevel.vSAN -ge 4) {
-                                                $vDisks | Sort-Object Host | ForEach-Object {
-                                                    Section -Style NOTOCHeading5 -ExcludeFromTOC "$($_.Disk) - $($_.Host)" {
-                                                        $TableParams = @{
-                                                            Name = "Disk $($_.Disk) - $($_.Host)"
-                                                            List = $true
-                                                            Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity', 'Host', 'Disk Group', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version'
-                                                            ColumnWidths = 50, 50
+                                                $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
+                                            }
+                                            $TableParams = @{
+                                                Name = "vSAN Configuration - $($VsanCluster.Name)"
+                                                List = $true
+                                                ColumnWidths = 50, 50
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $VsanClusterDetail | Table @TableParams
+
+                                            # TODO: vSAN Services
+
+                                            Section -Style Heading4 'Disk Groups' {
+                                                $VsanDiskGroups = foreach ($DiskGroup in $VsanDiskGroup) {
+                                                    $Disks = $DiskGroup | Get-VsanDisk
+                                                    [PSCustomObject]@{
+                                                        'Disk Group' = $DiskGroup.Uuid
+                                                        'Host' = $Diskgroup.VMHost
+                                                        '# of Disks' = $Disks.Count
+                                                        'State' = Switch ($DiskGroup.IsMounted) {
+                                                            $true { 'Mounted' }
+                                                            $False { 'Unmounted' }
                                                         }
-                                                        if ($Report.ShowTableCaptions) {
-                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        'Type' = Switch ($DiskGroup.DiskGroupType) {
+                                                            'AllFlash' { 'All Flash' }
+                                                            default { $DiskGroup.DiskGroupType }
                                                         }
-                                                        $_ | Table @TableParams
+                                                        'Disk Format Version' = $DiskGroup.DiskFormatVersion
                                                     }
                                                 }
-                                            } else {
                                                 $TableParams = @{
-                                                    Name = "vSAN Disks - $($VsanCluster.Name)"
-                                                    Columns = 'Disk', 'Drive Type', 'Claimed As', 'Capacity GB', 'Host', 'Disk Group'
-                                                    ColumnWidths = 21, 10, 10, 10, 21, 28
+                                                    Name = "vSAN Disk Groups - $($VsanCluster.Name)"
+                                                    ColumnWidths = 35, 28, 7, 10, 10, 10
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
                                                 }
-                                                $vDisks | Sort-Object Host | Table @TableParams
+                                                $VsanDiskGroups | Sort-Object Host | Table @TableParams
+                                            }
+
+                                            Section -Style Heading4 'Disks' {
+                                                $vDisks = foreach ($Disk in $VsanDisk) {
+                                                    [PSCustomObject]@{
+                                                        'Disk' = $Disk.Name
+                                                        'Name' = $Disk.ExtensionData.DisplayName
+                                                        'State' = Switch ($Disk.IsMounted) {
+                                                            $True { 'Mounted' }
+                                                            $False { 'Unmounted' }
+                                                        }
+                                                        'Drive Type' = Switch ($Disk.IsSsd) {
+                                                            $true { 'Flash' }
+                                                            $false { 'HDD' }
+                                                        }
+                                                        'Host' = $Disk.VsanDiskGroup.VMHost.Name
+                                                        'Claimed As' = Switch ($Disk.IsCacheDisk) {
+                                                            $true { 'Cache' }
+                                                            $false { 'Capacity' }
+                                                        }
+                                                        'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
+                                                        'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
+                                                        'Serial Number' = $Disk.ExtensionData.SerialNumber
+                                                        'Vendor' = $Disk.ExtensionData.Vendor
+                                                        'Model' = $Disk.ExtensionData.Model
+                                                        'Disk Group' = $Disk.VsanDiskGroup.Uuid
+                                                        'Disk Format Version' = $Disk.DiskFormatVersion
+                                                    }
+                                                }
+
+                                                if ($InfoLevel.vSAN -ge 4) {
+                                                    $vDisks | Sort-Object Host | ForEach-Object {
+                                                        $vDisk = $_
+                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
+                                                            $TableParams = @{
+                                                                Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
+                                                                List = $true
+                                                                Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity', 'Host', 'Disk Group', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version'
+                                                                ColumnWidths = 50, 50
+                                                            }
+                                                            if ($Report.ShowTableCaptions) {
+                                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                            }
+                                                            $vDisk | Table @TableParams
+                                                        }
+                                                    }
+                                                } else {
+                                                    $TableParams = @{
+                                                        Name = "vSAN Disks - $($VsanCluster.Name)"
+                                                        Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity GB', 'Host', 'Disk Group'
+                                                        ColumnWidths = 21, 10, 10, 10, 21, 28
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $vDisks | Sort-Object Host | Table @TableParams
+                                                }
                                             }
                                         }
 

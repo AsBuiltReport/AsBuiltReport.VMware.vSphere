@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.4.1 - 2024-03-28
+
+### Fixed
+- Add VSAN ESA support ([Fix #113](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/113))
+
 ## [[1.3.4](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.4)] - 2024-02-28
 
 ### Changed
@@ -20,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update vCenter Server alarms reporting ([Fix #106](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/106))
 - Fix issue with Platform Services Controller reporting ([Fix #103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103))
 - Fix NSX-T virtual switch network labels ([Fix #118](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/118))
-- Fix [#103](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/103)
 
 ### Removed
 - Removed reporting of vCenter Server OS type
