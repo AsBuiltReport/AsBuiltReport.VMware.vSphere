@@ -138,7 +138,7 @@ The **Options** schema allows certain options within the report to be toggled on
 
 | Sub-Schema      | Setting      | Default | Description                                                                                                                                                                                 |
 |-----------------|--------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ShowLicenseKeys | true / false | false   | Toggle to mask/unmask vSphere license keys<br><br> **Masked License Key**<br>\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-56YDM-AS12K<br><br> **Unmasked License Key**<br>AKLU4-PFG8M-W2D8J-56YDM-AS12K |
+| ShowLicenseKeys | true / false | false   | Toggle to mask/unmask vSphere license keys<br><br> **Masked License Key**<br>\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-AS12K<br><br> **Unmasked License Key**<br>AKLU4-PFG8M-W2D8J-56YDM-AS12K |
 | ShowVMSnapshots | true / false | true    | Toggle to enable/disable reporting of VM snapshots                                                                                                                                          |
 
 ### InfoLevel
