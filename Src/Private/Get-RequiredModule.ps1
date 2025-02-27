@@ -25,6 +25,7 @@ function Get-RequiredModule {
     # Check if the required version of VMware PowerCLI is installed
     $RequiredModule = Get-Module -ListAvailable -Name $Name | Sort-Object -Property Version -Descending | Select-Object -First 1
     $ModuleVersion = "$($RequiredModule.Version.Major)" + "." + "$($RequiredModule.Version.Minor)"
+    Write-PScriboMessage -Plugin "Module" -IsWarning "$($RequiredModule.Name  + " " + $ModuleVersion) is currently installed."
     if ($ModuleVersion -eq ".")  {
         throw "VMware PowerCLI $Version or higher is required to run the VMware vSphere As Built Report. Run 'Install-Module -Name $Name -MinimumVersion $Version -Force' to install the required modules."
     }

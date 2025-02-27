@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/Text formats using PScribo.
     .NOTES
-        Version:        1.3.4-RC2
+        Version:        1.3.5
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -40,7 +40,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
         Write-PscriboMessage -Plugin "Module" -IsWarning $_.Exception.Message
     }
     # Check if the required version of VMware PowerCLI is installed
-    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.2'
+    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.3'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
@@ -67,9 +67,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             # Check logged in user has sufficient privileges to generate an As Built Report
             Write-PScriboMessage 'Checking vCenter user privileges.'
             Try {
-                $UserPermission = Get-VIPermission | Where-Object { $_.Principal -eq $vCenter.User }
                 $AuthMgr = Get-View $($vCenter.ExtensionData.Content.AuthorizationManager)
-                $UserRole = $AuthMgr.RoleList | Where-Object { $_.Name -eq $($UserPermission.Role) }
+                $UserPrivileges = ($authMgr.FetchUserPrivilegeOnEntities("Folder-group-d1", $vCenter.User)).privileges
             } Catch {
                 Write-PScriboMessage 'Unable to obtain vCenter user privileges.'
             }
@@ -162,9 +161,14 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             #endregion NSX-T Manager Server Name
 
             #region Tag Information
-            $TagAssignments = Get-TagAssignment -Server $vCenter
-            $Tags = Get-Tag -Server $vCenter | Sort-Object Name, Category
-            $TagCategories = Get-TagCategory -Server $vCenter | Sort-Object Name | Select-Object Name, Description, Cardinality -Unique
+            Try {
+                Write-PScriboMessage "Collecting tag information."
+                $TagAssignments = Get-TagAssignment -Server $vCenter
+                $Tags = Get-Tag -Server $vCenter | Sort-Object Name, Category
+                $TagCategories = Get-TagCategory -Server $vCenter | Sort-Object Name | Select-Object Name, Description, Cardinality -Unique
+            } Catch {
+                Write-PScriboMessage -IsWarning "Error collecting tag information. $($_.Exception.Message)"
+            }
             #endregion Tag Information
 
             #region vCenter Advanced Settings
@@ -209,7 +213,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 'MemberType' = 'NoteProperty'
                             }
                             #region vCenter Server Detail
-                            if ($UserRole.Privilege -contains 'Global.Licenses') {
+                            if ($UserPrivileges -contains 'Global.Licenses') {
                                 $vCenterLicense = Get-License -vCenter $vCenter
                                 Add-Member @MemberProps -Name 'Product' -Value $vCenterLicense.Product
                                 Add-Member @MemberProps -Name 'License Key' -Value $vCenterLicense.LicenseKey
@@ -246,7 +250,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             $TableParams = @{
                                 Name = "vCenter Server Configuration - $vCenterServerName"
                                 List = $true
-                                ColumnWidths = 50, 50
+                                ColumnWidths = 40, 60
                             }
                             if ($Report.ShowTableCaptions) {
                                 $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -264,7 +268,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $TableParams = @{
                                     Name = "Database Settings - $vCenterServerName"
                                     List = $true
-                                    ColumnWidths = 50, 50
+                                    ColumnWidths = 40, 60
                                 }
                                 if ($Report.ShowTableCaptions) {
                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -288,7 +292,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $TableParams = @{
                                     Name = "Mail Settings - $vCenterServerName"
                                     List = $true
-                                    ColumnWidths = 50, 50
+                                    ColumnWidths = 40, 60
                                 }
                                 if ($Report.ShowTableCaptions) {
                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -313,7 +317,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion vCenter Server Historical Statistics
 
                             #region vCenter Server Licensing
-                            if ($UserRole.Privilege -contains 'Global.Licenses') {
+                            if ($UserPrivileges -contains 'Global.Licenses') {
                                 Section -Style Heading3 'Licensing' {
                                     $Licenses = Get-License -Licenses | Select-Object Product, @{L = 'License Key'; E = { ($_.LicenseKey) } }, Total, Used, @{L = 'Available'; E = { ($_.total) - ($_.Used) } }, Expiration -Unique
                                     if ($Healthcheck.vCenter.Licensing) {
@@ -354,7 +358,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $TableParams = @{
                                         Name = "Certificate - $vCenterServerName"
                                         List = $true
-                                        ColumnWidths = 50, 50
+                                        ColumnWidths = 40, 60
                                     }
                                     if ($Report.ShowTableCaptions) {
                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -370,9 +374,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $VIRoleInfo = foreach ($VIRole in $VIRoles) {
                                     [PSCustomObject]@{
                                         'Role' = $VIRole.Name
-                                        'System Role' = Switch ($VIRole.IsSystem) {
-                                            $true { 'Yes' }
-                                            $false { 'No' }
+                                        'System Role' = if ($VIRole.IsSystem) {
+                                            'Yes'
+                                        } else {
+                                            'No'
                                         }
                                         'Privilege List' = ($VIRole.PrivilegeList).Replace(".", " > ") | Select-Object -Unique
                                     }
@@ -410,13 +415,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $TagInfo = foreach ($Tag in $Tags) {
                                         [PSCustomObject] @{
                                             'Tag' = $Tag.Name
-                                            'Description' = Switch ($Tag.Description) {
-                                                '' { 'None' }
-                                                default { $Tag.Description }
+                                            'Description' = if ($Tag.Description) {
+                                                $Tag.Description
+                                            } else {
+                                                'None'
                                             }
-                                            'Category' = Switch ($Tag.Category) {
-                                                '' { 'None' }
-                                                default { $Tag.Category }
+                                            'Category' = if ($Tag.Category) {
+                                                $Tag.Category
+                                            } else {
+                                                'None'
                                             }
                                         }
                                     }
@@ -438,13 +445,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $TagCategoryInfo = foreach ($TagCategory in $TagCategories) {
                                         [PSCustomObject] @{
                                             'Category' = $TagCategory.Name
-                                            'Description' = Switch ($TagCategory.Description) {
-                                                '' { 'None' }
-                                                default { $TagCategory.Description }
+                                            'Description' = if ($TagCategory.Description) {
+                                                $TagCategory.Description
+                                            } else {
+                                                'None'
                                             }
-                                            'Cardinality' = Switch ($TagCategory.Cardinality) {
-                                                '' { 'None' }
-                                                default { $TagCategory.Cardinality }
+                                            'Cardinality' = if ($TagCategory.Cardinality) {
+                                                $TagCategory.Cardinality
+                                            } else {
+                                                'None'
                                             }
                                         }
                                     }
@@ -483,7 +492,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion vCenter Server Tag Assignments
 
                             #region VM Storage Policies
-                            if ($UserRole.Privilege -contains 'StorageProfile.View') {
+                            if ($UserPrivileges -contains 'StorageProfile.View') {
                                 $SpbmStoragePolicies = Get-SpbmStoragePolicy | Sort-Object Name
                                 if ($SpbmStoragePolicies) {
                                     Section -Style Heading3 'VM Storage Policies' {
@@ -519,11 +528,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         Get-AlarmActionTrigger -AlarmAction $_ |
                                         Select-Object @{N = 'Alarm'; E = { $alarm.Name } },
                                         @{N = 'Description'; E = { $alarm.Description } },
-                                        @{N = 'Enabled'; E = { Switch ($alarm.Enabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                } }
-                                        },
+                                        @{N = 'Enabled'; E = { if ($alarm.Enabled) { 'Enabled' } else { 'Disabled' } } },
                                         @{N = 'Entity'; E = { $alarm.Entity.Type } },
                                         @{N = 'Trigger'; E = {
                                                 "{0}:{1}->{2} (Repeat={3})" -f $action.ActionType,
@@ -620,21 +625,25 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Datacenter' = $Cluster | Get-Datacenter
                                         '# of Hosts' = $Cluster.ExtensionData.Host.Count
                                         '# of VMs' = $Cluster.ExtensionData.VM.Count
-                                        'vSphere HA' = Switch ($Cluster.HAEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
+                                        'vSphere HA' = if ($Cluster.HAEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
-                                        'vSphere DRS' = Switch ($Cluster.DrsEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
+                                        'vSphere DRS' = if ($Cluster.DrsEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
-                                        'Virtual SAN' = Switch ($Cluster.VsanEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
+                                        'Virtual SAN' = if ($Cluster.VsanEnabled -or $VsanCluster.VsanEsaEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
-                                        'EVC Mode' = Switch ($Cluster.EVCMode) {
-                                            $null { 'Disabled' }
-                                            default { $EvcModeLookup."$($Cluster.EVCMode)" }
+                                        'EVC Mode' = if ($Cluster.EVCMode) {
+                                            $EvcModeLookup."$($Cluster.EVCMode)"
+                                        } else {
+                                            'Disabled'
                                         }
                                         'VM Swap File Policy' = Switch ($Cluster.VMSwapfilePolicy) {
                                             'WithVM' { 'With VM' }
@@ -684,21 +693,25 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'Datacenter' = $Cluster | Get-Datacenter
                                             'Number of Hosts' = $Cluster.ExtensionData.Host.Count
                                             'Number of VMs' = ($Cluster | Get-VM).Count
-                                            'vSphere HA' = Switch ($Cluster.HAEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'vSphere HA' = if ($Cluster.HAEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'vSphere DRS' = Switch ($Cluster.DrsEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'vSphere DRS' = if ($Cluster.DrsEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'Virtual SAN' = Switch ($Cluster.VsanEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Virtual SAN' = if ($Cluster.VsanEnabled -or $Cluster.VsanEsaEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'EVC Mode' = Switch ($Cluster.EVCMode) {
-                                                $null { 'Disabled' }
-                                                default { $EvcModeLookup."$($Cluster.EVCMode)" }
+                                            'EVC Mode' = if ($Cluster.EVCMode) {
+                                                $EvcModeLookup."$($Cluster.EVCMode)"
+                                            } else {
+                                                'Disabled'
                                             }
                                             'VM Swap File Policy' = Switch ($Cluster.VMSwapfilePolicy) {
                                                 'WithVM' { 'Virtual machine directory' }
@@ -740,7 +753,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Cluster Configuration - $Cluster"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -845,7 +858,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "vSphere HA Failures and Responses - $Cluster"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -857,9 +870,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region vSphere HA Cluster Admission Control
                                                 Section -Style NOTOCHeading5 -ExcludeFromTOC 'Admission Control' {
                                                     $HAAdmissionControl = [PSCustomObject]@{
-                                                        'Admission Control' = Switch ($Cluster.HAAdmissionControlEnabled) {
-                                                            $true { 'Enabled' }
-                                                            $false { 'Disabled' }
+                                                        'Admission Control' = if ($Cluster.HAAdmissionControlEnabled) {
+                                                            'Enabled'
+                                                        } else {
+                                                            'Disabled'
                                                         }
                                                     }
                                                     if ($Cluster.HAAdmissionControlEnabled) {
@@ -879,16 +893,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 Add-Member @MemberProps -Name 'Host Failover Capacity Policy' -Value 'Slot policy'
                                                             }
                                                         }
-                                                        Switch ($ClusterDasConfig.AdmissionControlPolicy.AutoComputePercentages) {
-                                                            $true {
-                                                                Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'No'
-                                                            }
-                                                            $false {
+                                                        if ($ClusterDasConfig.AdmissionControlPolicy.AutoComputePercentages) {
+                                                            Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'No'
+                                                            } else {
                                                                 Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'Yes'
                                                                 Add-Member @MemberProps -Name 'CPU %' -Value $ClusterDasConfig.AdmissionControlPolicy.CpuFailoverResourcesPercent
                                                                 Add-Member @MemberProps -Name 'Memory %' -Value $ClusterDasConfig.AdmissionControlPolicy.MemoryFailoverResourcesPercent
                                                             }
-                                                        }
                                                         if ($ClusterDasConfig.AdmissionControlPolicy.SlotPolicy) {
                                                             Add-Member @MemberProps -Name 'Slot Policy' -Value 'Fixed slot size'
                                                             Add-Member @MemberProps -Name 'CPU Slot Size' -Value "$($ClusterDasConfig.AdmissionControlPolicy.SlotPolicy.Cpu) MHz"
@@ -906,7 +917,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "vSphere HA Admission Control - $Cluster"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -933,7 +944,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "vSphere HA Heartbeat Datastores - $Cluster"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -978,9 +989,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #region Proactive HA Failures and Responses Section
                                                 Section -Style NOTOCHeading5 -ExcludeFromTOC 'Failures and Responses' {
                                                     $ProactiveHa = [PSCustomObject]@{
-                                                        'Proactive HA' = Switch ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
-                                                            $true { 'Enabled' }
-                                                            $false { 'Disabled' }
+                                                        'Proactive HA' = if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
+                                                            'Enabled'
+                                                        } else {
+                                                            'Disabled'
                                                         }
                                                     }
                                                     if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
@@ -1013,7 +1025,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "Proactive HA - $Cluster"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1034,9 +1046,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                                 #region vSphere DRS Cluster Specifications
                                                 $DrsCluster = [PSCustomObject]@{
-                                                    'vSphere DRS' = Switch ($Cluster.DrsEnabled) {
-                                                        $true { 'Enabled' }
-                                                        $false { 'Disabled' }
+                                                    'vSphere DRS' = if ($Cluster.DrsEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
                                                     }
                                                 }
                                                 $MemberProps = @{
@@ -1055,21 +1068,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     }
                                                 }
                                                 Add-Member @MemberProps -Name 'Migration Threshold' -Value $ClusterDrsConfig.VmotionRate
-                                                Switch ($ClusterConfigEx.ProactiveDrsConfig.Enabled) {
-                                                    $false {
-                                                        Add-Member @MemberProps -Name 'Predictive DRS' -Value 'Disabled'
-                                                    }
-                                                    $true {
-                                                        Add-Member @MemberProps -Name 'Predictive DRS' -Value 'Enabled'
-                                                    }
+                                                if ($ClusterConfigEx.ProactiveDrsConfig.Enabled) {
+                                                    Add-Member @MemberProps -Name 'Predictive DRS' -Value 'Enabled'
+                                                } else {
+                                                    Add-Member @MemberProps -Name 'Predictive DRS' -Value 'Disabled'
                                                 }
-                                                Switch ($ClusterDrsConfig.EnableVmBehaviorOverrides) {
-                                                    $true {
-                                                        Add-Member @MemberProps -Name 'Virtual Machine Automation' -Value 'Enabled'
-                                                    }
-                                                    $false {
-                                                        Add-Member @MemberProps -Name 'Virtual Machine Automation' -Value 'Disabled'
-                                                    }
+                                                if ($ClusterDrsConfig.EnableVmBehaviorOverrides) {
+                                                    Add-Member @MemberProps -Name 'Virtual Machine Automation' -Value 'Enabled'
+                                                } else {
+                                                    Add-Member @MemberProps -Name 'Virtual Machine Automation' -Value 'Disabled'
                                                 }
                                                 if ($Healthcheck.Cluster.DrsEnabled) {
                                                     $DrsCluster | Where-Object { $_.'vSphere DRS' -eq 'Disabled' } | Set-Style -Style Warning -Property 'vSphere DRS'
@@ -1080,7 +1087,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $TableParams = @{
                                                     Name = "vSphere DRS Configuration - $Cluster"
                                                     List = $true
-                                                    ColumnWidths = 50, 50
+                                                    ColumnWidths = 40, 60
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1120,7 +1127,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $TableParams = @{
                                                             Name = "DRS Additional Options - $Cluster"
                                                             List = $true
-                                                            ColumnWidths = 50, 50
+                                                            ColumnWidths = 40, 60
                                                         }
                                                         if ($Report.ShowTableCaptions) {
                                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1134,9 +1141,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
                                                     Section -Style NOTOCHeading5 -ExcludeFromTOC 'Power Management' {
                                                         $DpmConfig = [PSCustomObject]@{
-                                                            'DPM' = Switch ($ClusterConfigEx.DpmConfigInfo.Enabled) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'DPM' = if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
                                                         }
                                                         $MemberProps = @{
@@ -1157,7 +1165,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $TableParams = @{
                                                             Name = "vSphere DPM - $Cluster"
                                                             List = $true
-                                                            ColumnWidths = 50, 50
+                                                            ColumnWidths = 40, 60
                                                         }
                                                         if ($Report.ShowTableCaptions) {
                                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1204,9 +1212,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'VMHostGroup' { 'Host Group' }
                                                                     default { $DrsClusterGroup.GroupType }
                                                                 }
-                                                                'Members' = Switch (($DrsClusterGroup.Member).Count -gt 0) {
-                                                                    $true { ($DrsClusterGroup.Member | Sort-Object) -join ', ' }
-                                                                    $false { "None" }
+                                                                'Members' = if (($DrsClusterGroup.Member).Count -gt 0) {
+                                                                    ($DrsClusterGroup.Member | Sort-Object) -join ', '
+                                                                } else {
+                                                                    "None"
                                                                 }
                                                             }
                                                         }
@@ -1235,9 +1244,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         'ShouldNotRunOn' { 'Should not run on hosts in group' }
                                                                         default { $DrsVMHostRule.Type }
                                                                     }
-                                                                    'Enabled' = Switch ($DrsVMHostRule.Enabled) {
-                                                                        $true { 'Yes' }
-                                                                        $False { 'No' }
+                                                                    'Enabled' = if ($DrsVMHostRule.Enabled) {
+                                                                        'Yes'
+                                                                    } else {
+                                                                        'No'
                                                                     }
                                                                     'VM Group' = $DrsVMHostRule.VMGroup
                                                                     'Host Group' = $DrsVMHostRule.VMHostGroup
@@ -1270,9 +1280,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         'VMAffinity' { 'Keep Vitrual Machines Together' }
                                                                         'VMAntiAffinity' { 'Separate Virtual Machines' }
                                                                     }
-                                                                    'Enabled' = Switch ($DrsRule.Enabled) {
-                                                                        $true { 'Yes' }
-                                                                        $False { 'No' }
+                                                                    'Enabled' = if ($DrsRule.Enabled) {
+                                                                        'Yes'
+                                                                    } else {
+                                                                        'No'
                                                                     }
                                                                     'Mandatory' = $DrsRule.Mandatory
                                                                     'Virtual Machines' = ($DrsRule.VMIds | ForEach-Object { (Get-View -Id $_).name }) -join ', '
@@ -1490,11 +1501,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VM Overrides
 
                                                 #region Cluster VUM Baselines
-                                                if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                                if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($VUMConnection) {
-                                                        if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                                                        Try {
                                                             $ClusterPatchBaselines = $Cluster | Get-PatchBaseline
-                                                        } else {
+                                                        } Catch {
                                                             Write-PScriboMessage 'Cluster VUM baseline information is not currently available with your version of PowerShell.'
                                                         }
                                                         if ($ClusterPatchBaselines) {
@@ -1505,7 +1516,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         'Description' = $ClusterBaseline.Description
                                                                         'Type' = $ClusterBaseline.BaselineType
                                                                         'Target Type' = $ClusterBaseline.TargetType
-                                                                        'Last Update Time' = ($ClusterBaseline.LastUpdateTime).ToLocalTime()
+                                                                        'Last Update Time' = ($ClusterBaseline.LastUpdateTime).ToLocalTime().ToString()
                                                                         '# of Patches' = $ClusterBaseline.CurrentPatches.Count
                                                                     }
                                                                 }
@@ -1538,11 +1549,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion Cluster VUM Baselines
 
                                                 #region Cluster VUM Compliance (Advanced Detail Information)
-                                                if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                                if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                     if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
-                                                        if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                                                        Try {
                                                             $ClusterCompliances = $Cluster | Get-Compliance
-                                                        } else {
+                                                        } Catch {
                                                             Write-PScriboMessage 'Cluster VUM compliance information is not currently available with your version of PowerShell.'
                                                         }
                                                         if ($ClusterCompliances) {
@@ -1586,15 +1597,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $ClusterVIPermissions = foreach ($VIPermission in $VIPermissions) {
                                                         [PSCustomObject]@{
                                                             'User/Group' = $VIPermission.Principal
-                                                            'Is Group?' = Switch ($VIPermission.IsGroup) {
-                                                                $true { 'Yes' }
-                                                                $false { 'No' }
+                                                            'Is Group?' = if ($VIPermission.IsGroup) {
+                                                                'Yes'
+                                                            } else {
+                                                                'No'
                                                             }
                                                             'Role' = $VIPermission.Role
                                                             'Defined In' = $VIPermission.Entity
-                                                            'Propagate' = Switch ($VIPermission.Propagate) {
-                                                                $true { 'Yes' }
-                                                                $false { 'No' }
+                                                            'Propagate' = if ($VIPermission.Propagate) {
+                                                                'Yes'
+                                                            } else {
+                                                                'No'
                                                             }
                                                         }
                                                     }
@@ -1644,10 +1657,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             default { $ResourcePool.CpuLimitMHz }
                                         }
                                         'Memory Shares Level' = $ResourcePool.MemSharesLevel
-                                        'Memory Reservation' = [math]::Round($ResourcePool.MemReservationGB, 2)
-                                        'Memory Limit GB' = Switch ($ResourcePool.MemLimitGB) {
+                                        'Memory Reservation' = Convert-DataSize $ResourcePool.MemReservationGB -RoundUnits 0
+                                        'Memory Limit' = Switch ($ResourcePool.MemLimitGB) {
                                             '-1' { 'Unlimited' }
-                                            default { [math]::Round($ResourcePool.MemLimitGB, 2) }
+                                            default { Convert-DataSize $ResourcePool.MemLimitGB -RoundUnits 0 }
                                         }
                                     }
                                 }
@@ -1674,9 +1687,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'CPU Shares Level' = $ResourcePool.CpuSharesLevel
                                             'Number of CPU Shares' = $ResourcePool.NumCpuShares
                                             'CPU Reservation' = "$($ResourcePool.CpuReservationMHz) MHz"
-                                            'CPU Expandable Reservation' = Switch ($ResourcePool.CpuExpandableReservation) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'CPU Expandable Reservation' = if ($ResourcePool.CpuExpandableReservation) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
                                             'CPU Limit MHz' = Switch ($ResourcePool.CpuLimitMHz) {
                                                 '-1' { 'Unlimited' }
@@ -1684,14 +1698,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             }
                                             'Memory Shares Level' = $ResourcePool.MemSharesLevel
                                             'Number of Memory Shares' = $ResourcePool.NumMemShares
-                                            'Memory Reservation' = "$([math]::Round($ResourcePool.MemReservationGB, 2)) GB"
-                                            'Memory Expandable Reservation' = Switch ($ResourcePool.MemExpandableReservation) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Memory Reservation' = Convert-DataSize $ResourcePool.MemReservationGB -RoundUnits 0
+                                            'Memory Expandable Reservation' = if ($ResourcePool.MemExpandableReservation) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
                                             'Memory Limit' = Switch ($ResourcePool.MemLimitGB) {
                                                 '-1' { 'Unlimited' }
-                                                default { "$([math]::Round($ResourcePool.MemLimitGB, 2)) GB" }
+                                                default { Convert-DataSize $ResourcePool.MemLimitGB -RoundUnits 0 }
                                             }
                                             'Number of VMs' = $ResourcePool.ExtensionData.VM.Count
                                         }
@@ -1718,7 +1733,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Resource Pool Configuration - $($ResourcePool.Name)"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1756,7 +1771,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                         'CPU Sockets' = $VMHost.ExtensionData.Hardware.CpuInfo.NumCpuPackages
                                         'CPU Cores' = $VMHost.ExtensionData.Hardware.CpuInfo.NumCpuCores
-                                        'Memory GB' = [math]::Round($VMHost.MemoryTotalGB, 0)
+                                        'Memory' = Convert-DataSize $VMHost.MemoryTotalGB -RoundUnits 0
                                         '# of VMs' = $VMHost.ExtensionData.Vm.Count
                                     }
                                 }
@@ -1793,6 +1808,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $VMHostUptime = Get-Uptime -VMHost $VMHost
                                             $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
                                             $ScratchLocation = Get-AdvancedSetting -Entity $VMHost | Where-Object { $_.Name -eq 'ScratchConfig.CurrentScratchLocation' }
+                                            $VMHostCpuTotal = [math]::Round(($VMHost.CpuTotalMhz) / 1000, 2)
+                                            $VMHostCpuUsed = [math]::Round(($VMHost.CpuUsageMhz) / 1000, 2)
+                                            $VMHostCpuFree = $VMHostCpuTotal - $VMHostCpuUsed
                                             $VMHostDetail = [PSCustomObject]@{
                                                 'Host' = $VMHost.Name
                                                 'Connection State' = Switch ($VMHost.ConnectionState) {
@@ -1803,49 +1821,52 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'Parent' = $VMHost.Parent
                                                 'Manufacturer' = $VMHost.Manufacturer
                                                 'Model' = $VMHost.Model
-                                                'Serial Number' = Switch ($VMHost.ExtensionData.Hardware.SystemInfo.SerialNumber) {
-                                                    $null { '--' }
-                                                    default { $VMHost.ExtensionData.Hardware.SystemInfo.SerialNumber }
+                                                'Serial Number' = if ($VMHost.ExtensionData.Hardware.SystemInfo.SerialNumber) {
+                                                    $VMHost.ExtensionData.Hardware.SystemInfo.SerialNumber
+                                                } else {
+                                                    '--'
                                                 }
-                                                'Asset Tag' = Switch ($VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue) {
-                                                    '' { 'Unknown' }
-                                                    $null { 'Unknown' }
-                                                    default { $VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue }
+                                                'Asset Tag' = if ($VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue) {
+                                                    $VMHost.ExtensionData.Summary.Hardware.OtherIdentifyingInfo[0].IdentifierValue
+                                                } else {
+                                                    'Unknown'
                                                 }
                                                 'Processor Type' = $VMHost.Processortype
-                                                'HyperThreading' = Switch ($VMHost.HyperthreadingActive) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
+                                                'HyperThreading' = if ($VMHost.HyperthreadingActive) {
+                                                    'Enabled'
+                                                } else {
+                                                    'Disabled'
                                                 }
                                                 'Number of CPU Sockets' = $VMHost.ExtensionData.Hardware.CpuInfo.NumCpuPackages
                                                 'Number of CPU Cores' = $VMHost.ExtensionData.Hardware.CpuInfo.NumCpuCores
                                                 'Number of CPU Threads' = $VMHost.ExtensionData.Hardware.CpuInfo.NumCpuThreads
-                                                'CPU Total / Used' = "$([math]::Round(($VMHost.CpuTotalMhz) / 1000, 2)) GHz / $([math]::Round(($VMHost.CpuUsageMhz) / 1000, 2)) GHz"
-                                                'Memory Total / Used' = "$([math]::Round($VMHost.MemoryTotalGB, 2)) GB / $([math]::Round($VMHost.MemoryUsageGB, 2)) GB"
+                                                'CPU Total / Used / Free' = "{0:N2} GHz / {1:N2} GHz / {2:N2} GHz" -f $VMHostCpuTotal, $VMHostCpuUsed, $VMHostCpuFree
+                                                'Memory Total / Used / Free' = "{0} / {1} / {2}" -f (Convert-DataSize $VMHost.MemoryTotalGB), (Convert-DataSize $VMHost.MemoryUsageGB), (Convert-DataSize ($VMHost.MemoryTotalGB - $VMHost.MemoryUsageGB))
                                                 'NUMA Nodes' = $VMHost.ExtensionData.Hardware.NumaInfo.NumNodes
                                                 'Number of NICs' = $VMHost.ExtensionData.Summary.Hardware.NumNics
                                                 'Number of HBAs' = $VMHost.ExtensionData.Summary.Hardware.NumHBAs
                                                 'Number of Datastores' = ($VMHost.ExtensionData.Datastore).Count
                                                 'Number of VMs' = $VMHost.ExtensionData.VM.Count
                                                 'Maximum EVC Mode' = $EvcModeLookup."$($VMHost.MaxEVCMode)"
-                                                'EVC Graphics Mode' = Switch ($VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey) {
-                                                    $null { 'Not applicable' }
-                                                    default { $VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey }
+                                                'EVC Graphics Mode' = if ($VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey) {
+                                                    $VMHost.ExtensionData.Summary.CurrentEVCGraphicsModeKey
+                                                } else {
+                                                    'Not applicable'
                                                 }
                                                 'Power Management Policy' = $VMHost.ExtensionData.Hardware.CpuPowerManagementInfo.CurrentPolicy
                                                 'Scratch Location' = $ScratchLocation.Value
                                                 'Bios Version' = $VMHost.ExtensionData.Hardware.BiosInfo.BiosVersion
-                                                'Bios Release Date' = $VMHost.ExtensionData.Hardware.BiosInfo.ReleaseDate
+                                                'Bios Release Date' = ($VMHost.ExtensionData.Hardware.BiosInfo.ReleaseDate).ToString()
                                                 'ESXi Version' = $VMHost.Version
                                                 'ESXi Build' = $VMHost.build
-                                                'Boot Time' = ($VMHost.ExtensionData.Runtime.Boottime).ToLocalTime()
+                                                'Boot Time' = ($VMHost.ExtensionData.Runtime.Boottime).ToLocalTime().ToString()
                                                 'Uptime Days' = $VMHostUptime.UptimeDays
                                             }
                                             $MemberProps = @{
                                                 'InputObject' = $VMHostDetail
                                                 'MemberType' = 'NoteProperty'
                                             }
-                                            if ($UserRole.Privilege -contains 'Global.Licenses') {
+                                            if ($UserPrivileges -contains 'Global.Licenses') {
                                                 $VMHostLicense = Get-License -VMHost $VMHost
                                                 Add-Member @MemberProps -Name 'Product' -Value $VMHostLicense.Product
                                                 Add-Member @MemberProps -Name 'License Key' -Value $VMHostLicense.LicenseKey
@@ -1879,7 +1900,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $TableParams = @{
                                                 Name = "Hardware Configuration - $VMHost"
                                                 List = $true
-                                                ColumnWidths = 50, 50
+                                                ColumnWidths = 40, 60
                                             }
                                             if ($Report.ShowTableCaptions) {
                                                 $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1907,7 +1928,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "IPMI / BMC - $VMHost"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -1928,7 +1949,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'Model' = $ESXiBootDevice.Model
                                                     'Size' = Switch ($ESXiBootDevice.SizeMB) {
                                                         'N/A' { 'N/A' }
-                                                        default { "$([math]::Round($ESXiBootDevice.SizeMB / 1024, 2)) GB" }
+                                                        default { Convert-DataSize $ESXiBootDevice.SizeMB -InputUnit MB -RoundUnits 0 }
                                                     }
                                                     'Is SAS' = $ESXiBootDevice.IsSAS
                                                     'Is SSD' = $ESXiBootDevice.IsSSD
@@ -1937,7 +1958,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $TableParams = @{
                                                     Name = "Boot Device - $VMHost"
                                                     List = $true
-                                                    ColumnWidths = 50, 50
+                                                    ColumnWidths = 40, 60
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2046,7 +2067,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Profile Information
 
                                             #region ESXi Host Image Profile Information
-                                            if ($UserRole.Privilege -contains 'Host.Config.Settings') {
+                                            if ($UserPrivileges -contains 'Host.Config.Settings') {
                                                 Section -Style NOTOCHeading5 -ExcludeFromTOC 'Image Profile' {
                                                     $installdate = Get-InstallDate
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
@@ -2074,9 +2095,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style NOTOCHeading5 -ExcludeFromTOC 'Time Configuration' {
                                                 $VMHostTimeSettings = [PSCustomObject]@{
                                                     'Time Zone' = $VMHost.timezone
-                                                    'NTP Service' = Switch ((Get-VMHostService -VMHost $VMHost | Where-Object { $_.key -eq 'ntpd' }).Running) {
-                                                        $true { 'Running' }
-                                                        $false { 'Stopped' }
+                                                    'NTP Service' = if ((Get-VMHostService -VMHost $VMHost | Where-Object { $_.key -eq 'ntpd' }).Running) {
+                                                        'Running'
+                                                    } else {
+                                                        'Stopped'
                                                     }
                                                     'NTP Server(s)' = (Get-VMHostNtpServer -VMHost $VMHost | Sort-Object) -join ', '
                                                 }
@@ -2113,11 +2135,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Syslog Configuration
 
                                             #region ESXi Update Manager Baseline Information
-                                            if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                            if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
-                                                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                                                    Try {
                                                         $VMHostPatchBaselines = $VMHost | Get-PatchBaseline
-                                                    } else {
+                                                    } Catch {
                                                         Write-PScriboMessage 'ESXi VUM baseline information is not currently available with your version of PowerShell.'
                                                     }
                                                     if ($VMHostPatchBaselines) {
@@ -2128,7 +2150,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     'Description' = $VMHostBaseline.Description
                                                                     'Type' = $VMHostBaseline.BaselineType
                                                                     'Target Type' = $VMHostBaseline.TargetType
-                                                                    'Last Update Time' = $VMHostBaseline.LastUpdateTime
+                                                                    'Last Update Time' = ($VMHostBaseline.LastUpdateTime).ToLocalTime().ToString()
                                                                     '# of Patches' = $VMHostBaseline.CurrentPatches.Count
                                                                 }
                                                             }
@@ -2149,11 +2171,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Update Manager Baseline Information
 
                                             #region ESXi Update Manager Compliance Information
-                                            if ($UserRole.Privilege -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                            if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                                                 if ($VumServer.Name) {
-                                                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                                                    Try {
                                                         $VMHostCompliances = $VMHost | Get-Compliance
-                                                    } else {
+                                                    } Catch {
                                                         Write-PScriboMessage 'ESXi VUM compliance information is not currently available with your version of PowerShell.'
                                                     }
                                                     if ($VMHostCompliances) {
@@ -2241,27 +2263,34 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             if ($VMHostDatastores) {
                                                 Section -Style NOTOCHeading5 -ExcludeFromTOC 'Datastores' {
                                                     $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
+
+                                                        $VMHostDsUsedPercent = [math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)
+                                                        $VMHostDsFreePercent = [math]::Round(($VMHostDatastore.FreeSpaceGB / $VMHostDatastore.CapacityGB) * 100, 2)
+                                                        $VMHostDsUsedCapacityGB = ($VMHostDatastore.CapacityGB) - ($VMHostDatastore.FreeSpaceGB)
+
                                                         [PSCustomObject]@{
                                                             'Datastore' = $VMHostDatastore.Name
                                                             'Type' = $VMHostDatastore.Type
-                                                            'Version' = Switch ($VMHostDatastore.FileSystemVersion) {
-                                                                $null { '--' }
-                                                                default { $VMHostDatastore.FileSystemVersion }
+                                                            'Version' = if ($VMHostDatastore.FileSystemVersion) {
+                                                                $VMHostDatastore.FileSystemVersion
+                                                            } else {
+                                                                '--'
                                                             }
                                                             '# of VMs' = $VMHostDatastore.ExtensionData.VM.Count
-                                                            'Total Capacity GB' = [math]::Round($VMHostDatastore.CapacityGB, 2)
-                                                            'Used Capacity GB' = [math]::Round((($VMHostDatastore.CapacityGB) - ($VMHostDatastore.FreeSpaceGB)), 2)
-                                                            'Free Space GB' = [math]::Round($VMHostDatastore.FreeSpaceGB, 2)
-                                                            '% Used' = [math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)
+                                                            'Total Capacity' = Convert-DataSize $VMHostDatastore.CapacityGB
+                                                            'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $VMHostDsUsedCapacityGB), $VMHostDsUsedPercent
+                                                            'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $Datastore.FreeSpaceGB), $VMHostDsFreePercent
+                                                            '% Used' = $VMHostDsUsedPercent
                                                         }
                                                     }
                                                     if ($Healthcheck.Datastore.CapacityUtilization) {
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning
+                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
                                                     }
                                                     $TableParams = @{
                                                         Name = "Datastores - $VMHost"
-                                                        ColumnWidths = 20, 8, 9, 8, 15, 15, 15, 10
+                                                        Columns = 'Datastore','Type','Version','# of VMs','Total Capacity','Used Capacity','Free Capacity'
+                                                        ColumnWidths = 21, 10, 9, 9, 17, 17, 17
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2394,13 +2423,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 'VMkernel Adapters' = ($VMHostNetwork.Vnic.Device | Sort-Object) -join ', '
                                                 'Physical Adapters' = ($VMHostNetwork.Pnic.Device | Sort-Object) -join ', '
                                                 'VMkernel Gateway' = $VMHostNetwork.IpRouteConfig.DefaultGateway
-                                                'IPv6' = Switch ($VMHostNetwork.IPv6Enabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
+                                                'IPv6' = if ($VMHostNetwork.IPv6Enabled) {
+                                                    'Enabled'
+                                                } else {
+                                                    'Disabled'
                                                 }
-                                                'VMkernel IPv6 Gateway' = Switch ($VMHostNetwork.IpRouteConfig.IpV6DefaultGateway) {
-                                                    $null { '--' }
-                                                    default { $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway }
+                                                'VMkernel IPv6 Gateway' = if ($VMHostNetwork.IpRouteConfig.IpV6DefaultGateway) {
+                                                    $VMHostNetwork.IpRouteConfig.IpV6DefaultGateway
+                                                } else {
+                                                    '--'
                                                 }
                                                 'DNS Servers' = ($VMHostNetwork.DnsConfig.Address | Sort-Object) -join ', '
                                                 'Host Name' = $VMHostNetwork.DnsConfig.HostName
@@ -2413,7 +2444,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             $TableParams = @{
                                                 Name = "Network Configuration - $VMHost"
                                                 List = $true
-                                                ColumnWidths = 50, 50
+                                                ColumnWidths = 40, 60
                                             }
                                             if ($Report.ShowTableCaptions) {
                                                 $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2428,9 +2459,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $VMHostPhysicalNetAdapters = foreach ($PhysicalNetAdapter in $PhysicalNetAdapters) {
                                                     [PSCustomObject]@{
                                                         'Adapter' = $PhysicalNetAdapter.Device
-                                                        'Status' = Switch ($PhysicalNetAdapter.Linkspeed) {
-                                                            $null { 'Disconnected' }
-                                                            default { 'Connected' }
+                                                        'Status' = if ($PhysicalNetAdapter.Linkspeed) {
+                                                            'Connected'
+                                                        } else {
+                                                            'Disconnected'
                                                         }
                                                         'Virtual Switch' = $(
                                                             if ($VMHost.ExtensionData.Config.Network.Vswitch.Pnic -contains $PhysicalNetAdapter.Key) {
@@ -2442,29 +2474,28 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             }
                                                         )
                                                         'MAC Address' = $PhysicalNetAdapter.Mac
-                                                        'Actual Speed, Duplex' = Switch ($PhysicalNetAdapter.LinkSpeed.SpeedMb) {
-                                                            $null { 'Down' }
-                                                            default {
-                                                                if ($PhysicalNetAdapter.LinkSpeed.Duplex) {
-                                                                    "$($PhysicalNetAdapter.LinkSpeed.SpeedMb) Mbps, Full Duplex"
-                                                                } else {
-                                                                    'Auto negotiate'
-                                                                }
+                                                        'Actual Speed, Duplex' = if ($PhysicalNetAdapter.LinkSpeed.SpeedMb) {
+                                                            if ($PhysicalNetAdapter.LinkSpeed.Duplex) {
+                                                                "$($PhysicalNetAdapter.LinkSpeed.SpeedMb) Mbps, Full Duplex"
+                                                            } else {
+                                                                'Auto negotiate'
                                                             }
+                                                        } else {
+                                                            'Down'
                                                         }
-                                                        'Configured Speed, Duplex' = Switch ($PhysicalNetAdapter.Spec.LinkSpeed) {
-                                                            $null { 'Auto negotiate' }
-                                                            default {
-                                                                if ($PhysicalNetAdapter.Spec.LinkSpeed.Duplex) {
-                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps, Full Duplex"
-                                                                } else {
-                                                                    "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps"
-                                                                }
+                                                        'Configured Speed, Duplex' = if ($PhysicalNetAdapter.Spec.LinkSpeed) {
+                                                            if ($PhysicalNetAdapter.Spec.LinkSpeed.Duplex) {
+                                                                "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps, Full Duplex"
+                                                            } else {
+                                                                "$($PhysicalNetAdapter.Spec.LinkSpeed.SpeedMb) Mbps"
                                                             }
+                                                        } else {
+                                                            'Auto negotiate'
                                                         }
-                                                        'Wake on LAN' = Switch ($PhysicalNetAdapter.WakeOnLanSupported) {
-                                                            $true { 'Supported' }
-                                                            $false { 'Not Supported' }
+                                                        'Wake on LAN' = if ($PhysicalNetAdapter.WakeOnLanSupported) {
+                                                            'Supported'
+                                                        } else {
+                                                            'Not Supported'
                                                         }
                                                     }
                                                 }
@@ -2478,7 +2509,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $TableParams = @{
                                                                 Name = "Physical Adapter $($VMHostPhysicalNetAdapter.Adapter) - $VMHost"
                                                                 List = $true
-                                                                ColumnWidths = 50, 50
+                                                                ColumnWidths = 40, 60
                                                             }
                                                             if ($Report.ShowTableCaptions) {
                                                                 $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2523,7 +2554,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $TableParams = @{
                                                                     Name = "Network Adapter $($VMHostNetworkAdapter.Device) CDP Information - $VMHost"
                                                                     List = $true
-                                                                    ColumnWidths = 50, 50
+                                                                    ColumnWidths = 40, 60
                                                                 }
                                                                 if ($Report.ShowTableCaptions) {
                                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2578,7 +2609,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $TableParams = @{
                                                                     Name = "Network Adapter $($VMHostNetworkAdapter.Device) LLDP Information - $VMHost"
                                                                     List = $true
-                                                                    ColumnWidths = 50, 50
+                                                                    ColumnWidths = 40, 60
                                                                 }
                                                                 if ($Report.ShowTableCaptions) {
                                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2655,9 +2686,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             }
                                                             'MTU' = $_.Spec.Mtu
                                                             'MAC Address' = $_.Spec.Mac
-                                                            'DHCP' = Switch ($_.Spec.Ip.Dhcp) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'DHCP' = if ($_.Spec.Ip.Dhcp) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
                                                             'IP Address' = & {
                                                                 if ($_.Spec.IP.IPAddress) {
@@ -2675,45 +2707,55 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 }
                                                                 $script:netmask
                                                             }
-                                                            'Default Gateway' = Switch ($_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway) {
-                                                                $null { '--' }
-                                                                default { $_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway }
+                                                            'Default Gateway' = if ($_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway) {
+                                                                $_.Spec.IpRouteSpec.IpRouteConfig.DefaultGateway
+                                                            } else {
+                                                                '--'
                                                             }
-                                                            'vMotion' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vmotion' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vMotion' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vmotion' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'Provisioning' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereProvisioning' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'Provisioning' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereProvisioning' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'FT Logging' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'faultToleranceLogging' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'FT Logging' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'faultToleranceLogging' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'Management' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'management' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'Management' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'management' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'vSphere Replication' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplication' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vSphere Replication' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplication' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'vSphere Replication NFC' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplicationNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vSphere Replication NFC' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereReplicationNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'vSAN' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsan' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vSAN' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsan' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'vSAN Witness' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsanWitness' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vSAN Witness' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vsanWitness' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
-                                                            'vSphere Backup NFC' = Switch ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereBackupnNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
-                                                                $true { 'Enabled' }
-                                                                $false { 'Disabled' }
+                                                            'vSphere Backup NFC' = if ((($vnicMgr.Info.NetConfig | Where-Object { $_.NicType -eq 'vSphereBackupnNFC' }).SelectedVnic | ForEach-Object { $_ -match $device } ) -contains $true) {
+                                                                'Enabled'
+                                                            } else {
+                                                                'Disabled'
                                                             }
                                                         }
                                                     }
@@ -2723,7 +2765,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $TableParams = @{
                                                             Name = "VMkernel Adapter $($VMkernelAdapter.Adapter) - $VMHost"
                                                             List = $true
-                                                            ColumnWidths = 50, 50
+                                                            ColumnWidths = 40, 60
                                                         }
                                                         if ($Report.ShowTableCaptions) {
                                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -2769,17 +2811,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             $VssSecurity = foreach ($VssSec in $VssSecurity) {
                                                                 [PSCustomObject]@{
                                                                     'Virtual Switch' = $VssSec.VirtualSwitch
-                                                                    'Promiscuous Mode' = Switch ($VssSec.AllowPromiscuous) {
-                                                                        $true { 'Accept' }
-                                                                        $false { 'Reject' }
+                                                                    'Promiscuous Mode' = if ($VssSec.AllowPromiscuous) {
+                                                                        'Accept'
+                                                                    } else {
+                                                                        'Reject'
                                                                     }
-                                                                    'MAC Address Changes' = Switch ($VssSec.MacChanges) {
-                                                                        $true { 'Accept' }
-                                                                        $false { 'Reject' }
+                                                                    'MAC Address Changes' = if ($VssSec.MacChanges) {
+                                                                        'Accept'
+                                                                    } else {
+                                                                        'Reject'
                                                                     }
-                                                                    'Forged Transmits' = Switch ($VssSec.ForgedTransmits) {
-                                                                        $true { 'Accept' }
-                                                                        $false { 'Reject' }
+                                                                    'Forged Transmits' = if ($VssSec.ForgedTransmits) {
+                                                                        'Accept'
+                                                                    } else {
+                                                                        'Reject'
                                                                     }
                                                                 }
                                                             }
@@ -2801,9 +2846,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VssTrafficShapingPolicy = foreach ($VSSwitch in $VSSwitches) {
                                                             [PSCustomObject]@{
                                                                 'Virtual Switch' = $VSSwitch.Name
-                                                                'Status' = Switch ($VSSwitch.ExtensionData.Spec.Policy.ShapingPolicy.Enabled) {
-                                                                    $True { 'Enabled' }
-                                                                    $False { 'Disabled' }
+                                                                'Status' = if ($VSSwitch.ExtensionData.Spec.Policy.ShapingPolicy.Enabled) {
+                                                                    'Enabled'
+                                                                } else {
+                                                                    'Disabled'
                                                                 }
                                                                 'Average Bandwidth (kbit/s)' = $VSSwitch.ExtensionData.Spec.Policy.ShapingPolicy.AverageBandwidth
                                                                 'Peak Bandwidth (kbit/s)' = $VSSwitch.ExtensionData.Spec.Policy.ShapingPolicy.PeakBandwidth
@@ -2841,13 +2887,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         'BeaconProbing' { 'Beacon probing' }
                                                                         default { $VssNicTeam.NetworkFailoverDetectionPolicy }
                                                                     }
-                                                                    'Notify Switches' = Switch ($VssNicTeam.NotifySwitches) {
-                                                                        $true { 'Yes' }
-                                                                        $false { 'No' }
+                                                                    'Notify Switches' = if ($VssNicTeam.NotifySwitches) {
+                                                                        'Yes'
+                                                                    } else {
+                                                                        'No'
                                                                     }
-                                                                    'Failback' = Switch ($VssNicTeam.FailbackEnabled) {
-                                                                        $true { 'Yes' }
-                                                                        $false { 'No' }
+                                                                    'Failback' = if ($VssNicTeam.FailbackEnabled) {
+                                                                        'Yes'
+                                                                    } else {
+                                                                        'No'
                                                                     }
                                                                     'Active NICs' = ($VssNicTeam.ActiveNic | Sort-Object) -join [Environment]::NewLine
                                                                     'Standby NICs' = ($VssNicTeam.StandbyNic | Sort-Object) -join [Environment]::NewLine
@@ -2899,17 +2947,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                     [PSCustomObject]@{
                                                                         'Port Group' = $VssPortgroupSec.VirtualPortGroup
                                                                         'Virtual Switch' = $VssPortgroupSec.virtualportgroup.virtualswitchname
-                                                                        'Promiscuous Mode' = Switch ($VssPortgroupSec.AllowPromiscuous) {
-                                                                            $true { 'Accept' }
-                                                                            $false { 'Reject' }
+                                                                        'Promiscuous Mode' = if ($VssPortgroupSec.AllowPromiscuous) {
+                                                                            'Accept'
+                                                                        } else {
+                                                                            'Reject'
                                                                         }
-                                                                        'MAC Changes' = Switch ($VssPortgroupSec.MacChanges) {
-                                                                            $true { 'Accept' }
-                                                                            $false { 'Reject' }
+                                                                        'MAC Changes' = if ($VssPortgroupSec.MacChanges) {
+                                                                            'Accept'
+                                                                        } else {
+                                                                            'Reject'
                                                                         }
-                                                                        'Forged Transmits' = Switch ($VssPortgroupSec.ForgedTransmits) {
-                                                                            $true { 'Accept' }
-                                                                            $false { 'Reject' }
+                                                                        'Forged Transmits' = if ($VssPortgroupSec.ForgedTransmits) {
+                                                                            'Accept'
+                                                                        } else {
+                                                                            'Reject'
                                                                         }
                                                                     }
                                                                 }
@@ -2974,13 +3025,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                             'BeaconProbing' { 'Beacon probing' }
                                                                             default { $VssPortgroupNicTeam.NetworkFailoverDetectionPolicy }
                                                                         }
-                                                                        'Notify Switches' = Switch ($VssPortgroupNicTeam.NotifySwitches) {
-                                                                            $true { 'Yes' }
-                                                                            $false { 'No' }
+                                                                        'Notify Switches' = if ($VssPortgroupNicTeam.NotifySwitches) {
+                                                                            'Yes'
+                                                                        } else {
+                                                                            'No'
                                                                         }
-                                                                        'Failback' = Switch ($VssPortgroupNicTeam.FailbackEnabled) {
-                                                                            $true { 'Yes' }
-                                                                            $false { 'No' }
+                                                                        'Failback' = if ($VssPortgroupNicTeam.FailbackEnabled) {
+                                                                            'Yes'
+                                                                        } else {
+                                                                            'No'
                                                                         }
                                                                         'Active NICs' = ($VssPortgroupNicTeam.ActiveNic | Sort-Object) -join [Environment]::NewLine
                                                                         'Standby NICs' = ($VssPortgroupNicTeam.StandbyNic | Sort-Object) -join [Environment]::NewLine
@@ -3027,7 +3080,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $TableParams = @{
                                                         Name = "Lockdown Mode - $VMHost"
                                                         List = $true
-                                                        ColumnWidths = 50, 50
+                                                        ColumnWidths = 40, 60
                                                     }
                                                     if ($Report.ShowTableCaptions) {
                                                         $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -3043,9 +3096,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $Services = foreach ($VMHostService in $VMHostServices) {
                                                     [PSCustomObject]@{
                                                         'Service' = $VMHostService.Label
-                                                        'Daemon' = Switch ($VMHostService.Running) {
-                                                            $true { 'Running' }
-                                                            $false { 'Stopped' }
+                                                        'Daemon' = if ($VMHostService.Running) {
+                                                            'Running'
+                                                        } else {
+                                                            'Stopped'
                                                         }
                                                         'Startup Policy' = Switch ($VMHostService.Policy) {
                                                             'automatic' { 'Start and stop with port usage' }
@@ -3088,9 +3142,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         $VMHostFirewall = foreach ($VMHostFirewallException in $VMHostFirewallExceptions) {
                                                             [PScustomObject]@{
                                                                 'Service' = $VMHostFirewallException.Name
-                                                                'Status' = Switch ($VMHostFirewallException.Enabled) {
-                                                                    $true { 'Enabled' }
-                                                                    $false { 'Disabled' }
+                                                                'Status' = if ($VMHostFirewallException.Enabled) {
+                                                                    'Enabled'
+                                                                } else {
+                                                                    'Disabled'
                                                                 }
                                                                 'Incoming Ports' = $VMHostFirewallException.IncomingPorts
                                                                 'Outgoing Ports' = $VMHostFirewallException.OutgoingPorts
@@ -3155,15 +3210,16 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 'PoweredOff' { 'Off' }
                                                                 default { $VMHostVM.PowerState }
                                                             }
-                                                            'IP Address' = Switch ($VMHostVMView.Guest.IpAddress) {
-                                                                $null { '--' }
-                                                                default { $VMHostVMView.Guest.IpAddress }
+                                                            'IP Address' = if ($VMHostVMView.Guest.IpAddress) {
+                                                                $VMHostVMView.Guest.IpAddress
+                                                            } else {
+                                                                '--'
                                                             }
                                                             'CPUs' = $VMHostVM.NumCpu
                                                             #'Cores per Socket' = $VMHostVM.CoresPerSocket
-                                                            'Memory GB' = [math]::Round(($VMHostVM.memoryGB), 2)
-                                                            'Provisioned GB' = [math]::Round(($VMHostVM.ProvisionedSpaceGB), 2)
-                                                            'Used GB' = [math]::Round(($VMHostVM.UsedSpaceGB), 2)
+                                                            'Memory' = Convert-DataSize $VMHostVM.memoryGB -RoundUnits 0
+                                                            'Provisioned' = Convert-DataSize $VMHostVM.ProvisionedSpaceGB
+                                                            'Used' = Convert-DataSize $VMHostVM.UsedSpaceGB
                                                             'HW Version' = ($VMHostVM.HardwareVersion).Replace('vmx-', 'v')
                                                             'VM Tools Status' = Switch ($VMHostVM.ExtensionData.Guest.ToolsStatus) {
                                                                 'toolsOld' { 'Old' }
@@ -3205,9 +3261,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                         default { $VMStartPol.StartAction }
                                                                     }
                                                                     'Startup Delay' = "$($VMStartPol.StartDelay) seconds"
-                                                                    'VMware Tools' = Switch ($VMStartPol.WaitForHeartbeat) {
-                                                                        $true { 'Continue if VMware Tools is started' }
-                                                                        $false { 'Wait for startup delay' }
+                                                                    'VMware Tools' = if ($VMStartPol.WaitForHeartbeat) {
+                                                                        'Continue if VMware Tools is started'
+                                                                    } else {
+                                                                        'Wait for startup delay'
                                                                     }
                                                                     'Shutdown Behavior' = Switch ($VMStartPol.StopAction) {
                                                                         'PowerOff' { 'Power Off' }
@@ -3300,9 +3357,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'Number of Hosts' = $VDS.ExtensionData.Summary.HostMember.Count
                                             'Number of VMs' = $VDS.ExtensionData.Summary.VM.Count
                                             'MTU' = $VDS.Mtu
-                                            'Network I/O Control' = Switch ($VDS.ExtensionData.Config.NetworkResourceManagementEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Network I/O Control' = if ($VDS.ExtensionData.Config.NetworkResourceManagementEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
                                             'Discovery Protocol' = $VDS.LinkDiscoveryProtocol
                                             'Discovery Protocol Operation' = $VDS.LinkDiscoveryProtocolOperation
@@ -3329,7 +3387,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Distributed Switch General Properties - $VDS"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -3368,17 +3426,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Section -Style Heading4 'Distributed Switch Security' {
                                                 $VDSecurityPolicyDetail = [PSCustomObject]@{
                                                     'Distributed Switch' = $VDSecurityPolicy.VDSwitch
-                                                    'Allow Promiscuous' = Switch ($VDSecurityPolicy.AllowPromiscuous) {
-                                                        $true { 'Accept' }
-                                                        $false { 'Reject' }
+                                                    'Allow Promiscuous' = if ($VDSecurityPolicy.AllowPromiscuous) {
+                                                        'Accept'
+                                                    } else {
+                                                        'Reject'
                                                     }
-                                                    'Forged Transmits' = Switch ($VDSecurityPolicy.ForgedTransmits) {
-                                                        $true { 'Accept' }
-                                                        $false { 'Reject' }
+                                                    'Forged Transmits' = if ($VDSecurityPolicy.ForgedTransmits) {
+                                                        'Accept'
+                                                    } else {
+                                                        'Reject'
                                                     }
-                                                    'MAC Address Changes' = Switch ($VDSecurityPolicy.MacChanges) {
-                                                        $true { 'Accept' }
-                                                        $false { 'Reject' }
+                                                    'MAC Address Changes' = if ($VDSecurityPolicy.MacChanges) {
+                                                        'Accept'
+                                                    } else {
+                                                        'Reject'
                                                     }
                                                 }
                                                 $TableParams = @{
@@ -3405,9 +3466,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     [PSCustomObject]@{
                                                         'Distributed Switch' = $VDSTrafficShape.VDSwitch
                                                         'Direction' = $VDSTrafficShape.Direction
-                                                        'Status' = Switch ($VDSTrafficShape.Enabled) {
-                                                            $true { 'Enabled' }
-                                                            $false { 'Disabled' }
+                                                        'Status' = if ($VDSTrafficShape.Enabled) {
+                                                            'Enabled'
+                                                        } else {
+                                                            'Disabled'
                                                         }
                                                         'Average Bandwidth (kbit/s)' = $VDSTrafficShape.AverageBandwidth
                                                         'Peak Bandwidth (kbit/s)' = $VDSTrafficShape.PeakBandwidth
@@ -3436,9 +3498,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         'Port Group' = $VDSPortgroup.Name
                                                         'Distributed Switch' = $VDSPortgroup.VDSwitch
                                                         'Datacenter' = $VDSPortgroup.Datacenter
-                                                        'VLAN Configuration' = Switch ($VDSPortgroup.VlanConfiguration) {
-                                                            $null { '--' }
-                                                            default { $VDSPortgroup.VlanConfiguration }
+                                                        'VLAN Configuration' = if ($VDSPortgroup.VlanConfiguration) {
+                                                            $VDSPortgroup.VlanConfiguration
+                                                        } else {
+                                                            '--'
                                                         }
                                                         'Port Binding' = $VDSPortgroup.PortBinding
                                                         '# of Ports' = $VDSPortgroup.NumPorts
@@ -3474,17 +3537,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     [PSCustomObject]@{
                                                         'Port Group' = $VDSSecurityPolicy.VDPortgroup
                                                         'Distributed Switch' = $VDS.Name
-                                                        'Allow Promiscuous' = Switch ($VDSSecurityPolicy.AllowPromiscuous) {
-                                                            $true { 'Accept' }
-                                                            $false { 'Reject' }
+                                                        'Allow Promiscuous' = if ($VDSSecurityPolicy.AllowPromiscuous) {
+                                                            'Accept'
+                                                        } else {
+                                                            'Reject'
                                                         }
-                                                        'Forged Transmits' = Switch ($VDSSecurityPolicy.ForgedTransmits) {
-                                                            $true { 'Accept' }
-                                                            $false { 'Reject' }
+                                                        'Forged Transmits' = if ($VDSSecurityPolicy.ForgedTransmits) {
+                                                            'Accept'
+                                                        } else {
+                                                            'Reject'
                                                         }
-                                                        'MAC Address Changes' = Switch ($VDSSecurityPolicy.MacChanges) {
-                                                            $true { 'Accept' }
-                                                            $false { 'Reject' }
+                                                        'MAC Address Changes' = if ($VDSSecurityPolicy.MacChanges) {
+                                                            'Accept'
+                                                        } else {
+                                                            'Reject'
                                                         }
                                                     }
                                                 }
@@ -3513,9 +3579,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         'Port Group' = $VDSPortgroupTrafficShape.VDPortgroup
                                                         'Distributed Switch' = $VDS.Name
                                                         'Direction' = $VDSPortgroupTrafficShape.Direction
-                                                        'Status' = Switch ($VDSPortgroupTrafficShape.Enabled) {
-                                                            $true { 'Enabled' }
-                                                            $false { 'Disabled' }
+                                                        'Status' = if ($VDSPortgroupTrafficShape.Enabled) {
+                                                            'Enabled'
+                                                        } else {
+                                                            'Disabled'
                                                         }
                                                         'Average Bandwidth (kbit/s)' = $VDSPortgroupTrafficShape.AverageBandwidth
                                                         'Peak Bandwidth (kbit/s)' = $VDSPortgroupTrafficShape.PeakBandwidth
@@ -3555,13 +3622,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             'BeaconProbing' { 'Beacon probing' }
                                                             default { $VDUplink.FailoverDetectionPolicy }
                                                         }
-                                                        'Notify Switches' = Switch ($VDUplink.NotifySwitches) {
-                                                            $true { 'Yes' }
-                                                            $false { 'No' }
+                                                        'Notify Switches' = if ($VDUplink.NotifySwitches) {
+                                                            'Yes'
+                                                        } else {
+                                                            'No'
                                                         }
-                                                        'Failback Enabled' = Switch ($VDUplink.EnableFailback) {
-                                                            $true { 'Yes' }
-                                                            $false { 'No' }
+                                                        'Failback Enabled' = if ($VDUplink.EnableFailback) {
+                                                            'Yes'
+                                                        } else {
+                                                            'No'
                                                         }
                                                         'Active Uplinks' = $VDUplink.ActiveUplinkPort -join [Environment]::NewLine
                                                         'Standby Uplinks' = $VDUplink.StandbyUplinkPort -join [Environment]::NewLine
@@ -3620,21 +3689,31 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                         Section -Style Heading2 'vSAN' {
                             BlankLine
                             foreach ($VsanCluster in $VsanClusters) {
-                                $VsanSpaceUsage = Get-Cluster | Where-Object {$_.Name -eq $VsanCluster.Name}
-                                $VsanUsedCapacity = [math]::Round($VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB),2
-                                $VsanSpaceInfo = [PSCustomObject]@{
-                                    'Total Capacity' = "$([math]::Round($VsanSpaceUsage.CapacityGB,2)) GB"
-                                    'Used Capacity' = "$($VsanUsedCapacity) GB"
-                                    'Free Capacity' = "$([math]::Round($VsanSpaceUsage.FreeSpaceGB,2)) GB"
+                                Write-PScriboMessage "Collecting vSAN capacity information for $($VsanCluster.Name)."
+                                Try {
+                                    $VsanSpaceUsage = Get-VsanSpaceUsage -Cluster $VsanCluster.Name
+                                    $VsanUsedCapacity = $VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB
+
+                                    # Calculate percentages
+                                    $VsanUsedPercent = [math]::Round(($VsanUsedCapacity / $VsanSpaceUsage.CapacityGB) * 100, 2)
+                                    $VsanFreePercent = [math]::Round(($VsanSpaceUsage.FreeSpaceGB / $VsanSpaceUsage.CapacityGB) * 100, 2)
+
+                                    $VsanSpaceInfo = [PSCustomObject]@{
+                                        'Total Capacity'  = "$(Convert-DataSize $VsanSpaceUsage.CapacityGB)"
+                                        'Used Capacity'   = "$(Convert-DataSize $VsanUsedCapacity) ($VsanUsedPercent%)"
+                                        'Free Capacity'   = "$(Convert-DataSize $VsanSpaceUsage.FreeSpaceGB) ($VsanFreePercent%)"
+                                    }
+                                    $TableParams = @{
+                                        Name = "vSAN Capacity Overview - $($vCenterServerName)"
+                                        ColumnWidths = 34, 33, 33
+                                    }
+                                    if ($Report.ShowTableCaptions) {
+                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                    }
+                                    $VsanSpaceInfo | Table @TableParams
+                                } Catch {
+                                    Write-PScriboMessage -IsWarning "Unable to collect vSAN capacity information for $($VsanCluster.Name). $($_.Exception.Message)"
                                 }
-                                $TableParams = @{
-                                    Name = "vSAN Capacity Overview - $($vCenterServerName)"
-                                    ColumnWidths = 34, 33, 33
-                                }
-                                if ($Report.ShowTableCaptions) {
-                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                }
-                                $VsanSpaceInfo | Table @TableParams
                             }
 
                             Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
@@ -3644,29 +3723,31 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $VsanClusterInfo = foreach ($VsanCluster in $VsanClusters) {
                                     [PSCustomObject]@{
                                         'Cluster' = $VsanCluster.Name
-                                        'vSAN Enabled' = Switch ($VsanCluster.VsanEnabled) {
-                                            $true { 'Yes' }
-                                            $false { 'No' }
+                                        'vSAN Enabled' = if ($VsanCluster.VsanEnabled) {
+                                            'Yes'
+                                        } else {
+                                            'No'
                                         }
-                                        'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
-                                            $true { 'Yes' }
-                                            $false { 'No' }
+                                        'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
+                                            'Yes'
+                                        } else {
+                                            'No'
                                         }
                                         # TODO: Update for vSphere 7.0 U1 and higher - Space Efficiency: Deduplication & Compression, Compression Only, None
-                                        'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
-                                            $null { 'Disabled' }
+                                        'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
-                                        'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
-                                            $null { 'Disabled' }
+                                        'Encryption' = if ($VsanCluster.EncryptionEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
-                                        'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
-                                            $null { 'Disabled' }
+                                        'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
                                     }
                                 }
@@ -3687,332 +3768,385 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     #region vSAN Cluster Section
                                     Section -Style Heading3 $VsanCluster.Name {
                                         if ($VsanCluster.VsanEsaEnabled) {
-                                            $VsanStoragePoolDisk = Get-VsanStoragePoolDisk -Cluster $VsanCluster.Cluster
-                                            $VsanDiskFormat = $VsanStoragePoolDisk.DiskFormatVersion | Select-Object -First 1 -Unique
-                                            $VsanClusterDetail = [PSCustomObject]@{
-                                                'Cluster' = $VsanCluster.Name
-                                                'ID' = $VsanCluster.Id
-                                                'vSAN Type' = Switch ($VsanCluster.VsanEsaEnabled) {
-                                                    $true { 'vSAN ESA' }
-                                                    $null { 'vSAN OSA' }
-                                                }
-                                                'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
-                                                    $true { 'Yes' }
-                                                    $false { 'No' }
-                                                }
-                                                'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
-                                                'Number of Disks' = $VsanStoragePoolDisk.Count
-                                                'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
-                                                'Disk Format Version' = $VsanDiskFormat
-                                                'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
-                                            }
-
-                                            if ($InfoLevel.vSAN -ge 4) {
-                                                $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanStoragePoolDisk.Host | Select-Object -Unique | Sort-Object Name) -join ', ')
-                                            }
-
-                                            $TableParams = @{
-                                                Name = "vSAN Configuration - $($VsanCluster.Name)"
-                                                List = $true
-                                                ColumnWidths = 50, 50
-                                            }
-                                            if ($Report.ShowTableCaptions) {
-                                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                                            }
-                                            $VsanClusterDetail | Table @TableParams
-
-                                            Section -Style Heading4 'Disks' {
-                                                $vDisks = foreach ($Disk in $VsanStoragePoolDisk) {
-                                                    [PSCustomObject]@{
-                                                        'Disk' = $Disk.Name
-                                                        'Name' = $Disk.ExtensionData.DisplayName
-                                                        'Drive Type' = Switch ($Disk.IsSsd) {
-                                                            $true { 'Flash' }
-                                                            $false { 'HDD' }
-                                                        }
-                                                        'Host' = $Disk.Host.Name
-                                                        'State' = Switch ($Disk.IsMounted) {
-                                                            $True { 'Mounted' }
-                                                            $False { 'Unmounted' }
-                                                        }
-                                                        'Encrypted' = Switch ($Disk.IsEncryped) {
-                                                            $true { 'Yes' }
-                                                            $false { 'No' }
-                                                        }
-                                                        'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
-                                                        'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
-                                                        'Serial Number' = $Disk.ExtensionData.SerialNumber
-                                                        'Vendor' = $Disk.ExtensionData.Vendor
-                                                        'Model' = $Disk.ExtensionData.Model
-                                                        'Disk Type' = $Disk.DiskType
-                                                        'Disk Format Version' = $Disk.DiskFormatVersion
+                                            Write-PScriboMessage "Collecting vSAN ESA information for $($VsanCluster.Name)."
+                                            Try {
+                                                $VsanStoragePoolDisk = Get-VsanStoragePoolDisk -Cluster $VsanCluster.Cluster
+                                                $VsanDiskFormat = $VsanStoragePoolDisk.DiskFormatVersion | Select-Object -First 1 -Unique
+                                                $VsanClusterDetail = [PSCustomObject]@{
+                                                    'Cluster' = $VsanCluster.Name
+                                                    'ID' = $VsanCluster.Id
+                                                    'vSAN Type' = if ($VsanCluster.VsanEsaEnabled) {
+                                                        'vSAN ESA'
+                                                    } else {
+                                                        'vSAN OSA'
                                                     }
+                                                    'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
+                                                        'Yes'
+                                                    } else {
+                                                        'No'
+                                                    }
+                                                    'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
+                                                    'Number of Disks' = $VsanStoragePoolDisk.Count
+                                                    'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
+                                                    'Disk Format Version' = $VsanDiskFormat
+                                                    'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'Encryption' = if ($VsanCluster.EncryptionEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
                                                 }
 
                                                 if ($InfoLevel.vSAN -ge 4) {
-                                                    $vDisks | Sort-Object Host | ForEach-Object {
-                                                        $vDisk = $_
-                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
-                                                            $TableParams = @{
-                                                                Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
-                                                                List = $true
-                                                                Columns = 'Name', 'State', 'Drive Type', 'Encrypted', 'Capacity', 'Host', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version', 'Disk Type'
-                                                                ColumnWidths = 50, 50
-                                                            }
-                                                            if ($Report.ShowTableCaptions) {
-                                                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                            }
-                                                            $vDisk | Table @TableParams
-                                                        }
-                                                    }
-                                                } else {
-                                                    $TableParams = @{
-                                                        Name = "vSAN Disks - $($VsanCluster.Name)"
-                                                        Columns = 'Disk', 'Capacity GB', 'State', 'Host'
-                                                        ColumnWidths = 40, 15, 15, 30
-                                                    }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                    }
-                                                    $vDisks | Sort-Object Host | Table @TableParams
+                                                    $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanStoragePoolDisk.Host | Select-Object -Unique | Sort-Object Name) -join ', ')
                                                 }
-                                            }
-                                        } else {
-                                            $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
-                                            $NumVsanDiskGroup = $VsanDiskGroup.Count
-                                            $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
-                                            $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
-                                            $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
-                                            $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
-                                            if ($NumVsanHdd -gt 0) {
-                                                $VsanClusterType = "Hybrid"
-                                            } else {
-                                                $VsanClusterType = "All Flash"
-                                            }
-                                            $VsanClusterDetail = [PSCustomObject]@{
-                                                'Cluster' = $VsanCluster.Name
-                                                'ID' = $VsanCluster.Id
-                                                'vSAN Type' = Switch ($VsanCluster.VsanEsaEnabled) {
-                                                    $true { 'vSAN ESA' }
-                                                    $null { 'vSAN OSA' }
-                                                }
-                                                'Storage Type' = $VsanClusterType
-                                                'Stretched Cluster' = Switch ($VsanCluster.StretchedClusterEnabled) {
-                                                    $true { 'Yes' }
-                                                    $false { 'No' }
-                                                }
-                                                'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
-                                                'Number of Disks' = $NumVsanSsd + $NumVsanHdd
-                                                'Number of Disk Groups' = $NumVsanDiskGroup
-                                                'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
-                                                'Disk Format Version' = $VsanDiskFormat
-                                                'Deduplication & Compression' = Switch ($VsanCluster.SpaceEfficiencyEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'Encryption' = Switch ($VsanCluster.EncryptionEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'Health Check' = Switch ($VsanCluster.HealthCheckEnabled) {
-                                                    $true { 'Enabled' }
-                                                    $false { 'Disabled' }
-                                                    $null { 'Disabled' }
-                                                }
-                                                'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
-                                            }
 
-                                            if ($InfoLevel.vSAN -ge 4) {
-                                                $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
-                                            }
-                                            $TableParams = @{
-                                                Name = "vSAN Configuration - $($VsanCluster.Name)"
-                                                List = $true
-                                                ColumnWidths = 50, 50
-                                            }
-                                            if ($Report.ShowTableCaptions) {
-                                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                                            }
-                                            $VsanClusterDetail | Table @TableParams
-
-                                            # TODO: vSAN Services
-
-                                            Section -Style Heading4 'Disk Groups' {
-                                                $VsanDiskGroups = foreach ($DiskGroup in $VsanDiskGroup) {
-                                                    $Disks = $DiskGroup | Get-VsanDisk
-                                                    [PSCustomObject]@{
-                                                        'Disk Group' = $DiskGroup.Uuid
-                                                        'Host' = $Diskgroup.VMHost
-                                                        '# of Disks' = $Disks.Count
-                                                        'State' = Switch ($DiskGroup.IsMounted) {
-                                                            $true { 'Mounted' }
-                                                            $False { 'Unmounted' }
-                                                        }
-                                                        'Type' = Switch ($DiskGroup.DiskGroupType) {
-                                                            'AllFlash' { 'All Flash' }
-                                                            default { $DiskGroup.DiskGroupType }
-                                                        }
-                                                        'Disk Format Version' = $DiskGroup.DiskFormatVersion
-                                                    }
-                                                }
                                                 $TableParams = @{
-                                                    Name = "vSAN Disk Groups - $($VsanCluster.Name)"
-                                                    ColumnWidths = 35, 28, 7, 10, 10, 10
+                                                    Name = "vSAN Configuration - $($VsanCluster.Name)"
+                                                    List = $true
+                                                    ColumnWidths = 40, 60
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
                                                 }
-                                                $VsanDiskGroups | Sort-Object Host | Table @TableParams
+                                                $VsanClusterDetail | Table @TableParams
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Error collecting vSAN ESA information for $($VsanCluster.Name). $($_.Exception.Message)"
                                             }
 
-                                            Section -Style Heading4 'Disks' {
-                                                $vDisks = foreach ($Disk in $VsanDisk) {
-                                                    [PSCustomObject]@{
-                                                        'Disk' = $Disk.Name
-                                                        'Name' = $Disk.ExtensionData.DisplayName
-                                                        'State' = Switch ($Disk.IsMounted) {
-                                                            $True { 'Mounted' }
-                                                            $False { 'Unmounted' }
+                                            if ($VsanStoragePoolDisk) {
+                                                Write-PScriboMessage "Collecting vSAN disk information for $($VsanCluster.Name)."
+                                                Try {
+                                                    Section -Style Heading4 'Disks' {
+                                                        $vDisks = foreach ($Disk in $VsanStoragePoolDisk) {
+                                                            [PSCustomObject]@{
+                                                                'Disk' = $Disk.Name
+                                                                'Name' = $Disk.ExtensionData.DisplayName
+                                                                'Drive Type' = if ($Disk.IsSsd) {
+                                                                    'Flash'
+                                                                } else {
+                                                                    'HDD'
+                                                                }
+                                                                'Host' = $Disk.Host.Name
+                                                                'State' = if ($Disk.IsMounted) {
+                                                                    'Mounted'
+                                                                } else {
+                                                                    'Unmounted'
+                                                                }
+                                                                'Encrypted' = if ($Disk.IsEncryped) {
+                                                                    'Yes'
+                                                                } else {
+                                                                    'No'
+                                                                }
+                                                                'Capacity' = Convert-DataSize $Disk.CapacityGB
+                                                                'Serial Number' = $Disk.ExtensionData.SerialNumber
+                                                                'Vendor' = $Disk.ExtensionData.Vendor
+                                                                'Model' = $Disk.ExtensionData.Model
+                                                                'Disk Type' = $Disk.DiskType
+                                                                'Disk Format Version' = $Disk.DiskFormatVersion
+                                                            }
                                                         }
-                                                        'Drive Type' = Switch ($Disk.IsSsd) {
-                                                            $true { 'Flash' }
-                                                            $false { 'HDD' }
-                                                        }
-                                                        'Host' = $Disk.VsanDiskGroup.VMHost.Name
-                                                        'Claimed As' = Switch ($Disk.IsCacheDisk) {
-                                                            $true { 'Cache' }
-                                                            $false { 'Capacity' }
-                                                        }
-                                                        'Capacity' = "$([math]::Round($Disk.CapacityGB, 2)) GB"
-                                                        'Capacity GB' = [math]::Round($Disk.CapacityGB, 2)
-                                                        'Serial Number' = $Disk.ExtensionData.SerialNumber
-                                                        'Vendor' = $Disk.ExtensionData.Vendor
-                                                        'Model' = $Disk.ExtensionData.Model
-                                                        'Disk Group' = $Disk.VsanDiskGroup.Uuid
-                                                        'Disk Format Version' = $Disk.DiskFormatVersion
-                                                    }
-                                                }
 
-                                                if ($InfoLevel.vSAN -ge 4) {
-                                                    $vDisks | Sort-Object Host | ForEach-Object {
-                                                        $vDisk = $_
-                                                        Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
+                                                        if ($InfoLevel.vSAN -ge 4) {
+                                                            $vDisks | Sort-Object Host | ForEach-Object {
+                                                                $vDisk = $_
+                                                                Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
+                                                                    $TableParams = @{
+                                                                        Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
+                                                                        List = $true
+                                                                        Columns = 'Name', 'State', 'Drive Type', 'Encrypted', 'Capacity', 'Host', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version', 'Disk Type'
+                                                                        ColumnWidths = 40, 60
+                                                                    }
+                                                                    if ($Report.ShowTableCaptions) {
+                                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                                    }
+                                                                    $vDisk | Table @TableParams
+                                                                }
+                                                            }
+                                                        } else {
                                                             $TableParams = @{
-                                                                Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
-                                                                List = $true
-                                                                Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity', 'Host', 'Disk Group', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version'
-                                                                ColumnWidths = 50, 50
+                                                                Name = "vSAN Disks - $($VsanCluster.Name)"
+                                                                Columns = 'Disk', 'Capacity', 'State', 'Host'
+                                                                ColumnWidths = 40, 15, 15, 30
                                                             }
                                                             if ($Report.ShowTableCaptions) {
                                                                 $TableParams['Caption'] = "- $($TableParams.Name)"
                                                             }
-                                                            $vDisk | Table @TableParams
+                                                            $vDisks | Sort-Object Host | Table @TableParams
                                                         }
                                                     }
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Error collecting vSAN disk information for $($VsanCluster.Name). $($_.Exception.Message)"
+                                                }
+                                            }
+                                        } else {
+                                            Try {
+                                                Write-PScriboMessage "Collecting vSAN OSA information for $($VsanCluster.Name)."
+                                                $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
+                                                $NumVsanDiskGroup = $VsanDiskGroup.Count
+                                                $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
+                                                $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
+                                                $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
+                                                $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
+                                                if ($NumVsanHdd -gt 0) {
+                                                    $VsanClusterType = "Hybrid"
                                                 } else {
-                                                    $TableParams = @{
-                                                        Name = "vSAN Disks - $($VsanCluster.Name)"
-                                                        Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity GB', 'Host', 'Disk Group'
-                                                        ColumnWidths = 21, 10, 10, 10, 21, 28
+                                                    $VsanClusterType = "All Flash"
+                                                }
+                                                $VsanClusterDetail = [PSCustomObject]@{
+                                                    'Cluster' = $VsanCluster.Name
+                                                    'ID' = $VsanCluster.Id
+                                                    'vSAN Type' = if ($VsanCluster.VsanEsaEnabled) {
+                                                        'vSAN ESA'
+                                                    } else {
+                                                        'vSAN OSA'
                                                     }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    'Storage Type' = $VsanClusterType
+                                                    'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
+                                                        'Yes'
+                                                    } else {
+                                                        'No'
                                                     }
-                                                    $vDisks | Sort-Object Host | Table @TableParams
+                                                    'Number of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
+                                                    'Number of Disks' = $NumVsanSsd + $NumVsanHdd
+                                                    'Number of Disk Groups' = $NumVsanDiskGroup
+                                                    'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
+                                                    'Disk Format Version' = $VsanDiskFormat
+                                                    'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'Encryption' = if ($VsanCluster.EncryptionEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
+                                                }
+
+                                                if ($InfoLevel.vSAN -ge 4) {
+                                                    $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
+                                                }
+                                                $TableParams = @{
+                                                    Name = "vSAN Configuration - $($VsanCluster.Name)"
+                                                    List = $true
+                                                    ColumnWidths = 40, 60
+                                                }
+                                                if ($Report.ShowTableCaptions) {
+                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                }
+                                                $VsanClusterDetail | Table @TableParams
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Error collecting vSAN OSA information for $($VsanCluster.Name). $($_.Exception.Message)"
+                                            }
+
+                                            # TODO: vSAN Services
+                                            if ($VsanDiskGroup) {
+                                                Write-PScriboMessage "Collecting vSAN disk group information for $($VsanCluster.Name)."
+                                                Try {
+                                                    Section -Style Heading4 'Disk Groups' {
+                                                        $VsanDiskGroups = foreach ($DiskGroup in $VsanDiskGroup) {
+                                                            $Disks = $DiskGroup | Get-VsanDisk
+                                                            [PSCustomObject]@{
+                                                                'Disk Group' = $DiskGroup.Uuid
+                                                                'Host' = $Diskgroup.VMHost
+                                                                '# of Disks' = $Disks.Count
+                                                                'State' = if ($DiskGroup.IsMounted) {
+                                                                    'Mounted'
+                                                                } else {
+                                                                    'Unmounted'
+                                                                }
+                                                                'Type' = Switch ($DiskGroup.DiskGroupType) {
+                                                                    'AllFlash' { 'All Flash' }
+                                                                    default { $DiskGroup.DiskGroupType }
+                                                                }
+                                                                'Disk Format Version' = $DiskGroup.DiskFormatVersion
+                                                            }
+                                                        }
+                                                        $TableParams = @{
+                                                            Name = "vSAN Disk Groups - $($VsanCluster.Name)"
+                                                            ColumnWidths = 35, 28, 7, 10, 10, 10
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VsanDiskGroups | Sort-Object Host | Table @TableParams
+                                                    }
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Error collecting vSAN disk group information for $($VsanCluster.Name). $($_.Exception.Message)"
+                                                }
+                                            }
+
+                                            if ($VsanDisk) {
+                                                Write-PScriboMessage "Collecting vSAN disk information for $($VsanCluster.Name)."
+                                                Try {
+                                                    Section -Style Heading4 'Disks' {
+                                                        $vDisks = foreach ($Disk in $VsanDisk) {
+                                                            [PSCustomObject]@{
+                                                                'Disk' = $Disk.Name
+                                                                'Name' = $Disk.ExtensionData.DisplayName
+                                                                'State' = if ($Disk.IsMounted) {
+                                                                    'Mounted'
+                                                                } else {
+                                                                    'Unmounted'
+                                                                }
+                                                                'Drive Type' = if ($Disk.IsSsd) {
+                                                                    'Flash'
+                                                                } else {
+                                                                    'HDD'
+                                                                }
+                                                                'Host' = $Disk.VsanDiskGroup.VMHost.Name
+                                                                'Claimed As' = if ($Disk.IsCacheDisk) {
+                                                                    'Cache'
+                                                                } else {
+                                                                    'Capacity'
+                                                                }
+                                                                'Capacity' = Convert-DataSize $Disk.CapacityGB
+                                                                'Serial Number' = $Disk.ExtensionData.SerialNumber
+                                                                'Vendor' = $Disk.ExtensionData.Vendor
+                                                                'Model' = $Disk.ExtensionData.Model
+                                                                'Disk Group' = $Disk.VsanDiskGroup.Uuid
+                                                                'Disk Format Version' = $Disk.DiskFormatVersion
+                                                            }
+                                                        }
+
+                                                        if ($InfoLevel.vSAN -ge 4) {
+                                                            $vDisks | Sort-Object Host | ForEach-Object {
+                                                                $vDisk = $_
+                                                                Section -Style NOTOCHeading5 -ExcludeFromTOC "$($vDisk.Name) - $($vDisk.Host)" {
+                                                                    $TableParams = @{
+                                                                        Name = "Disk $($vDisk.Name) - $($vDisk.Host)"
+                                                                        List = $true
+                                                                        Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity', 'Host', 'Disk Group', 'Serial Number', 'Vendor', 'Model', 'Disk Format Version'
+                                                                        ColumnWidths = 40, 60
+                                                                    }
+                                                                    if ($Report.ShowTableCaptions) {
+                                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                                    }
+                                                                    $vDisk | Table @TableParams
+                                                                }
+                                                            }
+                                                        } else {
+                                                            $TableParams = @{
+                                                                Name = "vSAN Disks - $($VsanCluster.Name)"
+                                                                Columns = 'Name', 'Drive Type', 'Claimed As', 'Capacity', 'Host', 'Disk Group'
+                                                                ColumnWidths = 21, 10, 10, 10, 21, 28
+                                                            }
+                                                            if ($Report.ShowTableCaptions) {
+                                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                            }
+                                                            $vDisks | Sort-Object Host | Table @TableParams
+                                                        }
+                                                    }
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Error collecting vSAN disk information for $($VsanCluster.Name). $($_.Exception.Message)"
                                                 }
                                             }
                                         }
 
                                         $VsanIscsiTargets = Get-VsanIscsiTarget -Cluster $VsanCluster.Cluster -ErrorAction SilentlyContinue
                                         if ($VsanIscsiTargets) {
-                                            Section -Style Heading4 'iSCSI Targets' {
-                                                $VsanIscsiTargetInfo = foreach ($VsanIscsiTarget in $VsanIscsiTargets) {
-                                                    [PSCustomObject]@{
-                                                        'IQN' = $VsanIscsiTarget.IscsiQualifiedName
-                                                        'Alias' = $VsanIscsiTarget.Name
-                                                        'LUNs' = $VsanIscsiTarget.NumLuns
-                                                        'Network Interface' = $VsanIscsiTarget.NetworkInterface
-                                                        'I/O Owner Host' = $VsanIscsiTarget.IoOwnerVMHost
-                                                        'TCP Port' = $VsanIscsiTarget.TcpPort
-                                                        'Health' = $TextInfo.ToTitleCase($VsanIscsiTarget.VsanHealth)
-                                                        'Storage Policy' = Switch ($VsanIscsiTarget.StoragePolicy.Name) {
-                                                            $null { '--' }
-                                                            default { $VsanIscsiTarget.StoragePolicy.Name }
+                                            Write-PScriboMessage "Collecting vSAN iSCSI target information for $($VsanCluster.Name)."
+                                            Try {
+                                                Section -Style Heading4 'iSCSI Targets' {
+                                                    $VsanIscsiTargetInfo = foreach ($VsanIscsiTarget in $VsanIscsiTargets) {
+                                                        [PSCustomObject]@{
+                                                            'IQN' = $VsanIscsiTarget.IscsiQualifiedName
+                                                            'Alias' = $VsanIscsiTarget.Name
+                                                            'LUNs' = $VsanIscsiTarget.NumLuns
+                                                            'Network Interface' = $VsanIscsiTarget.NetworkInterface
+                                                            'I/O Owner Host' = $VsanIscsiTarget.IoOwnerVMHost
+                                                            'TCP Port' = $VsanIscsiTarget.TcpPort
+                                                            'Health' = $TextInfo.ToTitleCase($VsanIscsiTarget.VsanHealth)
+                                                            'Storage Policy' = if ($VsanIscsiTarget.StoragePolicy.Name) {
+                                                                $VsanIscsiTarget.StoragePolicy.Name
+                                                            } else {
+                                                                '--'
+                                                            }
+                                                            'Compliance Status' = $TextInfo.ToTitleCase($VsanIscsiTarget.SpbmComplianceStatus)
+                                                            'Authentication' = $VsanIscsiTarget.AuthenticationType
                                                         }
-                                                        'Compliance Status' = $TextInfo.ToTitleCase($VsanIscsiTarget.SpbmComplianceStatus)
-                                                        'Authentication' = $VsanIscsiTarget.AuthenticationType
                                                     }
+                                                    $TableParams = @{
+                                                        Name = "vSAN iSCSI Targets - $($VsanCluster.Name)"
+                                                        List = $true
+                                                        ColumnWidths = 40, 60
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $VsanIscsiTargetInfo | Table @TableParams
                                                 }
-                                                $TableParams = @{
-                                                    Name = "vSAN iSCSI Targets - $($VsanCluster.Name)"
-                                                    List = $true
-                                                    ColumnWidths = 50, 50
-                                                }
-                                                if ($Report.ShowTableCaptions) {
-                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                }
-                                                $VsanIscsiTargetInfo | Table @TableParams
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Error collecting vSAN iSCSI target information for $($VsanCluster.Name). $($_.Exception.Message)"
                                             }
                                         }
 
                                         $VsanIscsiLuns = Get-VsanIscsiLun -Cluster $VsanCluster.Cluster -ErrorAction SilentlyContinue | Sort-Object Name, LunId
                                         if ($VsanIscsiLuns) {
-                                            Section -Style Heading4 'iSCSI LUNs' {
-                                                $VsanIscsiLunInfo = foreach ($VsanIscsiLun in $VsanIscsiLuns) {
-                                                    [PSCustomobject]@{
-                                                        'LUN' = $VsanIscsiLun.Name
-                                                        'LUN ID' = $VsanIscsiLun.LunId
-                                                        'Capacity GB' = [math]::Round($VsanIscsiLun.CapacityGB, 2)
-                                                        'Used Capacity GB' = [math]::Round($VsanIscsiLun.UsedCapacityGB, 2)
-                                                        'State' = Switch ($VsanIscsiLun.IsOnline) {
-                                                            $true { 'Online' }
-                                                            $false { 'Offline' }
+                                            Write-PScriboMessage "Collecting vSAN iSCSI LUN information for $($VsanCluster.Name)."
+                                            Try {
+                                                Section -Style Heading4 'iSCSI LUNs' {
+                                                    $VsanIscsiLunInfo = foreach ($VsanIscsiLun in $VsanIscsiLuns) {
+                                                        [PSCustomobject]@{
+                                                            'LUN' = $VsanIscsiLun.Name
+                                                            'LUN ID' = $VsanIscsiLun.LunId
+                                                            'Capacity' = Convert-DataSize $VsanIscsiLun.CapacityGB
+                                                            'Used Capacity' = Convert-DataSize $VsanIscsiLun.UsedCapacityGB
+                                                            'State' = if ($VsanIscsiLun.IsOnline) {
+                                                                'Online'
+                                                            } else {
+                                                                'Offline'
+                                                            }
+                                                            'Health' = $TextInfo.ToTitleCase($VsanIscsiLun.VsanHealth)
+                                                            'Storage Policy' = if ($VsanIscsiLun.StoragePolicy.Name) {
+                                                                $VsanIscsiLun.StoragePolicy.Name
+                                                            } else {
+                                                                '--'
+                                                            }
+                                                            'Compliance Status' = $TextInfo.ToTitleCase($VsanIscsiLun.SpbmComplianceStatus)
                                                         }
-                                                        'Health' = $TextInfo.ToTitleCase($VsanIscsiLun.VsanHealth)
-                                                        'Storage Policy' = Switch ($VsanIscsiLun.StoragePolicy.Name) {
-                                                            $null { '--' }
-                                                            default { $VsanIscsiLun.StoragePolicy.Name }
+                                                    }
+                                                    if ($InfoLevel.vSAN -ge 4) {
+                                                        $TableParams = @{
+                                                            Name = "vSAN iSCSI LUNs - $($VsanCluster.Name)"
+                                                            List = $true
+                                                            ColumnWidths = 40, 60
                                                         }
-                                                        'Compliance Status' = $TextInfo.ToTitleCase($VsanIscsiLun.SpbmComplianceStatus)
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VsanIscsiLunInfo | Table @TableParams
+                                                    } else {
+                                                        $TableParams = @{
+                                                            Name = "vSAN iSCSI LUNs - $($VsanCluster.Name)"
+                                                            ColumnWidths = 28 , 18, 18, 18, 18
+                                                            Columns = 'LUN', 'LUN ID', 'Capacity', 'Used Capacity', 'State'
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VsanIscsiLunInfo | Table @TableParams
                                                     }
                                                 }
-                                                if ($InfoLevel.vSAN -ge 4) {
-                                                    $TableParams = @{
-                                                        Name = "vSAN iSCSI LUNs - $($VsanCluster.Name)"
-                                                        List = $true
-                                                        ColumnWidths = 50, 50
-                                                    }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                    }
-                                                    $VsanIscsiLunInfo | Table @TableParams
-                                                } else {
-                                                    $TableParams = @{
-                                                        Name = "vSAN iSCSI LUNs - $($VsanCluster.Name)"
-                                                        ColumnWidths = 28 , 18, 18, 18, 18
-                                                    }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                    }
-                                                    $VsanIscsiLunInfo | Select-Object 'LUN', 'LUN ID', 'Capacity GB', 'Used Capacity GB', 'State' | Table @TableParams
-                                                }
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Error collecting vSAN iSCSI LUN information for $($VsanCluster.Name). $($_.Exception.Message)"
                                             }
                                         }
                                     }
@@ -4035,29 +4169,36 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             if ($InfoLevel.Datastore -le 2) {
                                 BlankLine
                                 $DatastoreInfo = foreach ($Datastore in $Datastores) {
+
+                                    $DsUsedPercent = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
+                                    $DsFreePercent = [math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)
+                                    $DsUsedCapacityGB = ($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)
+
                                     [PSCustomObject]@{
                                         'Datastore' = $Datastore.Name
                                         'Type' = $Datastore.Type
-                                        'Version' = Switch ($Datastore.FileSystemVersion) {
-                                            $null { '--' }
-                                            default { $Datastore.FileSystemVersion }
+                                        'Version' = if ($Datastore.FileSystemVersion) {
+                                            $Datastore.FileSystemVersion
+                                        } else {
+                                            '--'
                                         }
                                         '# of Hosts' = $Datastore.ExtensionData.Host.Count
                                         '# of VMs' = $Datastore.ExtensionData.VM.Count
-                                        'Total Capacity GB' = [math]::Round($Datastore.CapacityGB, 2)
-                                        'Used Capacity GB' = [math]::Round((($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)), 2)
-                                        'Free Space GB' = [math]::Round($Datastore.FreeSpaceGB, 2)
-                                        '% Used' = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
+                                        'Total Capacity' = Convert-DataSize $Datastore.CapacityGB
+                                        'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $DsUsedCapacityGB), $DsUsedPercent
+                                        'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $Datastore.FreeSpaceGB), $DsFreePercent
+                                        '% Used' = $DsUsedPercent
                                     }
                                 }
                                 if ($Healthcheck.Datastore.CapacityUtilization) {
-                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
                                     $DatastoreInfo | Where-Object { $_.'% Used' -ge 75 -and
-                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
+                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
                                 }
                                 $TableParams = @{
                                     Name = "Datastore Summary - $($vCenterServerName)"
-                                    ColumnWidths = 20, 9, 9, 9, 9, 11, 11, 11, 11
+                                    Columns = 'Datastore','Type','Version','# of Hosts','# of VMs','Total Capacity','Used Capacity','Free Capacity'
+                                    ColumnWidths = 21, 10, 9, 9, 9, 14, 14, 14
                                 }
                                 if ($Report.ShowTableCaptions) {
                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4070,6 +4211,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             if ($InfoLevel.Datastore -ge 3) {
                                 foreach ($Datastore in $Datastores) {
                                     # TODO: Test Tags
+
+                                    $DsUsedPercent = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
+                                    $DSFreePercent = [math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)
+                                    $UsedCapacityGB = ($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)
+
                                     #region Datastore Section
                                     Section -Style Heading3 $Datastore.Name {
                                         $DatastoreDetail = [PSCustomObject]@{
@@ -4077,30 +4223,33 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'ID' = $Datastore.Id
                                             'Datacenter' = $Datastore.Datacenter
                                             'Type' = $Datastore.Type
-                                            'Version' = Switch ($Datastore.FileSystemVersion) {
-                                                $null { '--' }
-                                                default { $Datastore.FileSystemVersion }
+                                            'Version' = if ($Datastore.FileSystemVersion) {
+                                                $Datastore.FileSystemVersion
+                                            } else {
+                                                '--'
                                             }
                                             'State' = $Datastore.State
                                             'Number of Hosts' = $Datastore.ExtensionData.Host.Count
                                             'Number of VMs' = $Datastore.ExtensionData.VM.Count
-                                            'Storage I/O Control' = Switch ($Datastore.StorageIOControlEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Storage I/O Control' = if ($Datastore.StorageIOControlEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'Congestion Threshold' = Switch ($Datastore.CongestionThresholdMillisecond) {
-                                                $null { '--' }
-                                                default { "$($Datastore.CongestionThresholdMillisecond) ms" }
+                                            'Congestion Threshold' = if ($Datastore.CongestionThresholdMillisecond) {
+                                                "$($Datastore.CongestionThresholdMillisecond) ms"
+                                            } else {
+                                                '--'
                                             }
-                                            'Total Capacity' = "$([math]::Round($Datastore.CapacityGB, 2)) GB"
-                                            'Used Capacity' = "$([math]::Round((($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)), 2)) GB"
-                                            'Free Space' = "$([math]::Round($Datastore.FreeSpaceGB, 2)) GB"
-                                            '% Used' = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
+                                            'Total Capacity' = Convert-DataSize $Datastore.CapacityGB
+                                            'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $UsedCapacityGB), $DsUsedPercent
+                                            'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $Datastore.FreeSpaceGB), $DSFreePercent
+                                            '% Used' = $DsUsedPercent
                                         }
                                         if ($Healthcheck.Datastore.CapacityUtilization) {
-                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
+                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
                                             $DatastoreDetail | Where-Object { $_.'% Used' -ge 75 -and
-                                                $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property '% Used'
+                                                $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
                                         }
                                         $MemberProps = @{
                                             'InputObject' = $DatastoreDetail
@@ -4127,7 +4276,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Datastore Configuration - $($Datastore.Name)"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            Columns = 'Datastore','ID','Datacenter','Type','Version','State','Number of Hosts','Number of VMs','Storage I/O Control','Congestion Threshold','Total Capacity','Used Capacity','Free Capacity'
+                                            ColumnWidths = 40, 60
+                                        }
+                                        if ($InfoLevel.Datastore -ge 4) {
+                                            $TableParams['Columns'] = 'Datastore','ID','Datacenter','Type','Version','State','Number of Hosts','Number of VMs','Storage I/O Control','Congestion Threshold','Total Capacity','Used Capacity','Free Capacity','Hosts','Virtual Machines'
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4150,7 +4303,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     [PSCustomObject]@{
                                                         'Host' = $VMHostLookup."$($DatastoreHost.Type)-$($DatastoreHost.Value)"
                                                         'Canonical Name' = $DiskName
-                                                        'Capacity GB' = $ScsiDeviceDetail.CapacityGB
+                                                        'Capacity' = Convert-DataSize $ScsiDeviceDetail.CapacityGB
                                                         'Vendor' = $ScsiDeviceDetail.Vendor
                                                         'Model' = $ScsiDeviceDetail.Model
                                                         'Is SSD' = $ScsiDeviceDetail.Ssd
@@ -4199,9 +4352,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             default { $DSCluster.SdrsAutomationLevel }
                                         }
                                         'Space Utilization Threshold' = "$($DSCluster.SpaceUtilizationThresholdPercent)%"
-                                        'I/O Load Balance' = Switch ($DSCluster.IOLoadBalanceEnabled) {
-                                            $true { 'Enabled' }
-                                            $false { 'Disabled' }
+                                        'I/O Load Balance' = if ($DSCluster.IOLoadBalanceEnabled) {
+                                            'Enabled'
+                                        } else {
+                                            'Disabled'
                                         }
                                         'I/O Latency Threshold' = "$($DSCluster.IOLatencyThresholdMillisecond) ms"
                                     }
@@ -4225,6 +4379,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 foreach ($DSCluster in $DSClusters) {
                                     # TODO: Space Load Balance Config, IO Load Balance Config, Rules
                                     # TODO: Test Tags
+
+                                    $DSCUsedPercent = [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2)
+                                    $DSCFreePercent = [math]::Round(($DSCluster.FreeSpaceGB / $DSCluster.CapacityGB) * 100, 2)
+                                    $DSCUsedCapacityGB = ($DSCluster.CapacityGB - $DSCluster.FreeSpaceGB)
+
                                     Section -Style Heading3 $DSCluster.Name {
                                         Paragraph ("The following table details the configuration " +
                                             "for datastore cluster $DSCluster.")
@@ -4239,30 +4398,30 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 default { $DSCluster.SdrsAutomationLevel }
                                             }
                                             'Space Utilization Threshold' = "$($DSCluster.SpaceUtilizationThresholdPercent)%"
-                                            'I/O Load Balance' = Switch ($DSCluster.IOLoadBalanceEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'I/O Load Balance' = if ($DSCluster.IOLoadBalanceEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
                                             'I/O Latency Threshold' = "$($DSCluster.IOLatencyThresholdMillisecond) ms"
-                                            'Capacity' = "$([math]::Round($DSCluster.CapacityGB, 2)) GB"
-                                            'Free Space' = "$([math]::Round($DSCluster.FreeSpaceGB, 2)) GB"
-                                            '% Used' = Switch ($DSCluster.CapacityGB -gt 0) {
-                                                $true { [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2) }
-                                                $false { '0' }
-                                            }
+                                            'Total Capacity' = Convert-DataSize $DSCluster.CapacityGB
+                                            'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $DSCUsedCapacityGB), $DSCUsedPercent
+                                            'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $DSCluster.FreeSpaceGB), $DSCFreePercent
+                                            '% Used' = $DSCUsedPercent
                                         }
+                                        <#
                                         $MemberProps = @{
                                             'InputObject' = $DSClusterDetail
                                             'MemberType' = 'NoteProperty'
                                         }
-                                        <#
+
                                         if ($TagAssignments | Where-Object {$_.entity -eq $DSCluster}) {
                                             Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $DSCluster}).Tag -join ',')
                                         }
                                         #>
                                         if ($Healthcheck.DSCluster.CapacityUtilization) {
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property '% Used'
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property '% Used'
+                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
                                         }
                                         if ($Healthcheck.DSCluster.SDRSAutomationLevel) {
                                             $DSClusterDetail | Where-Object { $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
@@ -4270,7 +4429,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Datastore Cluster Configuration - $($DSCluster.Name)"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            Columns = 'Datastore Cluster','ID','SDRS Automation Level','Space Utilization Threshold','I/O Load Balance','I/O Latency Threshold','Total Capacity','Used Capacity','Free Capacity'
+                                            ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4290,9 +4450,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 "automated" { $DefaultVmBehavior = "Default (Fully Automated)" }
                                                 "manual" { $DefaultVmBehavior = "Default (No Automation (Manual Mode))" }
                                             }
-                                            Switch ($PodConfig.DefaultIntraVmAffinity) {
-                                                $true { $DefaultIntraVmAffinity = "Default (Yes)" }
-                                                $false { $DefaultIntraVmAffinity = "Default (No)" }
+                                            if ($PodConfig.DefaultIntraVmAffinity) {
+                                                $DefaultIntraVmAffinity = "Default (Yes)"
+                                            } else {
+                                                $DefaultIntraVmAffinity = "Default (No)"
                                             }
                                             $VMOverrides = $StoragePod.PodStorageDrsEntry.StorageDrsConfig.VmConfig | Where-Object {
                                                 -not (
@@ -4352,9 +4513,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $VMSummary = [PSCustomObject]@{
                                     'Total VMs' = $VMs.Count
                                     'Total vCPUs' = ($VMs | Measure-Object -Property NumCpu -Sum).Sum
-                                    'Total Memory' = "$([math]::Round(($VMs | Measure-Object -Property MemoryGB -Sum).Sum, 2)) GB"
-                                    'Total Provisioned Space' = "$([math]::Round(($VMs | Measure-Object -Property ProvisionedSpaceGB -Sum).Sum, 2)) GB"
-                                    'Total Used Space' = "$([math]::Round(($VMs | Measure-Object -Property UsedSpaceGB -Sum).Sum, 2)) GB"
+                                    'Total Memory' = Convert-DataSize ($VMs | Measure-Object -Property MemoryGB -Sum).Sum
+                                    'Total Provisioned Space' = Convert-DataSize ($VMs | Measure-Object -Property ProvisionedSpaceGB -Sum).Sum
+                                    'Total Used Space' = Convert-DataSize ($VMs | Measure-Object -Property UsedSpaceGB -Sum).Sum
                                     'VMs Powered On' = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
                                     'VMs Powered Off' = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
                                     'VMs Orphaned' = ($VMs | Where-Object { $_.ExtensionData.Runtime.ConnectionState -eq 'Orphaned' }).Count
@@ -4370,7 +4531,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $TableParams = @{
                                     Name = "VM Summary - $($vCenterServerName)"
                                     List = $true
-                                    ColumnWidths = 50, 50
+                                    ColumnWidths = 40, 60
                                 }
                                 if ($Report.ShowTableCaptions) {
                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4392,14 +4553,15 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'PoweredOff' { 'Off' }
                                             default { $VM.PowerState }
                                         }
-                                        'IP Address' = Switch ($VMView.Guest.IpAddress) {
-                                            $null { '--' }
-                                            default { $VMView.Guest.IpAddress }
+                                        'IP Address' = if ($VMView.Guest.IpAddress) {
+                                            $VMView.Guest.IpAddress
+                                        } else {
+                                            '--'
                                         }
                                         'vCPUs' = $VM.NumCpu
-                                        'Memory GB' = [math]::Round(($VM.MemoryGB), 0)
-                                        'Provisioned GB' = [math]::Round(($VM.ProvisionedSpaceGB), 2)
-                                        'Used GB' = [math]::Round(($VM.UsedSpaceGB), 2)
+                                        'Memory' = Convert-DataSize $VM.MemoryGB -RoundUnits 0
+                                        'Provisioned' = Convert-DataSize $VM.ProvisionedSpaceGB
+                                        'Used' = Convert-DataSize $VM.UsedSpaceGB
                                         'HW Version' = ($VM.HardwareVersion).Replace('vmx-', 'v')
                                         'VM Tools Status' = Switch ($VMView.Guest.ToolsStatus) {
                                             'toolsOld' { 'Old' }
@@ -4457,7 +4619,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region Virtual Machine Detailed Information
                             # TODO: Test Tags
                             if ($InfoLevel.VM -ge 3) {
-                                if ($UserRole.Privilege -contains 'StorageProfile.View') {
+                                if ($UserPrivileges -contains 'StorageProfile.View') {
                                     $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $null -ne $_.StoragePolicy }
                                 } else {
                                     Write-PScriboMessage "Insufficient user privileges to report VM storage policies. Please ensure the user account has the 'Storage Profile > View' privilege assigned."
@@ -4507,19 +4669,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'CPU Shares' = "$($VM.VMResourceConfiguration.CpuSharesLevel) / $($VM.VMResourceConfiguration.NumCpuShares)"
                                             'CPU Reservation' = $VM.VMResourceConfiguration.CpuReservationMhz
                                             'CPU Limit' = "$($VM.VMResourceConfiguration.CpuReservationMhz) MHz"
-                                            'CPU Hot Add' = Switch ($VMView.Config.CpuHotAddEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'CPU Hot Add' = if ($VMView.Config.CpuHotAddEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'CPU Hot Remove' = Switch ($VMView.Config.CpuHotRemoveEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'CPU Hot Remove' = if ($VMView.Config.CpuHotRemoveEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'Memory Allocation' = "$([math]::Round(($VM.memoryGB), 2)) GB"
+                                            'Memory Allocation' = Convert-DataSize $VM.memoryGB -RoundUnits 0
                                             'Memory Shares' = "$($VM.VMResourceConfiguration.MemSharesLevel) / $($VM.VMResourceConfiguration.NumMemShares)"
-                                            'Memory Hot Add' = Switch ($VMView.Config.MemoryHotAddEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Memory Hot Add' = if ($VMView.Config.MemoryHotAddEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
                                             'vNICs' = $VMView.Summary.Config.NumEthernetCards
                                             'DNS Name' = if ($VMView.Guest.HostName) {
@@ -4543,15 +4708,17 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 '--'
                                             }
                                             'vDisks' = $VMView.Summary.Config.NumVirtualDisks
-                                            'Provisioned Space' = "$([math]::Round(($VM.ProvisionedSpaceGB), 2)) GB"
-                                            'Used Space' = "$([math]::Round(($VM.UsedSpaceGB), 2)) GB"
-                                            'Changed Block Tracking' = Switch ($VMView.Config.ChangeTrackingEnabled) {
-                                                $true { 'Enabled' }
-                                                $false { 'Disabled' }
+                                            'Provisioned Space' = Convert-DataSize $VM.ProvisionedSpaceGB
+                                            'Used Space' = Convert-DataSize $VM.UsedSpaceGB
+                                            'Changed Block Tracking' = if ($VMView.Config.ChangeTrackingEnabled) {
+                                                'Enabled'
+                                            } else {
+                                                'Disabled'
                                             }
-                                            'Storage Based Policy' = Switch ($VMSpbmPolicy.StoragePolicy.Name) {
-                                                $null { '--' }
-                                                default { $TextInfo.ToTitleCase($VMSpbmPolicy.StoragePolicy.Name) }
+                                            'Storage Based Policy' = if ($VMSpbmPolicy.StoragePolicy.Name) {
+                                                $TextInfo.ToTitleCase($VMSpbmPolicy.StoragePolicy.Name)
+                                            } else {
+                                                '--'
                                             }
                                             'Storage Based Policy Compliance' = Switch ($VMSpbmPolicy.ComplianceStatus) {
                                                 $null { '--' }
@@ -4566,7 +4733,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             'MemberType' = 'NoteProperty'
                                         }
                                         #if ($VMView.Config.CreateDate) {
-                                        #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime()
+                                        #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime().ToString()
                                         #}
                                         <#
                                         if ($TagAssignments | Where-Object {$_.entity -eq $VM}) {
@@ -4577,7 +4744,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             Add-Member @MemberProps -Name 'Notes' -Value $VM.Notes
                                         }
                                         if ($VMView.Runtime.BootTime) {
-                                            Add-Member @MemberProps -Name 'Boot Time' -Value ($VMView.Runtime.BootTime).ToLocalTime()
+                                            Add-Member @MemberProps -Name 'Boot Time' -Value ($VMView.Runtime.BootTime).ToLocalTime().ToString()
                                         }
                                         if ($VMUptime.UptimeDays) {
                                             Add-Member @MemberProps -Name 'Uptime Days' -Value $VMUptime.UptimeDays
@@ -4613,7 +4780,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "VM Configuration - $($VM.Name)"
                                             List = $true
-                                            ColumnWidths = 50, 50
+                                            ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4681,7 +4848,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                             [PSCustomObject]@{
                                                                 'Disk' = $VMHdd.Name
                                                                 'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[") + 1, $VMHdd.Filename.IndexOf("]") - 1)
-                                                                'Capacity' = "$([math]::Round(($VMHdd.CapacityGB), 2)) GB"
+                                                                'Capacity' = Convert-DataSize $VMHdd.CapacityGB
                                                                 'Disk Provisioning' = Switch ($VMHdd.StorageFormat) {
                                                                     'EagerZeroedThick' { 'Thick Eager Zeroed' }
                                                                     'LazyZeroedThick' { 'Thick Lazy Zeroed' }
@@ -4717,7 +4884,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                                 $SCSIController = $SCSIControllers | Where-Object { $SCSIDevice.ControllerKey -eq $_.Key }
                                                                 $VMHardDiskInfo = [PSCustomObject]@{
                                                                     'Datastore' = $VMHdd.FileName.Substring($VMHdd.Filename.IndexOf("[") + 1, $VMHdd.Filename.IndexOf("]") - 1)
-                                                                    'Capacity' = "$([math]::Round(($VMHdd.CapacityGB), 2)) GB"
+                                                                    'Capacity' = Convert-DataSize $VMHdd.CapacityGB
                                                                     'Disk Path' = $VMHdd.Filename.Substring($VMHdd.Filename.IndexOf("]") + 2)
                                                                     'Disk Shares' = "$($TextInfo.ToTitleCase($VMHdd.ExtensionData.Shares.Level)) / $($VMHdd.ExtensionData.Shares.Shares)"
                                                                     'Disk Limit IOPs' = Switch ($VMHdd.ExtensionData.StorageIOAllocation.Limit) {
@@ -4764,9 +4931,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     $VMGuestDiskInfo = foreach ($VMGuestVol in $VMGuestVols) {
                                                         [PSCustomObject]@{
                                                             'Path' = $VMGuestVol.Path
-                                                            'Capacity' = "$([math]::Round(($VMGuestVol.CapacityGB), 2)) GB"
-                                                            'Used Space' = "$([math]::Round((($VMGuestVol.CapacityGB) - ($VMGuestVol.FreeSpaceGB)), 2)) GB"
-                                                            'Free Space' = "$([math]::Round($VMGuestVol.FreeSpaceGB, 2)) GB"
+                                                            'Capacity' = Convert-DataSize $VMGuestVol.CapacityGB
+                                                            'Used Space' = Convert-DataSize (($VMGuestVol.CapacityGB) - ($VMGuestVol.FreeSpaceGB))
+                                                            'Free Space' = Convert-DataSize $VMGuestVol.FreeSpaceGB
                                                         }
                                                     }
                                                     $TableParams = @{
@@ -4817,9 +4984,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 #region VMware Update Manager Section
                 Write-PScriboMessage "VUM InfoLevel set at $($InfoLevel.VUM)."
                 if (($InfoLevel.VUM -ge 1) -and ($VumServer.Name)) {
-                    if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                    Try {
                         $VUMBaselines = Get-PatchBaseline -Server $vCenter
-                    } else {
+                    } Catch {
                         Write-PScriboMessage 'VUM patch baseline information is not currently available with your version of PowerShell.'
                     }
                     if ($VUMBaselines) {
@@ -4833,7 +5000,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         'Description' = $VUMBaseline.Description
                                         'Type' = $VUMBaseline.BaselineType
                                         'Target Type' = $VUMBaseline.TargetType
-                                        'Last Update Time' = ($VUMBaseline.LastUpdateTime).ToLocalTime()
+                                        'Last Update Time' = ($VUMBaseline.LastUpdateTime).ToLocalTime().ToString()
                                         '# of Patches' = $VUMBaseline.CurrentPatches.Count
                                     }
                                 }
@@ -4849,9 +5016,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #endregion VUM Baseline Detailed Information
 
                             #region VUM Comprehensive Information
-                            if ("Desktop" -eq $PSVersionTable.PsEdition) {
+                            Try {
                                 $VUMPatches = Get-Patch -Server $vCenter | Sort-Object -Descending ReleaseDate
-                            } else {
+                            } Catch {
                                 Write-PScriboMessage 'VUM patch information is not currently available with your version of PowerShell.'
                             }
                             if ($VUMPatches -and $InfoLevel.VUM -ge 5) {

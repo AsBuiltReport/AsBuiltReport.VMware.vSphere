@@ -45,11 +45,6 @@ Sample vSphere As Built report with health checks, using default report style.
 
 ![Sample vSphere Report 1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/Samples/Sample_vSphere_Report_1.png "Sample vSphere Report 1")
 
-### Sample Report 2 - Custom Style
-Sample vSphere As Built report with health checks, using custom report style.
-
-![Sample vSphere Report 2](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/blob/master/Samples/Sample_vSphere_Report_2.png "Sample vSphere Report 2")
-
 # :beginner: Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
@@ -84,14 +79,6 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 - [VMware PowerCLI Module](https://www.powershellgallery.com/packages/VMware.PowerCLI/)
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
-### Linux & macOS
-* .NET Core is required for cover page image support on Linux and macOS operating systems.
-    * [Installing .NET Core for macOS](https://docs.microsoft.com/en-us/dotnet/core/install/macos)
-    * [Installing .NET Core for Linux](https://docs.microsoft.com/en-us/dotnet/core/install/linux)
-
-❗ If you are unable to install .NET Core, you must set `ShowCoverPageImage` to `False` in the report JSON configuration file.
-
-
 ### :closed_lock_with_key: Required Privileges
 
 A VMware vSphere As Built Report can be generated with read-only privileges, however the following sections will be skipped;
@@ -112,10 +99,10 @@ For a complete report, the following role assigned privileges are required;
 
 Open a PowerShell terminal window and install each of the required modules.
 
-:warning: VMware PowerCLI 12.3 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
+:warning: VMware PowerCLI 13.3 or higher is required. Please ensure older PowerCLI versions have been uninstalled.
 
 ```powershell
-install-module VMware.PowerCLI -MinimumVersion 12.3 -AllowClobber
+install-module VMware.PowerCLI -MinimumVersion 13.3 -AllowClobber
 install-module AsBuiltReport.VMware.vSphere
 ```
 
