@@ -3687,35 +3687,6 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                     $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
                     if ($VsanClusters) {
                         Section -Style Heading2 'vSAN' {
-                            BlankLine
-                            foreach ($VsanCluster in $VsanClusters) {
-                                Write-PScriboMessage "Collecting vSAN capacity information for $($VsanCluster.Name)."
-                                Try {
-                                    $VsanSpaceUsage = Get-VsanSpaceUsage -Cluster $VsanCluster.Name
-                                    $VsanUsedCapacity = $VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB
-
-                                    # Calculate percentages
-                                    $VsanUsedPercent = [math]::Round(($VsanUsedCapacity / $VsanSpaceUsage.CapacityGB) * 100, 2)
-                                    $VsanFreePercent = [math]::Round(($VsanSpaceUsage.FreeSpaceGB / $VsanSpaceUsage.CapacityGB) * 100, 2)
-
-                                    $VsanSpaceInfo = [PSCustomObject]@{
-                                        'Total Capacity'  = "$(Convert-DataSize $VsanSpaceUsage.CapacityGB)"
-                                        'Used Capacity'   = "$(Convert-DataSize $VsanUsedCapacity) ($VsanUsedPercent%)"
-                                        'Free Capacity'   = "$(Convert-DataSize $VsanSpaceUsage.FreeSpaceGB) ($VsanFreePercent%)"
-                                    }
-                                    $TableParams = @{
-                                        Name = "vSAN Capacity Overview - $($vCenterServerName)"
-                                        ColumnWidths = 34, 33, 33
-                                    }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $VsanSpaceInfo | Table @TableParams
-                                } Catch {
-                                    Write-PScriboMessage -IsWarning "Unable to collect vSAN capacity information for $($VsanCluster.Name). $($_.Exception.Message)"
-                                }
-                            }
-
                             Paragraph "The following sections detail the configuration of vSAN managed by vCenter Server $vCenterServerName."
                             #region vSAN Cluster Advanced Summary
                             if ($InfoLevel.vSAN -le 2) {
@@ -3723,28 +3694,23 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 $VsanClusterInfo = foreach ($VsanCluster in $VsanClusters) {
                                     [PSCustomObject]@{
                                         'Cluster' = $VsanCluster.Name
-                                        'vSAN Enabled' = if ($VsanCluster.VsanEnabled) {
-                                            'Yes'
+                                        'Storage Type' = if ($VsanCluster.VsanEsaEnabled) {
+                                            'ESA'
                                         } else {
-                                            'No'
+                                            'OSA'
                                         }
+                                        '# of Hosts' = $VsanCluster.Cluster.ExtensionData.Host.Count
                                         'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
                                             'Yes'
                                         } else {
                                             'No'
                                         }
-                                        # TODO: Update for vSphere 7.0 U1 and higher - Space Efficiency: Deduplication & Compression, Compression Only, None
                                         'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
                                             'Enabled'
                                         } else {
                                             'Disabled'
                                         }
                                         'Encryption' = if ($VsanCluster.EncryptionEnabled) {
-                                            'Enabled'
-                                        } else {
-                                            'Disabled'
-                                        }
-                                        'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
                                             'Enabled'
                                         } else {
                                             'Disabled'
@@ -3765,6 +3731,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                             #region vSAN Cluster Detailed Information
                             if ($InfoLevel.vSAN -ge 3) {
                                 foreach ($VsanCluster in $VsanClusters) {
+                                    $VsanSpaceUsage = Get-VsanSpaceUsage -Cluster $VsanCluster.Name
+                                    $VsanUsedCapacity = $VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB
+
+                                    # Calculate percentages
+                                    $VsanUsedPercent = [math]::Round(($VsanUsedCapacity / $VsanSpaceUsage.CapacityGB) * 100, 2)
+                                    $VsanFreePercent = [math]::Round(($VsanSpaceUsage.FreeSpaceGB / $VsanSpaceUsage.CapacityGB) * 100, 2)
+
                                     #region vSAN Cluster Section
                                     Section -Style Heading3 $VsanCluster.Name {
                                         if ($VsanCluster.VsanEsaEnabled) {
@@ -3775,10 +3748,10 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $VsanClusterDetail = [PSCustomObject]@{
                                                     'Cluster' = $VsanCluster.Name
                                                     'ID' = $VsanCluster.Id
-                                                    'vSAN Type' = if ($VsanCluster.VsanEsaEnabled) {
-                                                        'vSAN ESA'
+                                                    'Storage Type' = if ($VsanCluster.VsanEsaEnabled) {
+                                                        'ESA'
                                                     } else {
-                                                        'vSAN OSA'
+                                                        'OSA'
                                                     }
                                                     'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
                                                         'Yes'
@@ -3789,6 +3762,21 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'Number of Disks' = $VsanStoragePoolDisk.Count
                                                     'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
                                                     'Disk Format Version' = $VsanDiskFormat
+                                                    'Performance Service' = if ($VsanCluster.PerformanceServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'File Service' = if ($VsanCluster.FileServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'iSCSI Target Service' = if ($VsanCluster.IscsiTargetServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
                                                     'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
                                                         'Enabled'
                                                     } else {
@@ -3799,14 +3787,27 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     } else {
                                                         'Disabled'
                                                     }
+                                                    'Historical Health Service' = if ($VsanCluster.HistoricalHealthEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
                                                     'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
                                                         'Enabled'
                                                     } else {
                                                         'Disabled'
                                                     }
-                                                    'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
+                                                    'Total Capacity' = Convert-DataSize $VsanSpaceUsage.CapacityGB
+                                                    'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $VsanUsedCapacity), $VsanUsedPercent
+                                                    'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $VsanSpaceUsage.FreeSpaceGB), $VsanFreePercent
+                                                    '% Used' = $VsanUsedPercent
+                                                    'HCL Last Updated' = ($VsanCluster.TimeOfHclUpdate).ToLocalTime().ToString()
                                                 }
-
+                                                if ($Healthcheck.vSAN.CapacityUtilization) {
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 75 -and
+                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                }
                                                 if ($InfoLevel.vSAN -ge 4) {
                                                     $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanStoragePoolDisk.Host | Select-Object -Unique | Sort-Object Name) -join ', ')
                                                 }
@@ -3814,7 +3815,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $TableParams = @{
                                                     Name = "vSAN Configuration - $($VsanCluster.Name)"
                                                     List = $true
+                                                    Columns = 'Cluster','ID','Storage Type','Stretched Cluster','Number of Hosts','Number of Disks','Disk Claim Mode','Disk Format Version','Performance Service','File Service','iSCSI Target Service','Deduplication & Compression','Encryption','Historical Health Service','Health Check','Total Capacity','Used Capacity','Free Capacity','HCL Last Updated'
                                                     ColumnWidths = 40, 60
+                                                }
+                                                If ($InfoLevel.vSAN -ge 4) {
+                                                    $TableParams['Columns'] += 'Hosts'
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -3892,26 +3897,26 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         } else {
                                             Try {
                                                 Write-PScriboMessage "Collecting vSAN OSA information for $($VsanCluster.Name)."
+                                                # Get vSAN Disk Groups
                                                 $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
                                                 $NumVsanDiskGroup = $VsanDiskGroup.Count
+                                                # Get vSAN Disks
                                                 $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
-                                                $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -First 1 -Unique
-                                                $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true }).Count
-                                                $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false }).Count
-                                                if ($NumVsanHdd -gt 0) {
-                                                    $VsanClusterType = "Hybrid"
-                                                } else {
-                                                    $VsanClusterType = "All Flash"
-                                                }
+                                                $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -Unique
+                                                # Count SSDs and HDDs
+                                                $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true } | Measure-Object).Count
+                                                $NumVsanHdd = ($VsanDisk | Where-Object { $_.IsSsd -eq $false } | Measure-Object).Count
+                                                # Determine Storage Type
+                                                $VsanClusterType = if ($NumVsanHdd -gt 0) { "Hybrid" } else { "All Flash" }
                                                 $VsanClusterDetail = [PSCustomObject]@{
                                                     'Cluster' = $VsanCluster.Name
                                                     'ID' = $VsanCluster.Id
-                                                    'vSAN Type' = if ($VsanCluster.VsanEsaEnabled) {
-                                                        'vSAN ESA'
+                                                    'Storage Type' = if ($VsanCluster.VsanEsaEnabled) {
+                                                        'ESA'
                                                     } else {
-                                                        'vSAN OSA'
+                                                        'OSA'
                                                     }
-                                                    'Storage Type' = $VsanClusterType
+                                                    'Cluster Type' = $VsanClusterType
                                                     'Stretched Cluster' = if ($VsanCluster.StretchedClusterEnabled) {
                                                         'Yes'
                                                     } else {
@@ -3922,6 +3927,21 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'Number of Disk Groups' = $NumVsanDiskGroup
                                                     'Disk Claim Mode' = $VsanCluster.VsanDiskClaimMode
                                                     'Disk Format Version' = $VsanDiskFormat
+                                                    'Performance Service' = if ($VsanCluster.PerformanceServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'File Service' = if ($VsanCluster.FileServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
+                                                    'iSCSI Target Service' = if ($VsanCluster.IscsiTargetServiceEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
                                                     'Deduplication & Compression' = if ($VsanCluster.SpaceEfficiencyEnabled) {
                                                         'Enabled'
                                                     } else {
@@ -3932,21 +3952,38 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     } else {
                                                         'Disabled'
                                                     }
+                                                    'Historical Health Service' = if ($VsanCluster.HistoricalHealthEnabled) {
+                                                        'Enabled'
+                                                    } else {
+                                                        'Disabled'
+                                                    }
                                                     'Health Check' = if ($VsanCluster.HealthCheckEnabled) {
                                                         'Enabled'
                                                     } else {
                                                         'Disabled'
                                                     }
-                                                    'HCL Last Updated' = $VsanCluster.TimeOfHclUpdate
+                                                    'Total Capacity' = Convert-DataSize $VsanSpaceUsage.CapacityGB
+                                                    'Used Capacity' = "{0} ({1}%)" -f (Convert-DataSize $VsanUsedCapacity), $VsanUsedPercent
+                                                    'Free Capacity' = "{0} ({1}%)" -f (Convert-DataSize $VsanSpaceUsage.FreeSpaceGB), $VsanFreePercent
+                                                    '% Used' = $VsanUsedPercent
+                                                    'HCL Last Updated' = ($VsanCluster.TimeOfHclUpdate).ToLocalTime().ToString()
                                                 }
-
+                                                if ($Healthcheck.vSAN.CapacityUtilization) {
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 75 -and
+                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                }
                                                 if ($InfoLevel.vSAN -ge 4) {
                                                     $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
                                                 }
                                                 $TableParams = @{
                                                     Name = "vSAN Configuration - $($VsanCluster.Name)"
                                                     List = $true
+                                                    Columns = 'Cluster','ID','Storage Type','Cluster Type','Stretched Cluster','Number of Hosts','Number of Disks','Number of Disk Groups','Disk Claim Mode','Disk Format Version','Performance Service','File Service','iSCSI Target Service','Deduplication & Compression','Encryption','Historical Health Service','Health Check','Total Capacity','Used Capacity','Free Capacity','HCL Last Updated'
                                                     ColumnWidths = 40, 60
+                                                }
+                                                If ($InfoLevel.vSAN -ge 4) {
+                                                    $TableParams['Columns'] += 'Hosts'
                                                 }
                                                 if ($Report.ShowTableCaptions) {
                                                     $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -3981,7 +4018,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                         $TableParams = @{
                                                             Name = "vSAN Disk Groups - $($VsanCluster.Name)"
-                                                            ColumnWidths = 35, 28, 7, 10, 10, 10
+                                                            ColumnWidths = 30, 30, 7, 11, 11, 11
                                                         }
                                                         if ($Report.ShowTableCaptions) {
                                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4280,7 +4317,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             ColumnWidths = 40, 60
                                         }
                                         if ($InfoLevel.Datastore -ge 4) {
-                                            $TableParams['Columns'] = 'Datastore','ID','Datacenter','Type','Version','State','Number of Hosts','Number of VMs','Storage I/O Control','Congestion Threshold','Total Capacity','Used Capacity','Free Capacity','Hosts','Virtual Machines'
+                                            $TableParams['Columns'] += 'Hosts','Virtual Machines'
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"

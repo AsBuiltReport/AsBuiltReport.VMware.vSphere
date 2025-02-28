@@ -224,8 +224,9 @@ The **VMHost** schema is used to configure health checks for VMHosts.
 #### vSAN
 The **vSAN** schema is used to configure health checks for vSAN.
 
-| Schema | Sub-Schema | Setting | Default | Description | Highlight |
-|--------|------------|---------|---------|-------------|-----------|
+| Sub-Schema          | Setting      | Default | Description                                                      | Highlight                                                                                                                                            |
+|---------------------|--------------|---------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CapacityUtilization | true / false | true    | Highlights vSAN clusters with storage capacity utilization over 75% | ![Warning](https://via.placeholder.com/15/FFF4C7/FFF4C7.png) 75 - 90% utilized<br> ![Critical](https://via.placeholder.com/15/FEDDD7/FEDDD7.png) >90% utilized |
 
 #### Datastore
 The **Datastore** schema is used to configure health checks for Datastores.
