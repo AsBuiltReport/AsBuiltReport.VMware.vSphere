@@ -163,7 +163,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             #region Tag Information
             Try {
                 Write-PScriboMessage "Collecting tag information."
-                $TagAssignments = Get-TagAssignment -Server $vCenter
+                $TagAssignments = Get-TagAssignment -Server $vCenter -ErrorAction SilentlyContinue
                 $Tags = Get-Tag -Server $vCenter | Sort-Object Name, Category
                 $TagCategories = Get-TagCategory -Server $vCenter | Sort-Object Name | Select-Object Name, Description, Cardinality -Unique
             } Catch {
