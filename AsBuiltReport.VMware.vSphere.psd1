@@ -12,7 +12,7 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.3.4.1'
+    ModuleVersion = '1.3.6'
 
     # Supported PSEditions
     # CompatiblePSEditions = 'Desktop'
@@ -27,7 +27,7 @@
     # CompanyName = ''
 
     # Copyright statement for this module
-    Copyright = '(c) 2024 Tim Carman. All rights reserved.'
+    Copyright = '(c) 2025 Tim Carman. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
@@ -51,7 +51,7 @@
     RequiredModules = @(
         @{
             ModuleName = 'AsBuiltReport.Core';
-            ModuleVersion = '1.3.0'
+            ModuleVersion = '1.4.3'
         }
     )
 
@@ -117,7 +117,7 @@
             # RequireLicenseAcceptance = $false
 
             # External dependent modules of this module
-            # ExternalModuleDependencies = @()
+            ExternalModuleDependencies = @('VCF.PowerCLI')
 
         } # End of PSData hashtable
 

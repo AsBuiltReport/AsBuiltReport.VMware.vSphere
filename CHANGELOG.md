@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.6 - 2025-08-24
+
+### Fixed
+- Fix divide by zero error (@rebelinux) ([Fix #129](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/129))
+- Fix PowerCLI module dependency ([#134](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/134))
+- Update colour placeholders in `README.md`
+
+### Changed
+- Improve vSAN Capacity reporting and healthchecks
+- Add `VCF.PowerCLI` to `ExternalModuleDependencies` in the module manifest.
+
+### Removed
+- Remove `Get-RequiredModule` function to check for PowerCLI versions.
+- Remove VMware document style script
+
+## 1.3.5 - 2025-02-27
+### Fixed
+- Fix issue with license reporting ([Fix #128](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/128))
+- Fix issue with vCenter user privileges not handling groups (@nathcoad) ([Fix #102](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/102))
+- Fix time & date outputs showing incorrect date format
+- Fix VMware Update Manager reporting with PowerShell 7
+
+### Added
+- Add Free resource capacity reporting to VMhost hardware section
+
+### Changed
+- Update VMware PowerCLI requirements to version 13.3
+- Improve error reporting for vSAN section
+- Improve data size reporting. Data sizes are now displayed in more appropriately sized data units.
+- Change list tables to 40/60 column widths
+- Change datastore capacity reporting to include percentage used & free values
+- Update GitHub release workflow to add post to Bluesky social platform
+
 ## 1.3.4.1 - 2024-03-28
 
 ### Fixed
