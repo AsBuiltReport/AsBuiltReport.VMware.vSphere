@@ -51,7 +51,7 @@
     RequiredModules = @(
         @{
             ModuleName = 'AsBuiltReport.Core';
-            ModuleVersion = '1.4.2'
+            ModuleVersion = '1.4.3'
         }
     )
 
@@ -117,7 +117,7 @@
             # RequireLicenseAcceptance = $false
 
             # External dependent modules of this module
-            # ExternalModuleDependencies = @()
+            ExternalModuleDependencies = @('VCF.PowerCLI')
 
         } # End of PSData hashtable
 

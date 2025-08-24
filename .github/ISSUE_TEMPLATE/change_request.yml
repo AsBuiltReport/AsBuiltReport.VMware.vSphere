@@ -27,7 +27,7 @@ body:
       options:
         - label: >-
             I have read [the documentation](https://www.asbuiltreport.com/user-guide/new-asbuiltconfig),
-            and referred to the [known issues](https://www.asbuiltreport.com/user-guide/known-issues/) before submitting this change request.
+            and referred to the [known issues](https://www.asbuiltreport.com/support/known-issues) before submitting this change request.
           required: true
         - label: >-
             I have checked for previously opened & closed [issues](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues) before submitting this change request.

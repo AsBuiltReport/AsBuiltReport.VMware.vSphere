@@ -5,7 +5,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     .DESCRIPTION
         Documents the configuration of VMware vSphere infrastucture in Word/HTML/Text formats using PScribo.
     .NOTES
-        Version:        1.3.5
+        Version:        1.3.6
         Author:         Tim Carman
         Twitter:        @tpcarman
         Github:         tpcarman
@@ -37,10 +37,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             }
         }
     } Catch {
-        Write-PscriboMessage -Plugin "Module" -IsWarning $_.Exception.Message
+        Write-PScriboMessage -Plugin "Module" -IsWarning $_.Exception.Message
     }
-    # Check if the required version of VMware PowerCLI is installed
-    Get-RequiredModule -Name 'VMware.PowerCLI' -Version '13.3'
 
     # Import Report Configuration
     $Report = $ReportConfig.Report
@@ -895,11 +893,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                         if ($ClusterDasConfig.AdmissionControlPolicy.AutoComputePercentages) {
                                                             Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'No'
-                                                            } else {
-                                                                Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'Yes'
-                                                                Add-Member @MemberProps -Name 'CPU %' -Value $ClusterDasConfig.AdmissionControlPolicy.CpuFailoverResourcesPercent
-                                                                Add-Member @MemberProps -Name 'Memory %' -Value $ClusterDasConfig.AdmissionControlPolicy.MemoryFailoverResourcesPercent
-                                                            }
+                                                        } else {
+                                                            Add-Member @MemberProps -Name 'Override Calculated Failover Capacity' -Value 'Yes'
+                                                            Add-Member @MemberProps -Name 'CPU %' -Value $ClusterDasConfig.AdmissionControlPolicy.CpuFailoverResourcesPercent
+                                                            Add-Member @MemberProps -Name 'Memory %' -Value $ClusterDasConfig.AdmissionControlPolicy.MemoryFailoverResourcesPercent
+                                                        }
                                                         if ($ClusterDasConfig.AdmissionControlPolicy.SlotPolicy) {
                                                             Add-Member @MemberProps -Name 'Slot Policy' -Value 'Fixed slot size'
                                                             Add-Member @MemberProps -Name 'CPU Slot Size' -Value "$($ClusterDasConfig.AdmissionControlPolicy.SlotPolicy.Cpu) MHz"
@@ -2264,8 +2262,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 Section -Style NOTOCHeading5 -ExcludeFromTOC 'Datastores' {
                                                     $VMHostDsSpecs = foreach ($VMHostDatastore in $VMHostDatastores) {
 
-                                                        $VMHostDsUsedPercent = [math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)
-                                                        $VMHostDsFreePercent = [math]::Round(($VMHostDatastore.FreeSpaceGB / $VMHostDatastore.CapacityGB) * 100, 2)
+                                                        $VMHostDsUsedPercent = if (0 -in @($VMHostDatastore.FreeSpaceGB, $VMHostDatastore.CapacityGB)) {0} else {[math]::Round((100 - (($VMHostDatastore.FreeSpaceGB) / ($VMHostDatastore.CapacityGB) * 100)), 2)}
+                                                        $VMHostDsFreePercent = if (0 -in @($VMHostDatastore.FreeSpaceGB, $VMHostDatastore.CapacityGB)) {0} else {[math]::Round(($VMHostDatastore.FreeSpaceGB / $VMHostDatastore.CapacityGB) * 100, 2)}
                                                         $VMHostDsUsedCapacityGB = ($VMHostDatastore.CapacityGB) - ($VMHostDatastore.FreeSpaceGB)
 
                                                         [PSCustomObject]@{
@@ -2284,12 +2282,12 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                         }
                                                     }
                                                     if ($Healthcheck.Datastore.CapacityUtilization) {
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
-                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
+                                                        $VMHostDsSpecs | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity', 'Free Capacity'
                                                     }
                                                     $TableParams = @{
                                                         Name = "Datastores - $VMHost"
-                                                        Columns = 'Datastore','Type','Version','# of VMs','Total Capacity','Used Capacity','Free Capacity'
+                                                        Columns = 'Datastore', 'Type', 'Version', '# of VMs', 'Total Capacity', 'Used Capacity', 'Free Capacity'
                                                         ColumnWidths = 21, 10, 9, 9, 17, 17, 17
                                                     }
                                                     if ($Report.ShowTableCaptions) {
@@ -3735,8 +3733,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     $VsanUsedCapacity = $VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB
 
                                     # Calculate percentages
-                                    $VsanUsedPercent = [math]::Round(($VsanUsedCapacity / $VsanSpaceUsage.CapacityGB) * 100, 2)
-                                    $VsanFreePercent = [math]::Round(($VsanSpaceUsage.FreeSpaceGB / $VsanSpaceUsage.CapacityGB) * 100, 2)
+                                    $VsanUsedPercent = if (0 -in @($VsanUsedCapacity, $VsanSpaceUsage.CapacityGB)) {0} else {[math]::Round(($VsanUsedCapacity / $VsanSpaceUsage.CapacityGB) * 100, 2)}
+                                    $VsanFreePercent = if (0 -in @($VsanUsedCapacity, $VsanSpaceUsage.CapacityGB)) {0} else {[math]::Round(($VsanSpaceUsage.FreeSpaceGB / $VsanSpaceUsage.CapacityGB) * 100, 2)}
 
                                     #region vSAN Cluster Section
                                     Section -Style Heading3 $VsanCluster.Name {
@@ -3804,9 +3802,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'HCL Last Updated' = ($VsanCluster.TimeOfHclUpdate).ToLocalTime().ToString()
                                                 }
                                                 if ($Healthcheck.vSAN.CapacityUtilization) {
-                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
                                                     $VsanClusterDetail | Where-Object { $_.'% Used' -ge 75 -and
-                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity', 'Free Capacity'
                                                 }
                                                 if ($InfoLevel.vSAN -ge 4) {
                                                     $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanStoragePoolDisk.Host | Select-Object -Unique | Sort-Object Name) -join ', ')
@@ -3815,7 +3813,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $TableParams = @{
                                                     Name = "vSAN Configuration - $($VsanCluster.Name)"
                                                     List = $true
-                                                    Columns = 'Cluster','ID','Storage Type','Stretched Cluster','Number of Hosts','Number of Disks','Disk Claim Mode','Disk Format Version','Performance Service','File Service','iSCSI Target Service','Deduplication & Compression','Encryption','Historical Health Service','Health Check','Total Capacity','Used Capacity','Free Capacity','HCL Last Updated'
+                                                    Columns = 'Cluster', 'ID', 'Storage Type', 'Stretched Cluster', 'Number of Hosts', 'Number of Disks', 'Disk Claim Mode', 'Disk Format Version', 'Performance Service', 'File Service', 'iSCSI Target Service', 'Deduplication & Compression', 'Encryption', 'Historical Health Service', 'Health Check', 'Total Capacity', 'Used Capacity', 'Free Capacity', 'HCL Last Updated'
                                                     ColumnWidths = 40, 60
                                                 }
                                                 If ($InfoLevel.vSAN -ge 4) {
@@ -3969,9 +3967,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                     'HCL Last Updated' = ($VsanCluster.TimeOfHclUpdate).ToLocalTime().ToString()
                                                 }
                                                 if ($Healthcheck.vSAN.CapacityUtilization) {
-                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                                    $VsanClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
                                                     $VsanClusterDetail | Where-Object { $_.'% Used' -ge 75 -and
-                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity', 'Free Capacity'
                                                 }
                                                 if ($InfoLevel.vSAN -ge 4) {
                                                     $VsanClusterDetail | Add-Member -MemberType NoteProperty -Name 'Hosts' -Value (($VsanDiskGroup.VMHost | Select-Object -Unique | Sort-Object Name) -join ', ')
@@ -3979,7 +3977,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 $TableParams = @{
                                                     Name = "vSAN Configuration - $($VsanCluster.Name)"
                                                     List = $true
-                                                    Columns = 'Cluster','ID','Storage Type','Cluster Type','Stretched Cluster','Number of Hosts','Number of Disks','Number of Disk Groups','Disk Claim Mode','Disk Format Version','Performance Service','File Service','iSCSI Target Service','Deduplication & Compression','Encryption','Historical Health Service','Health Check','Total Capacity','Used Capacity','Free Capacity','HCL Last Updated'
+                                                    Columns = 'Cluster', 'ID', 'Storage Type', 'Cluster Type', 'Stretched Cluster', 'Number of Hosts', 'Number of Disks', 'Number of Disk Groups', 'Disk Claim Mode', 'Disk Format Version', 'Performance Service', 'File Service', 'iSCSI Target Service', 'Deduplication & Compression', 'Encryption', 'Historical Health Service', 'Health Check', 'Total Capacity', 'Used Capacity', 'Free Capacity', 'HCL Last Updated'
                                                     ColumnWidths = 40, 60
                                                 }
                                                 If ($InfoLevel.vSAN -ge 4) {
@@ -4207,8 +4205,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 BlankLine
                                 $DatastoreInfo = foreach ($Datastore in $Datastores) {
 
-                                    $DsUsedPercent = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
-                                    $DsFreePercent = [math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)
+                                    $DsUsedPercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) {0} else {[math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)}
+                                    $DsFreePercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) {0} else {[math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)}
                                     $DsUsedCapacityGB = ($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)
 
                                     [PSCustomObject]@{
@@ -4228,13 +4226,13 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     }
                                 }
                                 if ($Healthcheck.Datastore.CapacityUtilization) {
-                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                    $DatastoreInfo | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
                                     $DatastoreInfo | Where-Object { $_.'% Used' -ge 75 -and
-                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                        $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity', 'Free Capacity'
                                 }
                                 $TableParams = @{
                                     Name = "Datastore Summary - $($vCenterServerName)"
-                                    Columns = 'Datastore','Type','Version','# of Hosts','# of VMs','Total Capacity','Used Capacity','Free Capacity'
+                                    Columns = 'Datastore', 'Type', 'Version', '# of Hosts', '# of VMs', 'Total Capacity', 'Used Capacity', 'Free Capacity'
                                     ColumnWidths = 21, 10, 9, 9, 9, 14, 14, 14
                                 }
                                 if ($Report.ShowTableCaptions) {
@@ -4249,8 +4247,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                 foreach ($Datastore in $Datastores) {
                                     # TODO: Test Tags
 
-                                    $DsUsedPercent = [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)
-                                    $DSFreePercent = [math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)
+                                    $DsUsedPercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) {0} else {[math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2)}
+                                    $DSFreePercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) {0} else {[math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2)}
                                     $UsedCapacityGB = ($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)
 
                                     #region Datastore Section
@@ -4284,9 +4282,9 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             '% Used' = $DsUsedPercent
                                         }
                                         if ($Healthcheck.Datastore.CapacityUtilization) {
-                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                            $DatastoreDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
                                             $DatastoreDetail | Where-Object { $_.'% Used' -ge 75 -and
-                                                $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity','Free Capacity'
+                                                $_.'% Used' -lt 90 } | Set-Style -Style Warning -Property 'Used Capacity', 'Free Capacity'
                                         }
                                         $MemberProps = @{
                                             'InputObject' = $DatastoreDetail
@@ -4313,11 +4311,11 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Datastore Configuration - $($Datastore.Name)"
                                             List = $true
-                                            Columns = 'Datastore','ID','Datacenter','Type','Version','State','Number of Hosts','Number of VMs','Storage I/O Control','Congestion Threshold','Total Capacity','Used Capacity','Free Capacity'
+                                            Columns = 'Datastore', 'ID', 'Datacenter', 'Type', 'Version', 'State', 'Number of Hosts', 'Number of VMs', 'Storage I/O Control', 'Congestion Threshold', 'Total Capacity', 'Used Capacity', 'Free Capacity'
                                             ColumnWidths = 40, 60
                                         }
                                         if ($InfoLevel.Datastore -ge 4) {
-                                            $TableParams['Columns'] += 'Hosts','Virtual Machines'
+                                            $TableParams['Columns'] += 'Hosts', 'Virtual Machines'
                                         }
                                         if ($Report.ShowTableCaptions) {
                                             $TableParams['Caption'] = "- $($TableParams.Name)"
@@ -4417,8 +4415,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     # TODO: Space Load Balance Config, IO Load Balance Config, Rules
                                     # TODO: Test Tags
 
-                                    $DSCUsedPercent = [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2)
-                                    $DSCFreePercent = [math]::Round(($DSCluster.FreeSpaceGB / $DSCluster.CapacityGB) * 100, 2)
+                                    $DSCUsedPercent = if (0 -in @($DSCluster.FreeSpaceGB, $DSCluster.CapacityGB)) {0} else {[math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2)}
+                                    $DSCFreePercent = if (0 -in @($DSCluster.FreeSpaceGB, $DSCluster.CapacityGB)) {0} else { [math]::Round(($DSCluster.FreeSpaceGB / $DSCluster.CapacityGB) * 100, 2) }
                                     $DSCUsedCapacityGB = ($DSCluster.CapacityGB - $DSCluster.FreeSpaceGB)
 
                                     Section -Style Heading3 $DSCluster.Name {
@@ -4457,8 +4455,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         }
                                         #>
                                         if ($Healthcheck.DSCluster.CapacityUtilization) {
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
-                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property 'Used Capacity','Free Capacity'
+                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
+                                            $DSClusterDetail | Where-Object { $_.'% Used' -ge 75 -and $_.'% Used' -lt 90 } | Set-Style -Style Critical -Property 'Used Capacity', 'Free Capacity'
                                         }
                                         if ($Healthcheck.DSCluster.SDRSAutomationLevel) {
                                             $DSClusterDetail | Where-Object { $_.'SDRS Automation Level' -ne 'Fully Automated' } | Set-Style -Style Warning -Property 'SDRS Automation Level'
@@ -4466,7 +4464,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                         $TableParams = @{
                                             Name = "Datastore Cluster Configuration - $($DSCluster.Name)"
                                             List = $true
-                                            Columns = 'Datastore Cluster','ID','SDRS Automation Level','Space Utilization Threshold','I/O Load Balance','I/O Latency Threshold','Total Capacity','Used Capacity','Free Capacity'
+                                            Columns = 'Datastore Cluster', 'ID', 'SDRS Automation Level', 'Space Utilization Threshold', 'I/O Load Balance', 'I/O Latency Threshold', 'Total Capacity', 'Used Capacity', 'Free Capacity'
                                             ColumnWidths = 40, 60
                                         }
                                         if ($Report.ShowTableCaptions) {

@@ -59,7 +59,7 @@ function Get-License {
             Product = $VMHostLicense.Name
             LicenseKey = $VMHostLicenseKey
             Expiration =
-            if ($VMHostLicenseExpiration -eq $null) {
+            if ($null -eq $VMHostLicenseExpiration) {
                 "Never"
             } elseif ($VMHostLicenseExpiration -gt (Get-Date)) {
                 $VMHostLicenseExpiration.ToShortDateString()

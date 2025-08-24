@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.3.6 - 2025-02-27
+## 1.3.6 - 2025-08-24
+
+### Fixed
+- Fix divide by zero error (@rebelinux) ([Fix #129](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/129))
+- Fix PowerCLI module dependency ([#134](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/134))
+- Update colour placeholders in `README.md`
+
+### Changed
+- Improve vSAN Capacity reporting and healthchecks
+- Add `VCF.PowerCLI` to `ExternalModuleDependencies` in the module manifest.
+
+### Removed
+- Remove `Get-RequiredModule` function to check for PowerCLI versions.
+- Remove VMware document style script
+
+## 1.3.5 - 2025-02-27
 ### Fixed
 - Fix issue with license reporting ([Fix #128](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/128))
 - Fix issue with vCenter user privileges not handling groups (@nathcoad) ([Fix #102](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/102))
@@ -14,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add Free resource capacity reporting to VMhost hardware section
-- Add vSAN Capacity reporting and healthchecks
 
 ### Changed
 - Update VMware PowerCLI requirements to version 13.3
