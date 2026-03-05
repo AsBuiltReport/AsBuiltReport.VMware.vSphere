@@ -235,8 +235,10 @@ function Get-AbrVSpherevSAN {
                                             # Get vSAN Disk Groups
                                             $VsanDiskGroup = Get-VsanDiskGroup -Cluster $VsanCluster.Cluster
                                             $NumVsanDiskGroup = $VsanDiskGroup.Count
-                                            # Get vSAN Disks
-                                            $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
+                                            # Get vSAN Disks (guard against null disk groups — e.g. unclaimed OSA cluster)
+                                            if ($VsanDiskGroup) {
+                                                $VsanDisk = Get-VsanDisk -VsanDiskGroup $VsanDiskGroup
+                                            }
                                             $VsanDiskFormat = $VsanDisk.DiskFormatVersion | Select-Object -Unique
                                             # Count SSDs and HDDs
                                             $NumVsanSsd = ($VsanDisk | Where-Object { $_.IsSsd -eq $true } | Measure-Object).Count
