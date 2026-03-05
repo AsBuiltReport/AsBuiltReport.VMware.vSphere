@@ -23,7 +23,6 @@ function Get-AbrVSphereClusterDRS {
     param ()
     begin {
         $LocalizedData = $reportTranslate.GetAbrVSphereClusterDRS
-        Write-PScriboMessage -Message ($LocalizedData.InfoLevel -f $InfoLevel.Cluster)
     }
     process {
         Try {

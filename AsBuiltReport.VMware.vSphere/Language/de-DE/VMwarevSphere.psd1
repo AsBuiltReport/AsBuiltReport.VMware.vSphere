@@ -164,7 +164,6 @@ GetAbrVSphereCluster = ConvertFrom-StringData @'
 
 # Get-AbrVSphereClusterHA
 GetAbrVSphereClusterHA = ConvertFrom-StringData @'
-    InfoLevel               = Cluster-HA-Informationsebene auf {0} gesetzt.
     Collecting              = Cluster-HA-Informationen werden gesammelt.
     SectionHeading          = vSphere HA-Konfiguration
     ParagraphSummary        = Der folgende Abschnitt beschreibt die vSphere HA-Konfiguration für Cluster {0}.
@@ -224,7 +223,6 @@ GetAbrVSphereClusterHA = ConvertFrom-StringData @'
 
 # Get-AbrVSphereClusterProactiveHA
 GetAbrVSphereClusterProactiveHA = ConvertFrom-StringData @'
-    InfoLevel            = Cluster Proaktive HA-Informationsebene auf {0} gesetzt.
     Collecting           = Proaktive HA-Informationen des Clusters werden gesammelt.
     SectionHeading       = Proaktive HA
     ParagraphSummary     = Der folgende Abschnitt beschreibt die Konfiguration der proaktiven HA für Cluster {0}.
@@ -246,7 +244,6 @@ GetAbrVSphereClusterProactiveHA = ConvertFrom-StringData @'
 
 # Get-AbrVSphereClusterDRS
 GetAbrVSphereClusterDRS = ConvertFrom-StringData @'
-    InfoLevel              = Cluster-DRS-Informationsebene auf {0} gesetzt.
     Collecting             = Cluster-DRS-Informationen werden gesammelt.
     SectionHeading         = vSphere DRS-Konfiguration
     ParagraphSummary       = Die folgende Tabelle beschreibt die vSphere DRS-Konfiguration für Cluster {0}.
@@ -442,7 +439,6 @@ GetAbrVSphereVMHost = ConvertFrom-StringData @'
 
 # Get-AbrVSphereVMHostHardware
 GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
-    InfoLevel             = VMHost-Hardware-Informationsebene auf {0} gesetzt.
     Collecting            = VMHost-Hardware-Informationen werden gesammelt.
     SectionHeading        = Hardware
     ParagraphSummary      = Der folgende Abschnitt beschreibt die Hardware-Konfiguration des Hosts {0}.
@@ -547,7 +543,6 @@ GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
 
 # Get-AbrVSphereVMHostSystem
 GetAbrVSphereVMHostSystem = ConvertFrom-StringData @'
-    InfoLevel             = VMHost-System-Informationsebene auf {0} gesetzt.
     Collecting            = VMHost-System-Informationen werden gesammelt.
     HostProfile           = Host-Profil
     ProfileName           = Host-Profil
@@ -621,7 +616,6 @@ GetAbrVSphereVMHostSystem = ConvertFrom-StringData @'
 
 # Get-AbrVSphereVMHostStorage
 GetAbrVSphereVMHostStorage = ConvertFrom-StringData @'
-    InfoLevel             = VMHost-Speicher-Informationsebene auf {0} gesetzt.
     Collecting            = VMHost-Speicher-Informationen werden gesammelt.
     SectionHeading        = Speicher
     DatastoreSpecs        = Datenspeicher-Spezifikationen
@@ -679,7 +673,6 @@ GetAbrVSphereVMHostStorage = ConvertFrom-StringData @'
 
 # Get-AbrVSphereVMHostNetwork
 GetAbrVSphereVMHostNetwork = ConvertFrom-StringData @'
-    InfoLevel             = VMHost-Netzwerk-Informationsebene auf {0} gesetzt.
     Collecting            = VMHost-Netzwerk-Informationen werden gesammelt.
     SectionHeading        = Netzwerk
     NetworkConfig         = Netzwerkkonfiguration
@@ -837,7 +830,6 @@ GetAbrVSphereVMHostNetwork = ConvertFrom-StringData @'
 
 # Get-AbrVSphereVMHostSecurity
 GetAbrVSphereVMHostSecurity = ConvertFrom-StringData @'
-    InfoLevel             = VMHost-Sicherheits-Informationsebene auf {0} gesetzt.
     Collecting            = VMHost-Sicherheits-Informationen werden gesammelt.
     SectionHeading        = Sicherheit
     LockdownMode          = Sperrmodus

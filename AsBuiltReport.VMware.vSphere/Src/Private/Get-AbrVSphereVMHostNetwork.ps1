@@ -13,7 +13,6 @@ function Get-AbrVSphereVMHostNetwork {
 
     begin {
         $LocalizedData = $reportTranslate.GetAbrVSphereVMHostNetwork
-        Write-PScriboMessage -Message ($LocalizedData.InfoLevel -f $InfoLevel.VMHost)
     }
 
     process {

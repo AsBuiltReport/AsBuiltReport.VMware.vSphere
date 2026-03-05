@@ -13,7 +13,6 @@ function Get-AbrVSphereVMHostSecurity {
 
     begin {
         $LocalizedData = $reportTranslate.GetAbrVSphereVMHostSecurity
-        Write-PScriboMessage -Message ($LocalizedData.InfoLevel -f $InfoLevel.VMHost)
     }
 
     process {

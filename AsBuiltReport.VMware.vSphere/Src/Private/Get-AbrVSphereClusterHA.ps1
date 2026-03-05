@@ -21,7 +21,6 @@ function Get-AbrVSphereClusterHA {
     param ()
     begin {
         $LocalizedData = $reportTranslate.GetAbrVSphereClusterHA
-        Write-PScriboMessage -Message ($LocalizedData.InfoLevel -f $InfoLevel.Cluster)
     }
     process {
         try {
