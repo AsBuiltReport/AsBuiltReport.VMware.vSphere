@@ -20,6 +20,13 @@
         <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg"/></a>
 </p>
 <p align="center">
+    <a href="https://codecov.io/gh/AsBuiltReport/AsBuiltReport.VMware.vSphere" >
+    <img src="https://codecov.io/gh/AsBuiltReport/AsBuiltReport.VMware.vSphere/graph/badge.svg?token=VGABX486CM"/>
+    </a>
+    <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/actions/workflows/Pester.yml" alt="Pester Tests">
+        <img src="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/workflows/Pester%20Tests/badge.svg" /></a>
+</p>
+<p align="center">
     <a href="https://twitter.com/AsBuiltReport" alt="Twitter">
             <img src="https://img.shields.io/twitter/follow/AsBuiltReport.svg?style=social"/></a>
 </p>
@@ -74,7 +81,7 @@ This report is compatible with the following PowerShell versions;
 <!-- ********** Update supported PowerShell versions ********** -->
 | Windows PowerShell 5.1 |     PowerShell 7    |
 |:----------------------:|:--------------------:|
-|   :white_check_mark:   | :white_check_mark: |
+|   :x:   | :white_check_mark: |
 
 ## 🌐 Language Support
 <!-- ********** Update supported languages ********** -->
@@ -90,7 +97,10 @@ The VMware vSphere As Built Report supports the following languages;
 
 ## :wrench: System Requirements
 <!-- ********** Update system requirements ********** -->
-PowerShell 5.1 or PowerShell 7, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
+PowerShell 7.4 or higher, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
+
+> [!NOTE]
+> Windows PowerShell 5.1 is not supported. Please refer to the [VMware PowerCLI Installation Guide](https://developer.broadcom.com/powercli/installation-guide) for instructions on installing PowerShell 7 and PowerCLI.
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery
 

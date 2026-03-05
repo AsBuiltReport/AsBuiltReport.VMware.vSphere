@@ -27,7 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete module rewrite for improved maintainability and extensibility
 - Module source now uses nested folder structure (`AsBuiltReport.VMware.vSphere/`)
 - Requires `AsBuiltReport.Core` >= 1.6.2
-- `CompatiblePSEditions` now explicitly declares `Desktop` and `Core` support
+- Minimum PowerShell version raised to 7.4; refer to the [VMware PowerCLI Installation Guide](https://developer.broadcom.com/powercli/installation-guide)
+- `CompatiblePSEditions` updated to `Core` only
+
+### Removed
+
+- Windows PowerShell 5.1 (Desktop edition) support dropped
 
 ## [[1.3.6.1](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v1.3.6.1)] - 2025-08-24
 

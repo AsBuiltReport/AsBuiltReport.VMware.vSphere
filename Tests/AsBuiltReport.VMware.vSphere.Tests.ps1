@@ -52,12 +52,9 @@ Describe 'AsBuiltReport.VMware.vSphere Module Tests' {
             $ManifestData.CompatiblePSEditions | Should -Not -BeNullOrEmpty
         }
 
-        It 'Should support Desktop PSEdition' {
-            $ManifestData.CompatiblePSEditions | Should -Contain 'Desktop'
-        }
-
-        It 'Should support Core PSEdition' {
+        It 'Should support Core PSEdition only' {
             $ManifestData.CompatiblePSEditions | Should -Contain 'Core'
+            $ManifestData.CompatiblePSEditions | Should -Not -Contain 'Desktop'
         }
 
         It 'Should require AsBuiltReport.Core' {
