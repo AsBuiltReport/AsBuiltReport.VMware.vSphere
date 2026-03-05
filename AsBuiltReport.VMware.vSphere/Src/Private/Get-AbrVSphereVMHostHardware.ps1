@@ -87,10 +87,14 @@ function Get-AbrVSphereVMHostHardware {
                     'MemberType' = 'NoteProperty'
                 }
                 if ($UserPrivileges -contains 'Global.Licenses') {
-                    $VMHostLicense = Get-License -VMHost $VMHost
-                    Add-Member @MemberProps -Name $LocalizedData.Product           -Value $VMHostLicense.Product
-                    Add-Member @MemberProps -Name $LocalizedData.LicenseKey        -Value $VMHostLicense.LicenseKey
-                    Add-Member @MemberProps -Name $LocalizedData.LicenseExpiration -Value $VMHostLicense.Expiration
+                    try {
+                        $VMHostLicense = Get-License -VMHost $VMHost
+                        Add-Member @MemberProps -Name $LocalizedData.Product           -Value $VMHostLicense.Product
+                        Add-Member @MemberProps -Name $LocalizedData.LicenseKey        -Value $VMHostLicense.LicenseKey
+                        Add-Member @MemberProps -Name $LocalizedData.LicenseExpiration -Value $VMHostLicense.Expiration
+                    } catch {
+                        Write-PScriboMessage -IsWarning ($LocalizedData.LicenseError -f $VMHost.Name, $_.Exception.Message)
+                    }
                 } else {
                     Write-PScriboMessage -Message $LocalizedData.InsufficientPrivLicense
                 }

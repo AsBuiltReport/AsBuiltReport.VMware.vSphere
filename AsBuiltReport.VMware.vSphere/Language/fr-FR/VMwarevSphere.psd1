@@ -447,6 +447,7 @@ GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
     SectionHeading        = Matériel
     ParagraphSummary      = La section suivante détaille la configuration matérielle de l'hôte {0}.
     InsufficientPrivLicense = Privilèges utilisateur insuffisants pour rapporter les licences de l'hôte ESXi. Veuillez vous assurer que le compte utilisateur dispose du privilège 'Global > Licences'.
+    LicenseError          = Impossible de récupérer les informations de licence pour VMHost '{0}'. Erreur : {1}
     Specifications        = Spécifications
     Manufacturer          = Fabricant
     Model                 = Modèle

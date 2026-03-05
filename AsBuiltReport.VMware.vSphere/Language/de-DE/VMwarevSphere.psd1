@@ -447,6 +447,7 @@ GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
     SectionHeading        = Hardware
     ParagraphSummary      = Der folgende Abschnitt beschreibt die Hardware-Konfiguration des Hosts {0}.
     InsufficientPrivLicense = Unzureichende Benutzerberechtigungen für den Bericht über ESXi-Host-Lizenzierung. Stellen Sie sicher, dass dem Benutzerkonto das Privileg 'Global > Lizenzen' zugewiesen ist.
+    LicenseError          = Lizenzinformationen für VMHost '{0}' konnten nicht abgerufen werden. Fehler: {1}
     Specifications        = Spezifikationen
     Manufacturer          = Hersteller
     Model                 = Modell

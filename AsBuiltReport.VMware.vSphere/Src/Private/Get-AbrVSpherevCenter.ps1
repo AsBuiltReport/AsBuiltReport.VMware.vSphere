@@ -57,10 +57,14 @@ function Get-AbrVSpherevCenter {
                         }
                         #region vCenter Server Detail
                         if ($UserPrivileges -contains 'Global.Licenses') {
-                            $vCenterLicense = Get-License -vCenter $vCenter
-                            Add-Member @MemberProps -Name $LocalizedData.Product           -Value $vCenterLicense.Product
-                            Add-Member @MemberProps -Name $LocalizedData.LicenseKey        -Value $vCenterLicense.LicenseKey
-                            Add-Member @MemberProps -Name $LocalizedData.LicenseExpiration -Value $vCenterLicense.Expiration
+                            try {
+                                $vCenterLicense = Get-License -vCenter $vCenter
+                                Add-Member @MemberProps -Name $LocalizedData.Product           -Value $vCenterLicense.Product
+                                Add-Member @MemberProps -Name $LocalizedData.LicenseKey        -Value $vCenterLicense.LicenseKey
+                                Add-Member @MemberProps -Name $LocalizedData.LicenseExpiration -Value $vCenterLicense.Expiration
+                            } catch {
+                                Write-PScriboMessage -IsWarning $LocalizedData.InsufficientPrivLicense
+                            }
                         } else {
                             Write-PScriboMessage -Message $LocalizedData.InsufficientPrivLicense
                         }
@@ -164,24 +168,28 @@ function Get-AbrVSpherevCenter {
                         #region vCenter Server Licensing
                         if ($UserPrivileges -contains 'Global.Licenses') {
                             Section -Style Heading3 $LocalizedData.Licensing {
-                                $Licenses = Get-License -Licenses | Select-Object @{L = $LocalizedData.Product; E = { $_.Product } },
-                                @{L = $LocalizedData.LicenseKey; E = { ($_.LicenseKey) } },
-                                @{L = $LocalizedData.Total; E = { $_.Total } },
-                                @{L = $LocalizedData.Used; E = { $_.Used } },
-                                @{L = $LocalizedData.Available; E = { ($_.total) - ($_.Used) } },
-                                @{L = $LocalizedData.Expiration; E = { $_.Expiration } } -Unique
-                                if ($Healthcheck.vCenter.Licensing) {
-                                    $Licenses | Where-Object { $_.$($LocalizedData.Product) -eq 'Product Evaluation' } | Set-Style -Style Warning
-                                    $Licenses | Where-Object { $_.$($LocalizedData.Expiration) -eq 'Expired' } | Set-Style -Style Critical
+                                try {
+                                    $Licenses = Get-License -Licenses | Select-Object @{L = $LocalizedData.Product; E = { $_.Product } },
+                                    @{L = $LocalizedData.LicenseKey; E = { ($_.LicenseKey) } },
+                                    @{L = $LocalizedData.Total; E = { $_.Total } },
+                                    @{L = $LocalizedData.Used; E = { $_.Used } },
+                                    @{L = $LocalizedData.Available; E = { ($_.total) - ($_.Used) } },
+                                    @{L = $LocalizedData.Expiration; E = { $_.Expiration } } -Unique
+                                    if ($Healthcheck.vCenter.Licensing) {
+                                        $Licenses | Where-Object { $_.$($LocalizedData.Product) -eq 'Product Evaluation' } | Set-Style -Style Warning
+                                        $Licenses | Where-Object { $_.$($LocalizedData.Expiration) -eq 'Expired' } | Set-Style -Style Critical
+                                    }
+                                    $TableParams = @{
+                                        Name = ($LocalizedData.TableLicensing -f $vCenterServerName)
+                                        ColumnWidths = 25, 25, 12, 12, 12, 14
+                                    }
+                                    if ($Report.ShowTableCaptions) {
+                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                    }
+                                    $Licenses | Sort-Object $LocalizedData.Product, $LocalizedData.LicenseKey | Table @TableParams
+                                } catch {
+                                    Write-PScriboMessage -IsWarning $LocalizedData.InsufficientPrivLicense
                                 }
-                                $TableParams = @{
-                                    Name = ($LocalizedData.TableLicensing -f $vCenterServerName)
-                                    ColumnWidths = 25, 25, 12, 12, 12, 14
-                                }
-                                if ($Report.ShowTableCaptions) {
-                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                }
-                                $Licenses | Sort-Object $LocalizedData.Product, $LocalizedData.LicenseKey | Table @TableParams
                             }
                         } else {
                             Write-PScriboMessage -Message $LocalizedData.InsufficientPrivLicense

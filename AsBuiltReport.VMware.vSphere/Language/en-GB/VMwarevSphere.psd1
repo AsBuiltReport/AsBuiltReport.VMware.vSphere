@@ -447,6 +447,7 @@ GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
     SectionHeading        = Hardware
     ParagraphSummary      = The following section details the host hardware configuration for {0}.
     InsufficientPrivLicense = Insufficient user privileges to report ESXi host licensing. Please ensure the user account has the 'Global > Licenses' privilege assigned.
+    LicenseError          = Unable to retrieve licence information for VMHost '{0}'. Error: {1}
     Specifications        = Specifications
     Manufacturer          = Manufacturer
     Model                 = Model
