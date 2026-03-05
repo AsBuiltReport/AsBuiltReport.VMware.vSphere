@@ -104,7 +104,7 @@ PowerShell 7.4 or higher, and the following PowerShell modules are required for 
 
 Each of these modules can be easily downloaded and installed via the PowerShell Gallery
 
-- [VCF PowerCLI Module](https://www.powershellgallery.com/packages/VCF.PowerCLI/)
+- [VCF PowerCLI Module](https://www.powershellgallery.com/packages/VCF.PowerCLI/) version 9.0 or higher
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
 ### :closed_lock_with_key: Required Privileges
@@ -333,4 +333,7 @@ PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local'
 
 # Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML & DOCX formats. Use default report style. Reports are saved to the user profile folder by default. Attach and send reports via e-mail.
 PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Format Html,Word -OutputFolderPath 'C:\Users\Tim\Documents' -SendEmail
+
+# Generate a vSphere As Built Report for vCenter Server 'vcenter-01.corp.local' using specified credentials. Export report to HTML format. Use default report style. Generate the report in French. Save reports to 'C:\Users\Tim\Documents'.
+PS C:\> New-AsBuiltReport -Report VMware.vSphere -Target 'vcenter-01.corp.local' -Username 'administrator@vsphere.local' -Password 'VMware1!' -Format Html -OutputFolderPath 'C:\Users\Tim\Documents' -ReportLanguage 'fr-FR'
 ```
