@@ -91,6 +91,69 @@ function Get-AbrVSphereVMHostSecurity {
                 }
                 #endregion ESXi Host Services
 
+                #region ESXi Host TPM & Encryption
+                $TpmAttestation = $VMHost.ExtensionData.Config.TpmAttestation
+                $EncryptionSettings = $null
+                try {
+                    $esxcliTpm = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
+                    $EncryptionSettings = $esxcliTpm.system.settings.encryption.get.Invoke()
+                } catch {
+                    Write-PScriboMessage -IsWarning ($LocalizedData.TpmEncryptionError -f $VMHost, $_.Exception.Message)
+                }
+                if ($null -ne $TpmAttestation -or ($null -ne $EncryptionSettings -and $EncryptionSettings.Mode -ne 'None')) {
+                    Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.TpmEncryption {
+                        $TpmEncryptionInfo = [PSCustomObject]@{
+                            $LocalizedData.TpmPresent        = if ($null -ne $TpmAttestation) { $LocalizedData.Yes } else { $LocalizedData.No }
+                            $LocalizedData.TpmStatus         = if ($null -ne $TpmAttestation) { $TpmAttestation.Status } else { 'N/A' }
+                            $LocalizedData.EncryptionMode    = if ($null -ne $EncryptionSettings) { $EncryptionSettings.Mode } else { 'N/A' }
+                            $LocalizedData.RequireSecureBoot = if ($null -ne $EncryptionSettings) { $EncryptionSettings.RequireSecureBoot } else { 'N/A' }
+                            $LocalizedData.RequireSignedVIBs = if ($null -ne $EncryptionSettings) { $EncryptionSettings.RequireExecutablesOnlyFromInstalledVIBs } else { 'N/A' }
+                        }
+                        if ($Healthcheck.VMHost.TpmAttestation) {
+                            $TpmEncryptionInfo | Where-Object {
+                                $null -ne $TpmAttestation -and $TpmAttestation.Status -ne 'attested'
+                            } | Set-Style -Style Warning -Property $LocalizedData.TpmStatus
+                        }
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TableTpmEncryption -f $VMHost)
+                            List         = $true
+                            ColumnWidths = 40, 60
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $TpmEncryptionInfo | Table @TableParams
+
+                        # Recovery keys — InfoLevel >= 3 and ShowEncryptionKeys option
+                        if ($InfoLevel.VMHost -ge 3 -and $Options.ShowEncryptionKeys -and $null -ne $esxcliTpm) {
+                            try {
+                                $RecoveryKeys = $esxcliTpm.system.settings.encryption.recovery.list.Invoke()
+                                if ($RecoveryKeys) {
+                                    Section -Style NOTOCHeading6 -ExcludeFromTOC $LocalizedData.RecoveryKeys {
+                                        $RecoveryKeyInfo = foreach ($RecoveryKey in $RecoveryKeys) {
+                                            [PSCustomObject]@{
+                                                $LocalizedData.RecoveryID  = $RecoveryKey.RecoveryID
+                                                $LocalizedData.RecoveryKey = $RecoveryKey.Key
+                                            }
+                                        }
+                                        $TableParams = @{
+                                            Name         = ($LocalizedData.TableRecoveryKeys -f $VMHost)
+                                            ColumnWidths = 40, 60
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $RecoveryKeyInfo | Table @TableParams
+                                    }
+                                }
+                            } catch {
+                                Write-PScriboMessage -IsWarning ($LocalizedData.TpmEncryptionError -f $VMHost, $_.Exception.Message)
+                            }
+                        }
+                    }
+                }
+                #endregion ESXi Host TPM & Encryption
+
                 #region ESXi Host Advanced Detail Information
                 if ($InfoLevel.VMHost -ge 4) {
                     #region ESXi Host Firewall

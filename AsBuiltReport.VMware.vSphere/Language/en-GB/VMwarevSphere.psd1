@@ -910,6 +910,20 @@ GetAbrVSphereVMHostSecurity = ConvertFrom-StringData @'
     VMToolsStatus        = VM Tools Status
     TableVMs             = Virtual Machines - {0}
     TableStartupShutdown = VM Startup/Shutdown Policy - {0}
+    TpmEncryption        = TPM & Encryption
+    TpmPresent           = TPM Present
+    TpmStatus            = TPM Attestation Status
+    EncryptionMode       = Encryption Mode
+    RequireSecureBoot    = Require Secure Boot
+    RequireSignedVIBs    = Require Executables From Installed VIBs Only
+    RecoveryKeys         = Encryption Recovery Keys
+    RecoveryID           = Recovery ID
+    RecoveryKey          = Recovery Key
+    TpmEncryptionError   = Unable to retrieve TPM & Encryption information for host {0}. {1}
+    TableTpmEncryption   = TPM & Encryption - {0}
+    TableRecoveryKeys    = Encryption Recovery Keys - {0}
+    Yes                  = Yes
+    No                   = No
 '@
 
 # Get-AbrVSphereNetwork

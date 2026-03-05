@@ -191,8 +191,9 @@ The **Options** schema allows certain options within the report to be toggled on
 
 | Sub-Schema      | Setting      | Default | Description                                                                                                                                                                                 |
 |-----------------|--------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ShowLicenseKeys | true / false | false   | Toggle to mask/unmask vSphere license keys<br><br> **Masked License Key**<br>\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-AS12K<br><br> **Unmasked License Key**<br>AKLU4-PFG8M-W2D8J-56YDM-AS12K |
-| ShowVMSnapshots | true / false | true    | Toggle to enable/disable reporting of VM snapshots                                                                                                                                          |
+| ShowLicenseKeys    | true / false | false   | Toggle to mask/unmask vSphere license keys<br><br> **Masked License Key**<br>\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-\*\*\*\*\*-AS12K<br><br> **Unmasked License Key**<br>AKLU4-PFG8M-W2D8J-56YDM-AS12K |
+| ShowEncryptionKeys | true / false | false   | Toggle to show/hide ESXi host encryption recovery keys in the report. When disabled, the recovery keys table is suppressed even at InfoLevel 3+                                              |
+| ShowVMSnapshots    | true / false | true    | Toggle to enable/disable reporting of VM snapshots                                                                                                                                          |
 
 <!-- ********** Add/Remove the number of InfoLevels as required ********** -->
 ### InfoLevel
@@ -276,6 +277,7 @@ The **VMHost** schema is used to configure health checks for VMHosts.
 | NetworkAdapter  | true / false | true    | Highlights physical network adapters which are not 'Connected'<br> Highlights physical network adapters which are 'Down' | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Network adapter is 'Disconnected'<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Network adapter is 'Down'           |
 | LockdownMode    | true / false | true    | Highlights VMHosts which do not have Lockdown mode enabled                                                               | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Lockdown Mode disabled<br>                                                                                                            |
 | VUMCompliance   | true / false | true    | Highlights VMHosts which are not compliant with VMware Update Manager software packages                                  | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Incompatible                                                    |
+| TpmAttestation  | true / false | true    | Highlights VMHosts where a TPM is present but attestation status is not 'attested'                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) TPM attestation status is not attested                                                                                              |
 
 #### vSAN
 The **vSAN** schema is used to configure health checks for vSAN.
