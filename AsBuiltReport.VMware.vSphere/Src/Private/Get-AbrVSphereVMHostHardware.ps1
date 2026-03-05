@@ -261,7 +261,7 @@ function Get-AbrVSphereVMHostHardware {
                 #endregion ESXi Host PCI Devices
 
                 #region ESXi Host PCI Devices Drivers & Firmware
-                $VMHostPciDevicesDetails = Get-PciDeviceDetail -Server $vCenter -esxcli $esxcli | Sort-Object 'Device'
+                $VMHostPciDevicesDetails = Get-PciDeviceDetail -Server $vCenter -esxcli $esxcli -VMHost $VMHost | Sort-Object 'Device'
                 if ($VMHostPciDevicesDetails) {
                     try {
                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.PCIDriversFirmware {
