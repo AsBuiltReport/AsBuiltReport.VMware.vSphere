@@ -33,7 +33,7 @@ function Get-AbrVSphereVMHost {
                                         $LocalizedData.VMHost = $VMHost.Name
                                         $LocalizedData.Version = $VMHost.Version
                                         $LocalizedData.Build = $VMHost.Build
-                                        $LocalizedData.Parent = $VMHost.Parent
+                                        $LocalizedData.Parent = $VMHost.Parent.Name
                                         $LocalizedData.ConnectionState = switch ($VMHost.ConnectionState) {
                                             'NotResponding' { $LocalizedData.NotResponding }
                                             'Maintenance' { $LocalizedData.Maintenance }

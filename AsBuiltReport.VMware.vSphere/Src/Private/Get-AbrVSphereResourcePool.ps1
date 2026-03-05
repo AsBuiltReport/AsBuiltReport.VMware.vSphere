@@ -31,7 +31,7 @@ function Get-AbrVSphereResourcePool {
                             $ResourcePoolInfo = foreach ($ResourcePool in $ResourcePools) {
                                 [PSCustomObject]@{
                                     $LocalizedData.ResourcePool = $ResourcePool.Name
-                                    $LocalizedData.Parent = $ResourcePool.Parent
+                                    $LocalizedData.Parent = $ResourcePool.Parent.Name
                                     $LocalizedData.CPUSharesLevel = $ResourcePool.CpuSharesLevel
                                     $LocalizedData.CPUReservationMHz = $ResourcePool.CpuReservationMHz
                                     $LocalizedData.CPULimitMHz = switch ($ResourcePool.CpuLimitMHz) {
@@ -65,7 +65,7 @@ function Get-AbrVSphereResourcePool {
                                     $ResourcePoolDetail = [PSCustomObject]@{
                                         $LocalizedData.ResourcePool = $ResourcePool.Name
                                         $LocalizedData.ID = $ResourcePool.Id
-                                        $LocalizedData.Parent = $ResourcePool.Parent
+                                        $LocalizedData.Parent = $ResourcePool.Parent.Name
                                         $LocalizedData.CPUSharesLevel = $ResourcePool.CpuSharesLevel
                                         $LocalizedData.NumCPUShares = $ResourcePool.NumCpuShares
                                         $LocalizedData.CPUReservation = "$($ResourcePool.CpuReservationMHz) MHz"

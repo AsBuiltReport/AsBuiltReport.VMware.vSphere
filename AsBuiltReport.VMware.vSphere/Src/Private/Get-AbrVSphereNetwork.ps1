@@ -31,7 +31,7 @@ function Get-AbrVSphereNetwork {
                             $VDSInfo = foreach ($VDS in $VDSwitches) {
                                 [PSCustomObject]@{
                                     $LocalizedData.VDSwitch = $VDS.Name
-                                    $LocalizedData.Datacenter = $VDS.Datacenter
+                                    $LocalizedData.Datacenter = $VDS.Datacenter.Name
                                     $LocalizedData.Manufacturer = $VDS.Vendor
                                     $LocalizedData.Version = $VDS.Version
                                     $LocalizedData.NumUplinks = $VDS.NumUplinkPorts
@@ -62,7 +62,7 @@ function Get-AbrVSphereNetwork {
                                     $VDSwitchDetail = [PSCustomObject]@{
                                         $LocalizedData.VDSwitch = $VDS.Name
                                         $LocalizedData.ID = $VDS.Id
-                                        $LocalizedData.Datacenter = $VDS.Datacenter
+                                        $LocalizedData.Datacenter = $VDS.Datacenter.Name
                                         $LocalizedData.Manufacturer = $VDS.Vendor
                                         $LocalizedData.Version = $VDS.Version
                                         $LocalizedData.NumberOfUplinks = $VDS.NumUplinkPorts
@@ -121,11 +121,11 @@ function Get-AbrVSphereNetwork {
                                         Section -Style Heading4 $LocalizedData.UplinkPorts {
                                             $VdsUplinkDetail = foreach ($VdsUplink in $VdsUplinks) {
                                                 [PSCustomObject]@{
-                                                    $LocalizedData.VDSwitch = $VdsUplink.Switch
-                                                    $LocalizedData.Host = $VdsUplink.ProxyHost
+                                                    $LocalizedData.VDSwitch = [string]$VdsUplink.Switch
+                                                    $LocalizedData.Host = [string]$VdsUplink.ProxyHost
                                                     $LocalizedData.UplinkName = $VdsUplink.Name
-                                                    $LocalizedData.PhysicalNetworkAdapter = $VdsUplink.ConnectedEntity
-                                                    $LocalizedData.UplinkPortGroup = $VdsUplink.Portgroup
+                                                    $LocalizedData.PhysicalNetworkAdapter = [string]$VdsUplink.ConnectedEntity
+                                                    $LocalizedData.UplinkPortGroup = [string]$VdsUplink.Portgroup
                                                 }
                                             }
                                             $TableParams = @{
@@ -145,7 +145,7 @@ function Get-AbrVSphereNetwork {
                                     if ($VDSecurityPolicy) {
                                         Section -Style Heading4 $LocalizedData.VDSSecurity {
                                             $VDSecurityPolicyDetail = [PSCustomObject]@{
-                                                $LocalizedData.VDSwitch = $VDSecurityPolicy.VDSwitch
+                                                $LocalizedData.VDSwitch = $VDSecurityPolicy.VDSwitch.Name
                                                 $LocalizedData.AllowPromiscuous = if ($VDSecurityPolicy.AllowPromiscuous) {
                                                     $LocalizedData.Accept
                                                 } else {
@@ -184,7 +184,7 @@ function Get-AbrVSphereNetwork {
                                         Section -Style Heading4 $LocalizedData.VDSTrafficShaping {
                                             $VDSTrafficShapingDetail = foreach ($VDSTrafficShape in $VDSTrafficShaping) {
                                                 [PSCustomObject]@{
-                                                    $LocalizedData.VDSwitch = $VDSTrafficShape.VDSwitch
+                                                    $LocalizedData.VDSwitch = $VDSTrafficShape.VDSwitch.Name
                                                     $LocalizedData.Direction = $VDSTrafficShape.Direction
                                                     $LocalizedData.Status = if ($VDSTrafficShape.Enabled) {
                                                         $LocalizedData.Enabled
@@ -216,8 +216,8 @@ function Get-AbrVSphereNetwork {
                                             $VDSPortgroupDetail = foreach ($VDSPortgroup in $VDSPortgroups) {
                                                 [PSCustomObject]@{
                                                     $LocalizedData.PortGroup = $VDSPortgroup.Name
-                                                    $LocalizedData.VDSwitch = $VDSPortgroup.VDSwitch
-                                                    $LocalizedData.Datacenter = $VDSPortgroup.Datacenter
+                                                    $LocalizedData.VDSwitch = $VDSPortgroup.VDSwitch.Name
+                                                    $LocalizedData.Datacenter = $VDSPortgroup.Datacenter.Name
                                                     $LocalizedData.VLANConfiguration = if ($VDSPortgroup.VlanConfiguration) {
                                                         $VDSPortgroup.VlanConfiguration
                                                     } else {
@@ -255,7 +255,7 @@ function Get-AbrVSphereNetwork {
                                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VDSPortGroupSecurity {
                                             $VDSSecurityPolicies = foreach ($VDSSecurityPolicy in $VDSPortgroupSecurity) {
                                                 [PSCustomObject]@{
-                                                    $LocalizedData.PortGroup = $VDSSecurityPolicy.VDPortgroup
+                                                    $LocalizedData.PortGroup = [string]$VDSSecurityPolicy.VDPortgroup
                                                     $LocalizedData.VDSwitch = $VDS.Name
                                                     $LocalizedData.AllowPromiscuous = if ($VDSSecurityPolicy.AllowPromiscuous) {
                                                         $LocalizedData.Accept
@@ -296,7 +296,7 @@ function Get-AbrVSphereNetwork {
                                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VDSPortGroupTrafficShaping {
                                             $VDSPortgroupTrafficShapingDetail = foreach ($VDSPortgroupTrafficShape in $VDSPortgroupTrafficShaping) {
                                                 [PSCustomObject]@{
-                                                    $LocalizedData.PortGroup = $VDSPortgroupTrafficShape.VDPortgroup
+                                                    $LocalizedData.PortGroup = [string]$VDSPortgroupTrafficShape.VDPortgroup
                                                     $LocalizedData.VDSwitch = $VDS.Name
                                                     $LocalizedData.Direction = $VDSPortgroupTrafficShape.Direction
                                                     $LocalizedData.Status = if ($VDSPortgroupTrafficShape.Enabled) {
@@ -328,7 +328,7 @@ function Get-AbrVSphereNetwork {
                                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VDSPortGroupTeaming {
                                             $VDSPortgroupNICTeaming = foreach ($VDUplink in $VDUplinkTeamingPolicy) {
                                                 [PSCustomObject]@{
-                                                    $LocalizedData.PortGroup = $VDUplink.VDPortgroup
+                                                    $LocalizedData.PortGroup = [string]$VDUplink.VDPortgroup
                                                     $LocalizedData.VDSwitch = $VDS.Name
                                                     $LocalizedData.LoadBalancing = switch ($VDUplink.LoadBalancingPolicy) {
                                                         'LoadbalanceSrcId' { $LocalizedData.LoadBalanceSrcId }

@@ -35,15 +35,15 @@ function Get-AbrVSphereCluster {
                             BlankLine
                             $ClusterInfo = foreach ($Cluster in $Clusters) {
                                 [PSCustomObject]@{
-                                    ($LocalizedData.Cluster) = $Cluster.Name
-                                    ($LocalizedData.Datacenter) = $Cluster | Get-Datacenter
-                                    ($LocalizedData.NumHosts) = $Cluster.ExtensionData.Host.Count
-                                    ($LocalizedData.NumVMs) = $Cluster.ExtensionData.VM.Count
-                                    ($LocalizedData.HAEnabled) = if ($Cluster.HAEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                    ($LocalizedData.DRSEnabled) = if ($Cluster.DRSEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                    ($LocalizedData.VSANEnabled) = if ($Cluster.VsanEnabled -or $VsanCluster.VsanEsaEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                    ($LocalizedData.EVCMode) = if ($Cluster.EVCMode) { $EvcModeLookup."$($Cluster.EVCMode)" } else { $LocalizedData.Disabled }
-                                    ($LocalizedData.VMSwapFilePolicy) = switch ($Cluster.VMSwapfilePolicy) {
+                                    $LocalizedData.Cluster = $Cluster.Name
+                                    $LocalizedData.Datacenter = ($Cluster | Get-Datacenter).Name
+                                    $LocalizedData.NumHosts = $Cluster.ExtensionData.Host.Count
+                                    $LocalizedData.NumVMs = $Cluster.ExtensionData.VM.Count
+                                    $LocalizedData.HAEnabled = if ($Cluster.HAEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                    $LocalizedData.DRSEnabled = if ($Cluster.DRSEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                    $LocalizedData.VSANEnabled = if ($Cluster.VsanEnabled -or $VsanCluster.VsanEsaEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                    $LocalizedData.EVCMode = if ($Cluster.EVCMode) { $EvcModeLookup."$($Cluster.EVCMode)" } else { $LocalizedData.Disabled }
+                                    $LocalizedData.VMSwapFilePolicy = switch ($Cluster.VMSwapfilePolicy) {
                                         'WithVM' { $LocalizedData.SwapWithVM }
                                         'InHostDatastore' { $LocalizedData.SwapInHostDatastore }
                                         default { $Cluster.VMSwapfilePolicy }
@@ -87,16 +87,16 @@ function Get-AbrVSphereCluster {
                                     BlankLine
                                     #region Cluster Configuration
                                     $ClusterDetail = [PSCustomObject]@{
-                                        ($LocalizedData.Cluster) = $Cluster.Name
-                                        ($LocalizedData.ID) = $Cluster.Id
-                                        ($LocalizedData.Datacenter) = $Cluster | Get-Datacenter
-                                        ($LocalizedData.NumberOfHosts) = $Cluster.ExtensionData.Host.Count
-                                        ($LocalizedData.NumberOfVMs) = ($Cluster | Get-VM).Count
-                                        ($LocalizedData.HAEnabled) = if ($Cluster.HAEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                        ($LocalizedData.DRSEnabled) = if ($Cluster.DRSEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                        ($LocalizedData.VSANEnabled) = if ($Cluster.VsanEnabled -or $Cluster.VsanEsaEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
-                                        ($LocalizedData.EVCMode) = if ($Cluster.EVCMode) { $EvcModeLookup."$($Cluster.EVCMode)" } else { $LocalizedData.Disabled }
-                                        ($LocalizedData.VMSwapFilePolicy) = switch ($Cluster.VMSwapfilePolicy) {
+                                        $LocalizedData.Cluster = $Cluster.Name
+                                        $LocalizedData.ID = $Cluster.Id
+                                        $LocalizedData.Datacenter = ($Cluster | Get-Datacenter).Name
+                                        $LocalizedData.NumberOfHosts = $Cluster.ExtensionData.Host.Count
+                                        $LocalizedData.NumberOfVMs = ($Cluster | Get-VM).Count
+                                        $LocalizedData.HAEnabled = if ($Cluster.HAEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                        $LocalizedData.DRSEnabled = if ($Cluster.DRSEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                        $LocalizedData.VSANEnabled = if ($Cluster.VsanEnabled -or $Cluster.VsanEsaEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled }
+                                        $LocalizedData.EVCMode = if ($Cluster.EVCMode) { $EvcModeLookup."$($Cluster.EVCMode)" } else { $LocalizedData.Disabled }
+                                        $LocalizedData.VMSwapFilePolicy = switch ($Cluster.VMSwapfilePolicy) {
                                             'WithVM' { $LocalizedData.SwapVMDirectory }
                                             'InHostDatastore' { $LocalizedData.SwapHostDatastore }
                                             default { $Cluster.VMSwapfilePolicy }

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [[2.0.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v2.0.0)] - 2026-03-05
 
+### Fixed
+
+- Fix `An item with the same key has already been added. Key: LinkedView` error when generating TEXT format reports ([#130](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/130))
+
 ### Added
 
 - Modular architecture: each report section is now a dedicated private function (`Get-AbrVSphere*`)
