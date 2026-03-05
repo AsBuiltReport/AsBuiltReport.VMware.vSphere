@@ -199,29 +199,55 @@ function Get-AbrVSpherevCenter {
                         #region vCenter Server Certificate
                         if ($vCenter.Version -ge 6) {
                             Section -Style Heading3 $LocalizedData.Certificate {
-                                $VcenterCertMgmt = [PSCustomObject]@{
-                                    $LocalizedData.Country = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.country' }).Value
-                                    $LocalizedData.Email = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.email' }).Value
-                                    $LocalizedData.Locality = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.localityName' }).Value
-                                    $LocalizedData.State = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.state' }).Value
-                                    $LocalizedData.Organization = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.organizationName' }).Value
-                                    $LocalizedData.OrganizationUnit = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.cn.organizationalUnitName' }).Value
-                                    $LocalizedData.Validity = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.daysValid'}).Value / 365) years"
-                                    $LocalizedData.Mode = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.mode' }).Value
-                                    $LocalizedData.SoftThreshold = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.softThreshold'}).Value) days"
-                                    $LocalizedData.HardThreshold = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.hardThreshold'}).Value) days"
-                                    $LocalizedData.MinutesBefore = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.minutesBefore' }).Value
-                                    $LocalizedData.PollInterval = "$(($vCenterAdvSettings | Where-Object {$_.name -eq 'vpxd.certmgmt.certs.pollIntervalDays'}).Value) days"
+                                try {
+                                    $SslCallback = [System.Net.Security.RemoteCertificateValidationCallback]{
+                                        param($sender, $cert, $chain, $errors) $true
+                                    }
+                                    $TcpClient = New-Object -TypeName System.Net.Sockets.TcpClient -ArgumentList ($vCenterServerName, 443)
+                                    $SslStream = New-Object -TypeName System.Net.Security.SslStream -ArgumentList (
+                                        $TcpClient.GetStream(), $false, $SslCallback
+                                    )
+                                    $SslStream.AuthenticateAsClient($vCenterServerName)
+                                    $VIMachineCert = [System.Security.Cryptography.X509Certificates.X509Certificate2]$SslStream.RemoteCertificate
+                                    $SslStream.Dispose()
+                                    $TcpClient.Dispose()
+                                    $SoftThresholdDays = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.softThreshold' }).Value
+                                    $HardThresholdDays = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.hardThreshold' }).Value
+                                    $DaysRemaining = ($VIMachineCert.NotAfter - (Get-Date)).Days
+                                    $CertificateStatus = if ($DaysRemaining -le 0) {
+                                        'EXPIRED'
+                                    } elseif ($null -ne $HardThresholdDays -and $DaysRemaining -le [int]$HardThresholdDays) {
+                                        'EXPIRING'
+                                    } elseif ($null -ne $SoftThresholdDays -and $DaysRemaining -le [int]$SoftThresholdDays) {
+                                        'EXPIRING_SOON'
+                                    } else {
+                                        'VALID'
+                                    }
+                                    $VcenterCertMgmt = [PSCustomObject]@{
+                                        $LocalizedData.Subject       = $VIMachineCert.Subject
+                                        $LocalizedData.Issuer        = $VIMachineCert.Issuer
+                                        $LocalizedData.ValidFrom     = $VIMachineCert.NotBefore
+                                        $LocalizedData.ValidTo       = $VIMachineCert.NotAfter
+                                        $LocalizedData.Thumbprint    = $VIMachineCert.Thumbprint
+                                        $LocalizedData.CertStatus    = $CertificateStatus
+                                        $LocalizedData.Mode          = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.mode' }).Value
+                                        $LocalizedData.SoftThreshold = "$(($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.softThreshold' }).Value) days"
+                                        $LocalizedData.HardThreshold = "$(($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.hardThreshold' }).Value) days"
+                                        $LocalizedData.MinutesBefore = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.minutesBefore' }).Value
+                                        $LocalizedData.PollInterval  = "$(($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.certs.pollIntervalDays' }).Value) days"
+                                    }
+                                    $TableParams = @{
+                                        Name         = ($LocalizedData.TableCertificate -f $vCenterServerName)
+                                        List         = $true
+                                        ColumnWidths = 40, 60
+                                    }
+                                    if ($Report.ShowTableCaptions) {
+                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                    }
+                                    $VcenterCertMgmt | Table @TableParams
+                                } catch {
+                                    Write-PScriboMessage -IsWarning ($LocalizedData.InsufficientPrivCertificate -f $_.Exception.Message)
                                 }
-                                $TableParams = @{
-                                    Name = ($LocalizedData.TableCertificate -f $vCenterServerName)
-                                    List = $true
-                                    ColumnWidths = 40, 60
-                                }
-                                if ($Report.ShowTableCaptions) {
-                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                }
-                                $VcenterCertMgmt | Table @TableParams
                             }
                         }
                         #endregion vCenter Server Certificate
