@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add I/O Device Identifiers subsection to VMHost Hardware report, displaying VID/DID/SVID/SSID in lowercase hex for HCL validation ([#126](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/126))
 - Modular architecture: each report section is now a dedicated private function (`Get-AbrVSphere*`)
 - Internationalization (i18n) support via `Language/` `.psd1` files (`en-US`, `en-GB`, `es-ES`, `fr-FR`, `de-DE`)
 - Pester test suite (`AsBuiltReport.VMware.vSphere.Tests.ps1`, `LocalizationData.Tests.ps1`, `Invoke-Tests.ps1`)

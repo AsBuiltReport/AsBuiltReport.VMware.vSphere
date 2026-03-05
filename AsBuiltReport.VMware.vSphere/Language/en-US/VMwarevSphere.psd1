@@ -536,6 +536,13 @@ GetAbrVSphereVMHostHardware = ConvertFrom-StringData @'
     PCIDeviceError           = Error collecting PCI device information for {0}. {1}
     PCIDriversFirmwareError  = Error collecting PCI device driver & firmware information for {0}. {1}
     HardwareError            = Error collecting host hardware information for {0}. {1}
+    IODeviceIdentifiers      = I/O Device Identifiers
+    VendorID                 = VID
+    DeviceID                 = DID
+    SubVendorID              = SVID
+    SubDeviceID              = SSID
+    TableIODeviceIdentifiers = I/O Device Identifiers - {0}
+    IODeviceIdentifiersError = Error collecting I/O device identifier information for {0}. {1}
 '@
 
 # Get-AbrVSphereVMHostSystem

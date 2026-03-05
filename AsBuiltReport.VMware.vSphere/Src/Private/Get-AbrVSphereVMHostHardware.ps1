@@ -280,6 +280,50 @@ function Get-AbrVSphereVMHostHardware {
                     }
                 }
                 #endregion ESXi Host PCI Devices Drivers & Firmware
+
+                #region ESXi Host I/O Device Identifiers
+                try {
+                    # Build PCI address -> VMkernel name mapping (VMkernelName is unpopulated on ESXi 8)
+                    # Guard against null keys — software HBAs (iSCSI, software NVMe) have no PCI address
+                    $IOPciToDevice = @{}
+                    Get-VMHostNetworkAdapter -VMHost $VMHost -Physical | ForEach-Object {
+                        if ($_.PciId) { $IOPciToDevice[$_.PciId] = $_.DeviceName }
+                    }
+                    Get-VMHostHba -VMHost $VMHost | ForEach-Object {
+                        if ($_.Pci) { $IOPciToDevice[$_.Pci] = $_.Device }
+                    }
+                    (Get-VMHost $VMHost | Get-View -Property Config).Config.GraphicsInfo | ForEach-Object {
+                        if ($_.pciId) { $IOPciToDevice[$_.pciId] = $_.deviceName }
+                    }
+                    $VMHostIODevices = $esxcli.hardware.pci.list.Invoke() |
+                        Where-Object { $IOPciToDevice.ContainsKey($_.Address) } |
+                        Sort-Object -Property Address
+                    if ($VMHostIODevices) {
+                        Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.IODeviceIdentifiers {
+                            $VMHostIODeviceInfo = $VMHostIODevices | ForEach-Object {
+                                [PSCustomObject]@{
+                                    $LocalizedData.Device      = $IOPciToDevice[$_.Address]
+                                    $LocalizedData.Model       = $_.DeviceName
+                                    $LocalizedData.VendorID    = [String]::Format("{0:x4}", $_.VendorID)
+                                    $LocalizedData.DeviceID    = [String]::Format("{0:x4}", $_.DeviceID)
+                                    $LocalizedData.SubVendorID = [String]::Format("{0:x4}", $_.SubVendorID)
+                                    $LocalizedData.SubDeviceID = [String]::Format("{0:x4}", $_.SubDeviceID)
+                                }
+                            }
+                            $TableParams = @{
+                                Name         = ($LocalizedData.TableIODeviceIdentifiers -f $VMHost)
+                                ColumnWidths = 13, 31, 14, 14, 14, 14
+                            }
+                            if ($Report.ShowTableCaptions) {
+                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                            }
+                            $VMHostIODeviceInfo | Sort-Object $LocalizedData.Device | Table @TableParams
+                        }
+                    }
+                } catch {
+                    Write-PScriboMessage -Message ($LocalizedData.IODeviceIdentifiersError -f $VMHost.Name, $_.Exception.Message)
+                }
+                #endregion ESXi Host I/O Device Identifiers
             }
         } catch {
             Write-PScriboMessage -Message ($LocalizedData.HardwareError -f $VMHost.Name, $_.Exception.Message)
