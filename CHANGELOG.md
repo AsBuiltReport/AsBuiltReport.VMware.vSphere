@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix PCI Drivers & Firmware section not reporting on vSphere 8; `VMkernelName` is no longer populated in `esxcli hardware.pci.list` on ESXi 8.x so a PCI address to VMkernel name map is now built via the PowerCLI API as fallback. Also fixes per-device defaults not being reset between loop iterations ([#127](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/127))
+- Fix PCI Drivers & Firmware section not reporting on vSphere 8; `VMkernelName` is no longer populated in `esxcli hardware.pci.list` on ESXi 8.x so a PCI address to VMkernel name map is now built via the PowerCLI API as fallback. Also fixes per-device defaults not being reset between loop iterations ([#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111), [#127](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/127))
 - Fix vCenter Server Certificate section reporting VMCA template defaults instead of the actual deployed TLS certificate; now reads the live certificate directly from port 443 ([#88](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/88))
 - Fix null disk group crash in OSA vSAN clusters where disk groups have not yet been claimed ([#113](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/113))
 - Fix `An item with the same key has already been added. Key: LinkedView` error when generating TEXT format reports ([#130](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/130))
