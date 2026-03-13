@@ -124,6 +124,37 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TableAlarms                  = Alarms - {0}
     TableAdvancedSystemSettings  = vCenter Advanced System Settings - {0}
     RestApiSessionError          = Unable to establish vCenter REST API session. {0}
+    BackupSettings               = Backup Settings
+    BackupSchedule               = Backup Schedule
+    BackupJobHistory             = Backup Job History
+    BackupNotConfigured          = No backup schedule is configured.
+    BackupNoJobs                 = No backup jobs found.
+    BackupApiNotAvailable        = vCenter backup status requires vSphere 7.0 or later.
+    BackupApiError               = Unable to retrieve backup information. {0}
+    BackupScheduleID             = Schedule ID
+    BackupLocation               = Location
+    BackupLocationUser           = Location User
+    BackupEnabled                = Status
+    BackupActivated              = Activated
+    BackupDeactivated            = Deactivated
+    BackupParts                  = Backup Data
+    BackupPartSeat               = Supervisors Control Plane
+    BackupPartCommon             = Inventory and Configuration
+    BackupPartStats              = Stats, Events, and Tasks
+    BackupRecurrence             = Schedule
+    BackupRetentionCount         = Number of Backups to Retain
+    BackupDaily                  = Daily
+    BackupSendEmail              = Email Notification
+    BackupJobLocation            = Backup Location
+    BackupJobType                = Type
+    BackupJobStatus              = Status
+    BackupJobComplete            = Complete
+    BackupJobScheduled           = Scheduled
+    BackupJobDataTransferred     = Data Transferred
+    BackupJobDuration            = Duration
+    BackupJobEndTime             = End Time
+    TableBackupSchedule          = Backup Schedule - {0}
+    TableBackupJobHistory        = Backup Job History - {0}
 '@
 
 # Get-AbrVSphereCluster

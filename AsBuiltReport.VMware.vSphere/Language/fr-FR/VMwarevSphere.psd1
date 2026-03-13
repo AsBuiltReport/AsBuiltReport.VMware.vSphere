@@ -124,6 +124,37 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TableAlarms                  = Alarms - {0}
     TableAdvancedSystemSettings  = vCenter Advanced System Settings - {0}
     RestApiSessionError          = Unable to establish vCenter REST API session. {0}
+    BackupSettings               = Paramètres de sauvegarde
+    BackupSchedule               = Calendrier de sauvegarde
+    BackupJobHistory             = Historique des tâches de sauvegarde
+    BackupNotConfigured          = Aucun calendrier de sauvegarde n'est configuré.
+    BackupNoJobs                 = Aucune tâche de sauvegarde trouvée.
+    BackupApiNotAvailable        = L'état de sauvegarde vCenter nécessite vSphere 7.0 ou version ultérieure.
+    BackupApiError               = Impossible de récupérer les informations de sauvegarde. {0}
+    BackupScheduleID             = ID de calendrier
+    BackupLocation               = Emplacement
+    BackupLocationUser           = Utilisateur de l'emplacement
+    BackupEnabled                = État
+    BackupActivated              = Activé
+    BackupDeactivated            = Désactivé
+    BackupParts                  = Données de sauvegarde
+    BackupPartSeat               = Plan de contrôle des superviseurs
+    BackupPartCommon             = Inventaire et configuration
+    BackupPartStats              = Statistiques, événements et tâches
+    BackupRecurrence             = Planification
+    BackupRetentionCount         = Nombre de sauvegardes à conserver
+    BackupDaily                  = Quotidien
+    BackupSendEmail              = Notification par e-mail
+    BackupJobLocation            = Emplacement de sauvegarde
+    BackupJobType                = Type
+    BackupJobStatus              = État
+    BackupJobComplete            = Terminé
+    BackupJobScheduled           = Planifié
+    BackupJobDataTransferred     = Données transférées
+    BackupJobDuration            = Durée
+    BackupJobEndTime             = Heure de fin
+    TableBackupSchedule          = Calendrier de sauvegarde - {0}
+    TableBackupJobHistory        = Historique des tâches de sauvegarde - {0}
 '@
 
 # Get-AbrVSphereCluster

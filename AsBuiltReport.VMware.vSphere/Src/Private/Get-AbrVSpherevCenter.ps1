@@ -380,6 +380,134 @@ function Get-AbrVSpherevCenter {
                             Write-PScriboMessage -Message $LocalizedData.InsufficientPrivStoragePolicy
                         }
                         #endregion VM Storage Policies
+
+                        #region vCenter Server Backup
+                        Section -Style Heading3 $LocalizedData.BackupSettings {
+                            if (-not $vcApiUri) {
+                                Paragraph $LocalizedData.BackupApiNotAvailable
+                            } else {
+                                #region Backup Schedule
+                                $BackupSchedules = $null
+                                try {
+                                    $BackupSchedules = Invoke-RestMethod -Uri "$vcApiUri/appliance/recovery/backup/schedules" -Method Get -Headers $vcApiHeaders -SkipCertificateCheck -ErrorAction Stop
+                                } catch {
+                                    Write-PScriboMessage -IsWarning ($LocalizedData.BackupApiError -f $_.Exception.Message)
+                                }
+                                Section -Style Heading4 $LocalizedData.BackupSchedule {
+                                    if ($BackupSchedules -and $BackupSchedules.PSObject.Properties.Name.Count -gt 0) {
+                                        $ApplianceTimezone = $null
+                                        try {
+                                            $ApplianceTimezone = Invoke-RestMethod -Uri "$vcApiUri/appliance/system/time/timezone" -Method Get -Headers $vcApiHeaders -SkipCertificateCheck -ErrorAction Stop
+                                        } catch {}
+                                        $BackupScheduleInfo = foreach ($schedId in $BackupSchedules.PSObject.Properties.Name) {
+                                            $sched = $BackupSchedules.$schedId
+                                            $recurrence = if ($sched.recurrence_info) {
+                                                $h = [int]$sched.recurrence_info.hour % 12
+                                                if ($h -eq 0) { $h = 12 }
+                                                $ap = if ([int]$sched.recurrence_info.hour -ge 12) { 'P.M.' } else { 'A.M.' }
+                                                $timeStr = '{0}:{1:D2} {2}' -f $h, [int]$sched.recurrence_info.minute, $ap
+                                                $dayStr = if ($sched.recurrence_info.days -and $sched.recurrence_info.days.Count -gt 0) {
+                                                    ($sched.recurrence_info.days | ForEach-Object { $TextInfo.ToTitleCase($_.ToLower()) }) -join ', '
+                                                } else { $LocalizedData.BackupDaily }
+                                                $tz = if ($ApplianceTimezone) { " $ApplianceTimezone" } else { '' }
+                                                "$dayStr, $timeStr$tz"
+                                            } else { '--' }
+                                            $partsFormatted = ($sched.parts | ForEach-Object {
+                                                switch ($_) {
+                                                    'supervisors' { $LocalizedData.BackupPartSeat }
+                                                    'seat'        { $LocalizedData.BackupPartSeat }
+                                                    'common'      { $LocalizedData.BackupPartCommon }
+                                                    'stats'       { $LocalizedData.BackupPartStats }
+                                                    default       { $_ }
+                                                }
+                                            }) -join ', '
+                                            [PSCustomObject]@{
+                                                $LocalizedData.BackupEnabled        = if ($sched.enable) { $LocalizedData.BackupActivated } else { $LocalizedData.BackupDeactivated }
+                                                $LocalizedData.BackupRecurrence     = $recurrence
+                                                $LocalizedData.BackupLocation       = $sched.location
+                                                $LocalizedData.BackupParts          = $partsFormatted
+                                                $LocalizedData.BackupRetentionCount = $sched.retention_info.max_count
+                                            }
+                                        }
+                                        if ($Healthcheck.vCenter.Backup) {
+                                            $BackupScheduleInfo | Where-Object { $_.$($LocalizedData.BackupEnabled) -eq $LocalizedData.BackupDeactivated } | Set-Style -Style Warning -Property $LocalizedData.BackupEnabled
+                                        }
+                                        $TableParams = @{
+                                            Name         = ($LocalizedData.TableBackupSchedule -f $vCenterServerName)
+                                            List         = $true
+                                            ColumnWidths = 40, 60
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $BackupScheduleInfo | Table @TableParams
+                                    } else {
+                                        Paragraph $LocalizedData.BackupNotConfigured
+                                    }
+                                }
+                                #endregion Backup Schedule
+
+                                #region Backup Job History
+                                $BackupJobRecords = $null
+                                try {
+                                    $jobDetailsResponse = Invoke-RestMethod -Uri "$vcApiUri/appliance/recovery/backup/job/details" -Method Get -Headers $vcApiHeaders -SkipCertificateCheck -ErrorAction Stop
+                                    if ($jobDetailsResponse -and $jobDetailsResponse.PSObject.Properties.Name.Count -gt 0) {
+                                        $BackupJobRecords = $jobDetailsResponse.PSObject.Properties |
+                                            Sort-Object Name -Descending | Select-Object -First 10 | ForEach-Object {
+                                                $job = $_.Value
+                                                $jobDuration = if ($job.start_time -and $job.end_time) { ([datetime]$job.end_time - [datetime]$job.start_time).TotalSeconds } elseif ($job.duration) { $job.duration } else { $null }
+                                                [PSCustomObject]@{
+                                                    Location  = $job.location
+                                                    Type      = $job.type
+                                                    State     = $job.state ?? $job.status
+                                                    Size      = $job.size
+                                                    Duration  = $jobDuration
+                                                    Timestamp = $job.end_time
+                                                }
+                                            }
+                                    }
+                                } catch {
+                                    Write-PScriboMessage -IsWarning ($LocalizedData.BackupApiError -f $_.Exception.Message)
+                                }
+                                Section -Style Heading4 $LocalizedData.BackupJobHistory {
+                                    if ($BackupJobRecords -and $BackupJobRecords.Count -gt 0) {
+                                        $BackupJobInfo = foreach ($record in $BackupJobRecords) {
+                                            $duration = if ($record.Duration) { $ts = [timespan]::FromSeconds($record.Duration); '{0:D2}:{1:D2}:{2:D2}' -f $ts.Hours, $ts.Minutes, $ts.Seconds } else { '--' }
+                                            $dataTransferred = if ($record.Size -gt 0) { '{0:N2} GB' -f ($record.Size / 1GB) } else { '--' }
+                                            [PSCustomObject]@{
+                                                $LocalizedData.BackupJobLocation        = if ($record.Location) { $record.Location } else { '--' }
+                                                $LocalizedData.BackupJobType            = switch ($record.Type) {
+                                                    'SCHEDULED' { $LocalizedData.BackupJobScheduled }
+                                                    default     { if ($record.Type) { $TextInfo.ToTitleCase($record.Type.ToString().ToLower()) } else { '--' } }
+                                                }
+                                                $LocalizedData.BackupJobStatus          = switch ($record.State) {
+                                                    'SUCCEEDED' { $LocalizedData.BackupJobComplete }
+                                                    default     { if ($record.State) { $TextInfo.ToTitleCase($record.State.ToString().ToLower()) } else { '--' } }
+                                                }
+                                                $LocalizedData.BackupJobDataTransferred = $dataTransferred
+                                                $LocalizedData.BackupJobDuration        = $duration
+                                                $LocalizedData.BackupJobEndTime         = if ($record.Timestamp) { ([datetime]$record.Timestamp).ToLocalTime().ToString() } else { '--' }
+                                            }
+                                        }
+                                        if ($Healthcheck.vCenter.Backup) {
+                                            $BackupJobInfo | Where-Object { $_.$($LocalizedData.BackupJobStatus) -eq 'Failed' } | Set-Style -Style Critical -Property $LocalizedData.BackupJobStatus
+                                        }
+                                        $TableParams = @{
+                                            Name         = ($LocalizedData.TableBackupJobHistory -f $vCenterServerName)
+                                            ColumnWidths = 28, 13, 13, 13, 13, 20
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $BackupJobInfo | Table @TableParams
+                                    } else {
+                                        Paragraph $LocalizedData.BackupNoJobs
+                                    }
+                                }
+                                #endregion Backup Job History
+                            }
+                        }
+                        #endregion vCenter Server Backup
                     }
                     #endregion vCenter Server Detailed Information
 

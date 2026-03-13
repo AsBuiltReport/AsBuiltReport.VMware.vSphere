@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add vSAN Services section to vSAN cluster reporting (both OSA and ESA); shows enabled/disabled state of Performance Service, File Service, iSCSI Target Service, Deduplication, Encryption, Historical Health Service, and Health Check
 - Add tag reporting to Datastore, Datastore Cluster, Distributed Switch, Resource Pool, Virtual Machine, and VMHost sections
 - Extract Cluster VUM Baselines and Compliance into dedicated `Get-AbrVSphereClusterVUM` sub-function
+- Add vCenter Server Backup Settings section (InfoLevel 3+); Backup Schedule table shows status (Activated/Deactivated), schedule recurrence with appliance timezone, backup location, data components, and retention count; Backup Job History table shows the 10 most recent jobs (location, type, status, data transferred, duration, end time) via `GET /api/appliance/recovery/backup/job/details`; requires vSphere 7.0+ REST API; includes `Backup` healthcheck (Warning: schedule deactivated, Critical: job failed)
 
 ### Changed
 

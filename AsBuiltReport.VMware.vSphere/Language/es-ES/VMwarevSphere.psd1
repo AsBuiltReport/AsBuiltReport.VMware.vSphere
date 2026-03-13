@@ -124,6 +124,37 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TableAlarms                  = Alarms - {0}
     TableAdvancedSystemSettings  = vCenter Advanced System Settings - {0}
     RestApiSessionError          = Unable to establish vCenter REST API session. {0}
+    BackupSettings               = Configuración de copia de seguridad
+    BackupSchedule               = Programación de copia de seguridad
+    BackupJobHistory             = Historial de trabajos de copia de seguridad
+    BackupNotConfigured          = No hay ninguna programación de copia de seguridad configurada.
+    BackupNoJobs                 = No se encontraron trabajos de copia de seguridad.
+    BackupApiNotAvailable        = El estado de copia de seguridad de vCenter requiere vSphere 7.0 o posterior.
+    BackupApiError               = No se puede recuperar la información de copia de seguridad. {0}
+    BackupScheduleID             = ID de programación
+    BackupLocation               = Ubicación
+    BackupLocationUser           = Usuario de ubicación
+    BackupEnabled                = Estado
+    BackupActivated              = Activado
+    BackupDeactivated            = Desactivado
+    BackupParts                  = Datos de copia de seguridad
+    BackupPartSeat               = Plano de control de supervisores
+    BackupPartCommon             = Inventario y configuración
+    BackupPartStats              = Estadísticas, eventos y tareas
+    BackupRecurrence             = Programación
+    BackupRetentionCount         = Número de copias de seguridad a conservar
+    BackupDaily                  = Diario
+    BackupSendEmail              = Notificación por correo electrónico
+    BackupJobLocation            = Ubicación de copia de seguridad
+    BackupJobType                = Tipo
+    BackupJobStatus              = Estado
+    BackupJobComplete            = Completado
+    BackupJobScheduled           = Programado
+    BackupJobDataTransferred     = Datos transferidos
+    BackupJobDuration            = Duración
+    BackupJobEndTime             = Hora de finalización
+    TableBackupSchedule          = Programación de copia de seguridad - {0}
+    TableBackupJobHistory        = Historial de trabajos de copia de seguridad - {0}
 '@
 
 # Get-AbrVSphereCluster

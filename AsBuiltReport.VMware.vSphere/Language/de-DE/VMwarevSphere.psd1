@@ -124,6 +124,37 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TableAlarms                  = Alarms - {0}
     TableAdvancedSystemSettings  = vCenter Advanced System Settings - {0}
     RestApiSessionError          = Unable to establish vCenter REST API session. {0}
+    BackupSettings               = Sicherungseinstellungen
+    BackupSchedule               = Sicherungszeitplan
+    BackupJobHistory             = Sicherungsauftragsverlauf
+    BackupNotConfigured          = Es ist kein Sicherungszeitplan konfiguriert.
+    BackupNoJobs                 = Keine Sicherungsaufträge gefunden.
+    BackupApiNotAvailable        = Der vCenter-Sicherungsstatus erfordert vSphere 7.0 oder höher.
+    BackupApiError               = Sicherungsinformationen konnten nicht abgerufen werden. {0}
+    BackupScheduleID             = Zeitplan-ID
+    BackupLocation               = Speicherort
+    BackupLocationUser           = Speicherortbenutzer
+    BackupEnabled                = Status
+    BackupActivated              = Aktiviert
+    BackupDeactivated            = Deaktiviert
+    BackupParts                  = Sicherungsdaten
+    BackupPartSeat               = Supervisors Control Plane
+    BackupPartCommon             = Bestand und Konfiguration
+    BackupPartStats              = Statistiken, Ereignisse und Aufgaben
+    BackupRecurrence             = Zeitplan
+    BackupRetentionCount         = Anzahl der aufzubewahrenden Sicherungen
+    BackupDaily                  = Täglich
+    BackupSendEmail              = E-Mail-Benachrichtigung
+    BackupJobLocation            = Sicherungsort
+    BackupJobType                = Typ
+    BackupJobStatus              = Status
+    BackupJobComplete            = Abgeschlossen
+    BackupJobScheduled           = Geplant
+    BackupJobDataTransferred     = Übertragene Daten
+    BackupJobDuration            = Dauer
+    BackupJobEndTime             = Endzeit
+    TableBackupSchedule          = Sicherungszeitplan - {0}
+    TableBackupJobHistory        = Sicherungsauftragsverlauf - {0}
 '@
 
 # Get-AbrVSphereCluster
