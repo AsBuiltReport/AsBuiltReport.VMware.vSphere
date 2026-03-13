@@ -94,7 +94,7 @@ function Get-AbrVSphereDSCluster {
                                         'InputObject' = $DSClusterDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $DSCluster }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $DSCluster })) {
                                         Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $DSCluster }).Tag -join ', ')
                                     }
                                     if ($Healthcheck.DSCluster.CapacityUtilization) {

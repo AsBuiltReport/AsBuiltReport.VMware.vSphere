@@ -87,7 +87,7 @@ function Get-AbrVSphereNetwork {
                                         'InputObject' = $VDSwitchDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $VDS }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $VDS })) {
                                         Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $VDS }).Tag -join ', ')
                                     }
                                     #region Network Advanced Detail Information

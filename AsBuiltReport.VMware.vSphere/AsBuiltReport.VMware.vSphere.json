@@ -12,7 +12,10 @@
     "Options":  {
                     "ShowLicenseKeys":  false,
                     "ShowEncryptionKeys":  false,
-                    "ShowVMSnapshots":  true
+                    "ShowVMSnapshots":  true,
+                    "ShowRoles":  true,
+                    "ShowAlarms":  true,
+                    "ShowTags":  true
                 },
     "InfoLevel":  {
                       "_comment_":  "0 = Disabled, 1 = Enabled / Summary, 2 = Adv Summary, 3 = Detailed, 4 = Adv Detailed, 5 = Comprehensive",
@@ -33,7 +36,8 @@
                                         "Licensing":  true,
                                         "Alarms":  true,
                                         "Backup":  true,
-                                        "Certificate":  true
+                                        "Certificate":  true,
+                                        "ContentLibrary":  true
                                     },
                         "Cluster":  {
                                         "HAEnabled":  true,

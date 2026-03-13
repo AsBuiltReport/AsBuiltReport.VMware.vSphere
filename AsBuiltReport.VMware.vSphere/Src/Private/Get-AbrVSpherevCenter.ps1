@@ -27,7 +27,11 @@ function Get-AbrVSpherevCenter {
             if ($InfoLevel.vCenter -ge 1) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
                 Section -Style Heading2 $LocalizedData.SectionHeading {
-                    Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)
+                    if ($InfoLevel.vCenter -le 2) {
+                        Paragraph ($LocalizedData.ParagraphSummaryBrief -f $vCenterServerName)
+                    } else {
+                        Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)
+                    }
                     BlankLine
                     # Gather basic vCenter Server Information
                     $vCenterServerInfo = [PSCustomObject]@{
@@ -46,6 +50,100 @@ function Get-AbrVSpherevCenter {
                             $TableParams['Caption'] = "- $($TableParams.Name)"
                         }
                         $vCenterServerInfo | Table @TableParams
+
+                        #region Resource Summary
+                        Section -Style Heading3 $LocalizedData.ResourceSummary {
+                        $totalCpuMhz    = ($VMHosts | Measure-Object -Property CpuTotalMhz -Sum).Sum
+                        $usedCpuMhz     = ($VMHosts | Measure-Object -Property CpuUsageMhz -Sum).Sum
+                        $freeCpuMhz     = $totalCpuMhz - $usedCpuMhz
+                        $totalCpuGHz    = [Math]::Round($totalCpuMhz / 1000, 2)
+                        $usedCpuGHz     = [Math]::Round($usedCpuMhz / 1000, 2)
+                        $freeCpuGHz     = [Math]::Round($freeCpuMhz / 1000, 2)
+
+                        $totalMemGB     = ($VMHosts | Measure-Object -Property MemoryTotalGB -Sum).Sum
+                        $usedMemGB      = ($VMHosts | Measure-Object -Property MemoryUsageGB -Sum).Sum
+                        $freeMemGB      = $totalMemGB - $usedMemGB
+                        $totalMem       = Convert-DataSize -Size $totalMemGB -InputUnit GB
+                        $usedMem        = Convert-DataSize -Size $usedMemGB -InputUnit GB
+                        $freeMem        = Convert-DataSize -Size $freeMemGB -InputUnit GB
+
+                        $totalStorageGB = ($Datastores | Measure-Object -Property CapacityGB -Sum).Sum
+                        $freeStorageGB  = ($Datastores | Measure-Object -Property FreeSpaceGB -Sum).Sum
+                        $usedStorageGB  = $totalStorageGB - $freeStorageGB
+                        $totalStorage   = Convert-DataSize -Size $totalStorageGB -InputUnit GB
+                        $usedStorage    = Convert-DataSize -Size $usedStorageGB -InputUnit GB
+                        $freeStorage    = Convert-DataSize -Size $freeStorageGB -InputUnit GB
+
+                        $vCenterResourceSummary = @(
+                            [PSCustomObject]@{
+                                $LocalizedData.SummaryResource = $LocalizedData.CPU
+                                $LocalizedData.Free            = "$freeCpuGHz GHz"
+                                $LocalizedData.Used            = "$usedCpuGHz GHz"
+                                $LocalizedData.Total           = "$totalCpuGHz GHz"
+                            }
+                            [PSCustomObject]@{
+                                $LocalizedData.SummaryResource = $LocalizedData.Memory
+                                $LocalizedData.Free            = $freeMem
+                                $LocalizedData.Used            = $usedMem
+                                $LocalizedData.Total           = $totalMem
+                            }
+                            [PSCustomObject]@{
+                                $LocalizedData.SummaryResource = $LocalizedData.Storage
+                                $LocalizedData.Free            = $freeStorage
+                                $LocalizedData.Used            = $usedStorage
+                                $LocalizedData.Total           = $totalStorage
+                            }
+                        )
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TablevCenterResourceSummary -f $vCenterServerName)
+                            ColumnWidths = 25, 25, 25, 25
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $vCenterResourceSummary | Table @TableParams
+                        } # end Section ResourceSummary
+
+                        Section -Style Heading3 $LocalizedData.VirtualMachines {
+                        $vmPoweredOn  = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
+                        $vmPoweredOff = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
+                        $vmSuspended  = ($VMs | Where-Object { $_.PowerState -eq 'Suspended' }).Count
+                        $vCenterVMSummary = [PSCustomObject]@{
+                            $LocalizedData.PoweredOn  = $vmPoweredOn
+                            $LocalizedData.PoweredOff = $vmPoweredOff
+                            $LocalizedData.Suspended  = $vmSuspended
+                            $LocalizedData.Total      = $vmPoweredOn + $vmPoweredOff + $vmSuspended
+                        }
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TablevCenterVMSummary -f $vCenterServerName)
+                            ColumnWidths = 25, 25, 25, 25
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $vCenterVMSummary | Table @TableParams
+                        } # end Section VirtualMachines
+
+                        Section -Style Heading3 $LocalizedData.Hosts {
+                        $hostsConnected    = ($VMHosts | Where-Object { $_.ConnectionState -eq 'Connected' }).Count
+                        $hostsDisconnected = ($VMHosts | Where-Object { $_.ConnectionState -eq 'Disconnected' }).Count
+                        $hostsMaintenance  = ($VMHosts | Where-Object { $_.ConnectionState -eq 'Maintenance' }).Count
+                        $vCenterHostSummary = [PSCustomObject]@{
+                            $LocalizedData.Connected    = $hostsConnected
+                            $LocalizedData.Disconnected = $hostsDisconnected
+                            $LocalizedData.Maintenance  = $hostsMaintenance
+                            $LocalizedData.Total        = $hostsConnected + $hostsDisconnected + $hostsMaintenance
+                        }
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TablevCenterHostSummary -f $vCenterServerName)
+                            ColumnWidths = 25, 25, 25, 25
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $vCenterHostSummary | Table @TableParams
+                        } # end Section Hosts
+                        #endregion Resource Summary
                     }
                     #endregion vCenter Server Summary & Advanced Summary
 
@@ -385,6 +483,7 @@ function Get-AbrVSpherevCenter {
                         #endregion vCenter Server Certificate
 
                         #region vCenter Server Roles
+                        if ($Options.ShowRoles) {
                         Section -Style Heading3 $LocalizedData.Roles {
                             $VIRoles = Get-VIRole -Server $vCenter | Where-Object { $null -ne $_.PrivilegeList } | Sort-Object Name
                             $VIRoleInfo = foreach ($VIRole in $VIRoles) {
@@ -419,10 +518,11 @@ function Get-AbrVSpherevCenter {
                                 $VIRoleInfo | Table @TableParams
                             }
                         }
+                        } # end if ShowRoles
                         #endregion vCenter Server Roles
 
                         #region vCenter Server Tags
-                        if ($Tags) {
+                        if ($Options.ShowTags -and $Tags) {
                             Section -Style Heading3 $LocalizedData.Tags {
                                 $TagInfo = foreach ($Tag in $Tags) {
                                     [PSCustomObject]@{
@@ -444,7 +544,7 @@ function Get-AbrVSpherevCenter {
                         #endregion vCenter Server Tags
 
                         #region vCenter Server Tag Categories
-                        if ($TagCategories) {
+                        if ($Options.ShowTags -and $TagCategories) {
                             Section -Style Heading3 $LocalizedData.TagCategories {
                                 $TagCategoryInfo = foreach ($TagCategory in $TagCategories) {
                                     [PSCustomObject]@{
@@ -466,7 +566,7 @@ function Get-AbrVSpherevCenter {
                         #endregion vCenter Server Tag Categories
 
                         #region vCenter Server Tag Assignments
-                        if ($TagAssignments) {
+                        if ($Options.ShowTags -and $TagAssignments) {
                             Section -Style Heading3 $LocalizedData.TagAssignments {
                                 $TagAssignmentInfo = foreach ($TagAssignment in $TagAssignments) {
                                     [PSCustomObject]@{
@@ -512,12 +612,114 @@ function Get-AbrVSpherevCenter {
                             Write-PScriboMessage -Message $LocalizedData.InsufficientPrivStoragePolicy
                         }
                         #endregion VM Storage Policies
+
+                        #region Content Libraries
+                        $ContentLibraries = $null
+                        try {
+                            $ContentLibraries = Get-ContentLibrary -Server $vCenter -ErrorAction Stop | Sort-Object Name
+                        } catch {
+                            Write-PScriboMessage -IsWarning ($LocalizedData.ContentLibraryError -f $_.Exception.Message)
+                        }
+                        if ($ContentLibraries) {
+                            Write-PScriboMessage -Message $LocalizedData.CollectingContentLibrary
+                            Section -Style Heading3 $LocalizedData.ContentLibraries {
+                                if ($InfoLevel.vCenter -eq 3) {
+                                    $LibrarySummaryInfo = foreach ($Library in $ContentLibraries) {
+                                        $LibItems = $null
+                                        try { $LibItems = Get-ContentLibraryItem -ContentLibrary $Library -ErrorAction Stop } catch {}
+                                        [PSCustomObject]@{
+                                            $LocalizedData.ContentLibrary = $Library.Name
+                                            $LocalizedData.LibraryType    = if ($Library.Type -eq 'Local') { $LocalizedData.LibraryLocal } else { $LocalizedData.LibrarySubscribed }
+                                            $LocalizedData.Datastore      = if ($Library.Datastore) { $Library.Datastore.Name } else { '--' }
+                                            $LocalizedData.ItemCount      = if ($LibItems) { $LibItems.Count } else { 0 }
+                                            $LocalizedData.Description    = if ($Library.Description) { $Library.Description } else { $LocalizedData.None }
+                                        }
+                                    }
+                                    if ($Healthcheck.vCenter.ContentLibrary) {
+                                        foreach ($Library in $ContentLibraries) {
+                                            if ($Library.Type -ne 'Local' -and -not $Library.AutomaticSync) {
+                                                $LibrarySummaryInfo | Where-Object { $_.$($LocalizedData.ContentLibrary) -eq $Library.Name } |
+                                                    Set-Style -Style Warning -Property $LocalizedData.LibraryType
+                                            }
+                                        }
+                                    }
+                                    $TableParams = @{
+                                        Name         = ($LocalizedData.TableContentLibraries -f $vCenterServerName)
+                                        ColumnWidths = 25, 15, 20, 10, 30
+                                    }
+                                    if ($Report.ShowTableCaptions) { $TableParams['Caption'] = "- $($TableParams.Name)" }
+                                    $LibrarySummaryInfo | Table @TableParams
+                                }
+                                if ($InfoLevel.vCenter -ge 4) {
+                                    foreach ($Library in $ContentLibraries) {
+                                        Section -Style Heading4 $Library.Name {
+                                            $LibItems = $null
+                                            try {
+                                                $LibItems = Get-ContentLibraryItem -ContentLibrary $Library -ErrorAction Stop | Sort-Object Name
+                                            } catch {
+                                                Write-PScriboMessage -IsWarning ($LocalizedData.ContentLibraryItemError -f $Library.Name, $_.Exception.Message)
+                                            }
+                                            $LibDetailObj = [PSCustomObject]@{
+                                                $LocalizedData.ContentLibrary = $Library.Name
+                                                $LocalizedData.LibraryType    = if ($Library.Type -eq 'Local') { $LocalizedData.LibraryLocal } else { $LocalizedData.LibrarySubscribed }
+                                                $LocalizedData.Datastore      = if ($Library.Datastore) { $Library.Datastore.Name } else { '--' }
+                                                $LocalizedData.ItemCount      = if ($LibItems) { $LibItems.Count } else { 0 }
+                                                $LocalizedData.Description    = if ($Library.Description) { $Library.Description } else { $LocalizedData.None }
+                                                $LocalizedData.CreationTime   = if ($Library.CreateDate) { $Library.CreateDate.ToString() } else { '--' }
+                                                $LocalizedData.LastModified   = if ($Library.UpdateDate) { $Library.UpdateDate.ToString() } else { '--' }
+                                            }
+                                            if ($Library.Type -ne 'Local') {
+                                                $MemberProps = @{ InputObject = $LibDetailObj; MemberType = 'NoteProperty' }
+                                                Add-Member @MemberProps -Name $LocalizedData.SubscriptionUrl -Value $(if ($Library.SubscriptionUri) { $Library.SubscriptionUri } else { '--' })
+                                                Add-Member @MemberProps -Name $LocalizedData.AutomaticSync   -Value $(if ($Library.AutomaticSync) { $LocalizedData.Enabled } else { $LocalizedData.Disabled })
+                                                Add-Member @MemberProps -Name $LocalizedData.OnDemandSync    -Value $(if ($Library.DownloadContentOnDemand) { $LocalizedData.Enabled } else { $LocalizedData.Disabled })
+                                            }
+                                            if ($Healthcheck.vCenter.ContentLibrary) {
+                                                $LibDetailObj | Where-Object { $_.$($LocalizedData.AutomaticSync) -eq $LocalizedData.Disabled } |
+                                                    Set-Style -Style Warning -Property $LocalizedData.AutomaticSync
+                                            }
+                                            $TableParams = @{
+                                                Name         = ($LocalizedData.TableContentLibrary -f $Library.Name, $vCenterServerName)
+                                                List         = $true
+                                                ColumnWidths = 40, 60
+                                            }
+                                            if ($Report.ShowTableCaptions) { $TableParams['Caption'] = "- $($TableParams.Name)" }
+                                            $LibDetailObj | Table @TableParams
+
+                                            if ($LibItems) {
+                                                $ItemsInfo = foreach ($Item in $LibItems) {
+                                                    $itemSize = if ($Item.SizeGB -gt 0) { Convert-DataSize -Size $Item.SizeGB -InputUnit GB } else { '--' }
+                                                    [PSCustomObject]@{
+                                                        $LocalizedData.ItemName     = $Item.Name
+                                                        $LocalizedData.ContentType  = if ($Item.ItemType) { $Item.ItemType } else { '--' }
+                                                        $LocalizedData.ItemSize     = $itemSize
+                                                        $LocalizedData.Description  = if ($Item.Description) { $Item.Description } else { $LocalizedData.None }
+                                                        $LocalizedData.CreationTime = if ($Item.CreationTime) { $Item.CreationTime.ToString() } else { '--' }
+                                                        $LocalizedData.LastModified = if ($Item.LastWriteTime) { $Item.LastWriteTime.ToString() } else { '--' }
+                                                    }
+                                                }
+                                                $TableParams = @{
+                                                    Name         = ($LocalizedData.TableLibraryItems -f $Library.Name)
+                                                    ColumnWidths = 25, 13, 13, 21, 14, 14
+                                                }
+                                                if ($Report.ShowTableCaptions) { $TableParams['Caption'] = "- $($TableParams.Name)" }
+                                                $ItemsInfo | Table @TableParams
+                                            } else {
+                                                Paragraph $LocalizedData.ContentLibraryNoItems
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        #endregion Content Libraries
                     }
                     #endregion vCenter Server Detailed Information
 
                     #region vCenter Server Advanced Detail Information
                     if ($InfoLevel.vCenter -ge 4) {
                         #region vCenter Alarms
+                        if ($Options.ShowAlarms) {
                         Section -Style Heading3 $LocalizedData.Alarms {
                             $Alarms = Get-AlarmDefinition -PipelineVariable alarm | ForEach-Object -Process {
                                 Get-AlarmAction -AlarmDefinition $_ -PipelineVariable action | ForEach-Object -Process {
@@ -579,6 +781,7 @@ function Get-AbrVSpherevCenter {
                                 $Alarms | Table @TableParams
                             }
                         }
+                        } # end if ShowAlarms
                         #endregion vCenter Alarms
                     }
                     #endregion vCenter Server Advanced Detail Information

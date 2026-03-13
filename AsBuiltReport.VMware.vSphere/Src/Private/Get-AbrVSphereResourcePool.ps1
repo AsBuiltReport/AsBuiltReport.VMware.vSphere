@@ -95,7 +95,7 @@ function Get-AbrVSphereResourcePool {
                                         'InputObject' = $ResourcePoolDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $ResourcePool }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $ResourcePool })) {
                                         Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $ResourcePool }).Tag -join ', ')
                                     }
                                     #region Resource Pool Advanced Detail Information

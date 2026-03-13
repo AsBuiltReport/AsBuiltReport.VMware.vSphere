@@ -71,7 +71,7 @@ function Get-AbrVSphereVMHost {
                             foreach ($VMHost in ($VMHosts | Where-Object { $_.ConnectionState -eq 'Connected' -or $_.ConnectionState -eq 'Maintenance' })) {
                                 #region VMHost Section
                                 Section -Style Heading3 $VMHost {
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $VMHost }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $VMHost })) {
                                         Paragraph ($LocalizedData.Tags + ': ' + (($TagAssignments | Where-Object { $_.entity -eq $VMHost }).Tag -join ', '))
                                     }
                                     Get-AbrVSphereVMHostHardware

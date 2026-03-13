@@ -116,7 +116,7 @@ function Get-AbrVSphereDatastore {
                                         'InputObject' = $DatastoreDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $Datastore }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $Datastore })) {
                                         Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $Datastore }).Tag -join ', ')
                                     }
 

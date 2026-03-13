@@ -262,7 +262,7 @@ function Get-AbrVSphereVM {
                                     #if ($VMView.Config.CreateDate) {
                                     #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime().ToString()
                                     #}
-                                    if ($TagAssignments | Where-Object { $_.entity -eq $VM }) {
+                                    if ($Options.ShowTags -and ($TagAssignments | Where-Object { $_.entity -eq $VM })) {
                                         Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $VM }).Tag -join ', ')
                                     }
                                     if ($VM.Notes) {
