@@ -168,16 +168,16 @@ function Get-AbrVSpherevSAN {
                                         try {
                                             Section -Style Heading4 $LocalizedData.ServicesSection {
                                                 $VsanServices = @(
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService;   $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService;          $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService;   $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication;        $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled)     { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption;           $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled)          { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService; $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService; $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService; $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication; $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption; $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
                                                     [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HistoricalHealthService; $LocalizedData.Status = if ($VsanCluster.HistoricalHealthEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck;          $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck; $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
                                                 )
                                                 $TableParams = @{
-                                                    Name         = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
+                                                    Name = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
                                                     ColumnWidths = 50, 50
                                                 }
                                                 if ($Report.ShowTableCaptions) {
@@ -360,16 +360,16 @@ function Get-AbrVSpherevSAN {
                                         try {
                                             Section -Style Heading4 $LocalizedData.ServicesSection {
                                                 $VsanServices = @(
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService;   $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService;          $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService;   $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication;        $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled)     { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption;           $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled)          { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService; $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService; $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService; $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication; $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption; $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
                                                     [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HistoricalHealthService; $LocalizedData.Status = if ($VsanCluster.HistoricalHealthEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
-                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck;          $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck; $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
                                                 )
                                                 $TableParams = @{
-                                                    Name         = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
+                                                    Name = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
                                                     ColumnWidths = 50, 50
                                                 }
                                                 if ($Report.ShowTableCaptions) {

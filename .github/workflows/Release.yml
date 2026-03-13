@@ -17,6 +17,17 @@ jobs:
         shell: pwsh
         run: |
           Install-Module -Name AsBuiltReport.Core -Repository PSGallery -Force
+      - name: Set Prerelease string in manifest
+        if: ${{ github.event.release.prerelease }}
+        shell: pwsh
+        run: |
+          $tag = '${{ github.event.release.tag_name }}'
+          if ($tag -match '-(.+)$') {
+            $prerelease = $Matches[1]
+            Update-ModuleManifest `
+              -Path .\AsBuiltReport.VMware.vSphere\AsBuiltReport.VMware.vSphere.psd1 `
+              -Prerelease $prerelease
+          }
       - name: Test Module Manifest
         shell: pwsh
         run: |
@@ -27,6 +38,7 @@ jobs:
           Publish-Module -Path .\AsBuiltReport.VMware.vSphere -NuGetApiKey ${{ secrets.PSGALLERY_API_KEY }} -Verbose
   tweet:
     needs: publish-to-psgallery
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: Eomm/why-don-t-you-tweet@v2
@@ -41,13 +53,40 @@ jobs:
           TWITTER_CONSUMER_API_SECRET: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+  tweet-prerelease:
+    needs: publish-to-psgallery
+    if: ${{ github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Eomm/why-don-t-you-tweet@v2
+        # We don't want to tweet if the repository is not a public one
+        if: ${{ !github.event.repository.private }}
+        with:
+          tweet-message: "[Pre-release] ${{ github.event.repository.name }} ${{ github.event.release.tag_name }} is now available for testing! Install with -AllowPrerelease ${{ github.event.release.html_url }} #VMware #vSphere #AsBuiltReport #vExpert"
+        env:
+          TWITTER_CONSUMER_API_KEY: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
+          TWITTER_CONSUMER_API_SECRET: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
   bsky-post:
     needs: publish-to-psgallery
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: zentered/bluesky-post-action@v0.2.0
         with:
           post: "[New Release] ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}! Check out what's new! ${{ github.event.release.html_url }} #VMware #vSphere #AsBuiltReport #vExpert"
+        env:
+          BSKY_IDENTIFIER: ${{ secrets.BSKY_IDENTIFIER }}
+          BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
+  bsky-post-prerelease:
+    needs: publish-to-psgallery
+    if: ${{ github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: zentered/bluesky-post-action@v0.2.0
+        with:
+          post: "[Pre-release] ${{ github.event.repository.name }} ${{ github.event.release.tag_name }} is now available for testing! Install with -AllowPrerelease ${{ github.event.release.html_url }} #VMware #vSphere #AsBuiltReport #vExpert"
         env:
           BSKY_IDENTIFIER: ${{ secrets.BSKY_IDENTIFIER }}
           BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}

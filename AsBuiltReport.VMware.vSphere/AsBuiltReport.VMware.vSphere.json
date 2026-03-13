@@ -32,7 +32,8 @@
                                         "Mail":  true,
                                         "Licensing":  true,
                                         "Alarms":  true,
-                                        "Backup":  true
+                                        "Backup":  true,
+                                        "Certificate":  true
                                     },
                         "Cluster":  {
                                         "HAEnabled":  true,
