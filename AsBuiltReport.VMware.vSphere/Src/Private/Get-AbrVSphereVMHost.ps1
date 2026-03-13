@@ -71,8 +71,9 @@ function Get-AbrVSphereVMHost {
                             foreach ($VMHost in ($VMHosts | Where-Object { $_.ConnectionState -eq 'Connected' -or $_.ConnectionState -eq 'Maintenance' })) {
                                 #region VMHost Section
                                 Section -Style Heading3 $VMHost {
-                                    # TODO: Host Certificate, Swap File Location
-                                    # TODO: Test Tags
+                                    if ($TagAssignments | Where-Object { $_.entity -eq $VMHost }) {
+                                        Paragraph ($LocalizedData.Tags + ': ' + (($TagAssignments | Where-Object { $_.entity -eq $VMHost }).Tag -join ', '))
+                                    }
                                     Get-AbrVSphereVMHostHardware
                                     Get-AbrVSphereVMHostSystem
                                     Get-AbrVSphereVMHostStorage

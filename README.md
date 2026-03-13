@@ -125,6 +125,9 @@ For a complete report, the following role assigned privileges are required;
 * Profile-driven Storage > Profile-driven storage view
 * VMware vSphere Update Manager > View Compliance Status
 
+> [!NOTE]
+> The vSphere Lifecycle Manager (vLCM) image composition, compliance, and Software Depot sections use the vCenter REST API. The credentials supplied to `New-AsBuiltReport` are used to authenticate automatically — no additional configuration is required.
+
 ## :package: Module Installation
 
 ### PowerShell
@@ -258,6 +261,7 @@ The **Cluster** schema is used to configure health checks for vSphere Clusters.
 | vSANEnabled                 | true / false | true    | Highlights vSphere Clusters which do not have Virtual SAN enabled                          | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Virtual SAN disabled                                                                |
 | EVCEnabled                  | true / false | true    | Highlights vSphere Clusters which do not have Enhanced vMotion Compatibility (EVC) enabled | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere EVC disabled                                                                |
 | VUMCompliance               | true / false | true    | Highlights vSphere Clusters which do not comply with VMware Update Manager baselines       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Not Compliant |
+| LCMCompliance               | true / false | true    | Highlights clusters and hosts where the vLCM image compliance status is not Compliant     | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Non-compliant                                                                      |
 
 #### VMHost
 The **VMHost** schema is used to configure health checks for VMHosts.
@@ -315,6 +319,7 @@ The **VM** schema is used to configure health checks for virtual machines.
 | SpbmPolicyCompliance | true / false | true    | Highlights VMs which do not comply with storage based policies                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM storage based policy compliance is unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM does not comply with storage based policies |
 | VMToolsStatus        | true / false | true    | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Tools not installed, out of date or not running                                                                                                        |
 | VMSnapshots          | true / false | true    | Highlights Virtual Machines which have snapshots older than 7 days                                   | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Snapshot age >= 7 days<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM Snapshot age >= 14 days                                         |
+| VUMCompliance        | true / false | true    | Highlights VMs which do not comply with VMware Update Manager baselines                              | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Not Compliant / Incompatible                                                         |
 
 ## :computer: Examples
 <!-- ********** Add some examples. Use other AsBuiltReport modules as a guide. ********** -->

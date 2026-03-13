@@ -401,7 +401,7 @@ function Get-AbrVSphereVMHostNetwork {
                         #region ESXi Host Standard Virtual Switch Properties
                         $VSSProperties = foreach ($VSSwitchNicTeam in $VSSwitchNicTeaming) {
                             [PSCustomObject]@{
-                                $LocalizedData.VirtualSwitch = $VSSwitchNicTeam.VirtualSwitch
+                                $LocalizedData.VirtualSwitch = $VSSwitchNicTeam.VirtualSwitch.Name
                                 $LocalizedData.MTU = $VSSwitchNicTeam.VirtualSwitch.Mtu
                                 $LocalizedData.NumberOfPorts = $VSSwitchNicTeam.VirtualSwitch.NumPorts
                                 $LocalizedData.NumberOfPortsAvailable = $VSSwitchNicTeam.VirtualSwitch.NumPortsAvailable
@@ -424,7 +424,7 @@ function Get-AbrVSphereVMHostNetwork {
                             Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VSSecurity {
                                 $VssSecurity = foreach ($VssSec in $VssSecurity) {
                                     [PSCustomObject]@{
-                                        $LocalizedData.VirtualSwitch = $VssSec.VirtualSwitch
+                                        $LocalizedData.VirtualSwitch = $VssSec.VirtualSwitch.Name
                                         $LocalizedData.PromiscuousMode = if ($VssSec.AllowPromiscuous) {
                                             $LocalizedData.Accept
                                         } else {
@@ -488,7 +488,7 @@ function Get-AbrVSphereVMHostNetwork {
                             Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VSTeamingFailover {
                                 $VssNicTeaming = foreach ($VssNicTeam in $VssNicTeamingPolicy) {
                                     [PSCustomObject]@{
-                                        $LocalizedData.VirtualSwitch = $VssNicTeam.VirtualSwitch
+                                        $LocalizedData.VirtualSwitch = $VssNicTeam.VirtualSwitch.Name
                                         $LocalizedData.LoadBalancing = switch ($VssNicTeam.LoadBalancingPolicy) {
                                             'LoadbalanceSrcId' { $LocalizedData.LBSrcId }
                                             'LoadbalanceSrcMac' { $LocalizedData.LBSrcMac }
@@ -559,7 +559,7 @@ function Get-AbrVSphereVMHostNetwork {
                                 Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VSPGSecurity {
                                     $VssPortgroupSecurity = foreach ($VssPortgroupSec in $VssPortgroupSecurity) {
                                         [PSCustomObject]@{
-                                            $LocalizedData.PortGroup = $VssPortgroupSec.VirtualPortGroup
+                                            $LocalizedData.PortGroup = $VssPortgroupSec.VirtualPortGroup.Name
                                             $LocalizedData.VirtualSwitch = $VssPortgroupSec.virtualportgroup.virtualswitchname
                                             $LocalizedData.PromiscuousMode = if ($VssPortgroupSec.AllowPromiscuous) {
                                                 $LocalizedData.Accept
@@ -625,7 +625,7 @@ function Get-AbrVSphereVMHostNetwork {
                                 Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.VSPGTeamingFailover {
                                     $VssPortgroupNicTeaming = foreach ($VssPortgroupNicTeam in $VssPortgroupNicTeaming) {
                                         [PSCustomObject]@{
-                                            $LocalizedData.PortGroup = $VssPortgroupNicTeam.VirtualPortGroup
+                                            $LocalizedData.PortGroup = $VssPortgroupNicTeam.VirtualPortGroup.Name
                                             $LocalizedData.VirtualSwitch = $VssPortgroupNicTeam.virtualportgroup.virtualswitchname
                                             $LocalizedData.LoadBalancing = switch ($VssPortgroupNicTeam.LoadBalancingPolicy) {
                                                 'LoadbalanceSrcId' { $LocalizedData.LBSrcId }

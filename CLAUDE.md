@@ -34,6 +34,8 @@ AsBuiltReport.VMware.vSphere/        ← repo root
 │           ├── Get-AbrVSphereClusterHA.ps1
 │           ├── Get-AbrVSphereClusterProactiveHA.ps1
 │           ├── Get-AbrVSphereClusterDRS.ps1
+│           ├── Get-AbrVSphereClusterVUM.ps1
+│           ├── Get-AbrVSphereClusterLCM.ps1
 │           ├── Get-AbrVSphereResourcePool.ps1
 │           ├── Get-AbrVSphereVMHost.ps1
 │           ├── Get-AbrVSphereVMHostHardware.ps1
@@ -107,10 +109,11 @@ function Get-AbrVSphere{Name} {
 ```
 
 **Key rules:**
-- Functions use variables from parent scope (not parameters) — `$vCenter`, `$InfoLevel`, `$Report`, `$Healthcheck`, `$TextInfo`, `$vCenterServerName`, `$reportTranslate`, etc.
+- Functions use variables from parent scope (not parameters) — `$vCenter`, `$InfoLevel`, `$Report`, `$Healthcheck`, `$TextInfo`, `$vCenterServerName`, `$reportTranslate`, `$vcApiUri`, `$vcApiHeaders`, etc.
 - `$LocalizedData` is always set in `begin {}` from `$reportTranslate.{KeyName}`
 - All PSCustomObject property names (column headers), section headings, table names, and user-visible strings use `$LocalizedData` keys
 - Table names (`Name =`) in `$TableParams` also use `$LocalizedData` keys for localization
+- **PSCustomObject keys must NOT use parentheses around `$LocalizedData` expressions.** Use `$LocalizedData.Key = value`, never `($LocalizedData.Key) = value`. The brackets are unnecessary — PowerShell evaluates `$LocalizedData.Key` as a key name directly in hashtable/PSCustomObject literals.
 
 ## Language / i18n Structure
 
@@ -227,6 +230,47 @@ BeforeDiscovery {
 
 ### psm1 Module Exports
 The `.psm1` only exports public functions (`Export-ModuleMember -Function $Public.BaseName`). Private section functions (`Get-AbrVSphere*`) are dot-sourced and available in module scope without being exported. The `FunctionsToExport` in the `.psd1` manifest acts as the final authoritative allow-list.
+
+### vCenter REST API Authentication
+The `$vcApiUri` and `$vcApiHeaders` variables are set in `Invoke-AsBuiltReport.VMware.vSphere.ps1` only when the connected vCenter is vSphere 8.0+. A REST API session is established via `POST /api/session` using the report `$Credential`:
+
+```powershell
+$restToken = Invoke-RestMethod -Uri "$vcApiBaseUri/session" -Method Post -Credential $Credential -SkipCertificateCheck
+$vcApiHeaders = @{ 'vmware-api-session-id' = $restToken }
+```
+
+**Do not** use `$vCenter.SessionId` as the session token — that is the PowerCLI SOAP/VMOMI session ID and is rejected by the REST API with HTTP 401.
+
+Functions that call the REST API check `if (-not $vcApiUri) { return }` to silently skip on unsupported versions or when session establishment failed.
+
+### `Get-Compliance` Non-Terminating Warning
+The PowerCLI `Get-Compliance` cmdlet emits a non-terminating warning alongside its return value. Use `-ErrorAction SilentlyContinue` (not `-ErrorAction Stop`) to suppress the warning without discarding the compliance data. The null check on the result variable handles genuine failures:
+
+```powershell
+$Compliances = $Entity | Get-Compliance -ErrorAction SilentlyContinue
+if ($Compliances) { ... }
+```
+
+Using `-ErrorAction Stop` converts the warning to a terminating error and the catch block fires, losing the data even though the cmdlet succeeded.
+
+### LinkedView Error — Never Store Raw VMOMI Objects in PSCustomObject
+PScribo serializes every `PSCustomObject` when rendering TEXT/Word/HTML output. VMOMI/PowerCLI objects (e.g., `ClusterComputeResource`, `VIPermission`, `VirtualMachine`) expose a duplicate `LinkedView` property internally, which causes:
+
+```
+An item with the same key has already been added. Key: LinkedView
+```
+
+**Rule:** PSCustomObject property values must always be **string primitives**, never raw PowerCLI objects.
+
+```powershell
+# WRONG — stores raw VMOMI object
+[PSCustomObject]@{ ($LocalizedData.Entity) = $ClusterCompliance.Entity }
+
+# CORRECT — store the string name
+[PSCustomObject]@{ ($LocalizedData.Entity) = $ClusterCompliance.Entity.Name }
+```
+
+This applies to any property that holds a PowerCLI object: use `.Name`, `.Id`, `.ToString()`, or any other string extraction. Using the object in a `Where-Object` comparison (not as a stored value) is safe.
 
 ### Locale Key Consistency
 The `en-US` locale file is the authoritative template. All other locales must have **identical key sets** — the `LocalizationData.Tests.ps1` Pester test enforces this. To quickly check parity without running Pester, compare key counts:

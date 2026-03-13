@@ -226,8 +226,8 @@ function Get-AbrVSpherevCenter {
                                     $VcenterCertMgmt = [PSCustomObject]@{
                                         $LocalizedData.Subject       = $VIMachineCert.Subject
                                         $LocalizedData.Issuer        = $VIMachineCert.Issuer
-                                        $LocalizedData.ValidFrom     = $VIMachineCert.NotBefore
-                                        $LocalizedData.ValidTo       = $VIMachineCert.NotAfter
+                                        $LocalizedData.ValidFrom     = $VIMachineCert.NotBefore.ToString()
+                                        $LocalizedData.ValidTo       = $VIMachineCert.NotAfter.ToString()
                                         $LocalizedData.Thumbprint    = $VIMachineCert.Thumbprint
                                         $LocalizedData.CertStatus    = $CertificateStatus
                                         $LocalizedData.Mode          = ($vCenterAdvSettings | Where-Object { $_.name -eq 'vpxd.certmgmt.mode' }).Value

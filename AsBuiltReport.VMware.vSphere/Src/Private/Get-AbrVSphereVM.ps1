@@ -133,7 +133,6 @@ function Get-AbrVSphereVM {
                         #endregion Virtual Machine Advanced Summary
 
                         #region Virtual Machine Detailed Information
-                        # TODO: Test Tags
                         if ($InfoLevel.VM -ge 3) {
                             if ($UserPrivileges -contains 'StorageProfile.View') {
                                 $VMSpbmConfig = Get-SpbmEntityConfiguration -VM ($VMs) | Where-Object { $null -ne $_.StoragePolicy }
@@ -142,6 +141,18 @@ function Get-AbrVSphereVM {
                             }
                             if ($InfoLevel.VM -ge 4) {
                                 $VMHardDisks = Get-HardDisk -VM ($VMs) -Server $vCenter
+                            }
+                            $VMComplianceData = $null
+                            if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
+                                if ($VUMConnection) {
+                                    Try {
+                                        $VMComplianceData = $VMs | Get-Compliance -ErrorAction SilentlyContinue
+                                    } Catch {
+                                        Write-PScriboMessage -Message $LocalizedData.VUMComplianceError
+                                    }
+                                }
+                            } else {
+                                Write-PScriboMessage -Message $LocalizedData.InsufficientPrivVUMCompliance
                             }
                             foreach ($VM in $VMs) {
                                 Section -Style Heading3 $VM.name {
@@ -251,11 +262,9 @@ function Get-AbrVSphereVM {
                                     #if ($VMView.Config.CreateDate) {
                                     #    Add-Member @MemberProps -Name 'Creation Date' -Value ($VMView.Config.CreateDate).ToLocalTime().ToString()
                                     #}
-                                    <#
-                                    if ($TagAssignments | Where-Object {$_.entity -eq $VM}) {
-                                        Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VM}).Tag -join ',')
+                                    if ($TagAssignments | Where-Object { $_.entity -eq $VM }) {
+                                        Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $VM }).Tag -join ', ')
                                     }
-                                    #>
                                     if ($VM.Notes) {
                                         Add-Member @MemberProps -Name $LocalizedData.Notes -Value $VM.Notes
                                     }
@@ -312,11 +321,11 @@ function Get-AbrVSphereVM {
                                             Section -Style Heading4 $LocalizedData.NetworkAdapters {
                                                 $VMnicInfo = foreach ($VMnic in $VMnics) {
                                                     [PSCustomObject]@{
-                                                        $LocalizedData.NICName = $VMnic.Device
+                                                        $LocalizedData.NICName = $VMnic.Device.DeviceInfo.Label
                                                         $LocalizedData.NICConnected = if ($VMnic.Connected) { $LocalizedData.Connected } else { $LocalizedData.NotConnected }
-                                                        $LocalizedData.NetworkName = switch -wildcard ($VMnic.Device.NetworkName) {
-                                                            'dvportgroup*' { $VDPortgroupLookup."$($VMnic.Device.NetworkName)" }
-                                                            default { $VMnic.Device.NetworkName }
+                                                        $LocalizedData.NetworkName = switch -wildcard ($VMnic.NetworkName) {
+                                                            'dvportgroup*' { $VDPortgroupLookup."$($VMnic.NetworkName)" }
+                                                            default { $VMnic.NetworkName }
                                                         }
                                                         $LocalizedData.NICType = $VMnic.Device.Type
                                                         $LocalizedData.IPAddress = $VMnic.IpAddress -join [Environment]::NewLine
@@ -488,6 +497,39 @@ function Get-AbrVSphereVM {
                                             $VMSnapshots | Table @TableParams
                                         }
                                     }
+
+                                    #region VM VUM Compliance
+                                    $VMCompliances = $VMComplianceData | Where-Object { $_.Entity -eq $VM }
+                                    if ($VMCompliances) {
+                                        BlankLine
+                                        Section -Style NOTOCHeading4 -ExcludeFromTOC $LocalizedData.VUMCompliance {
+                                            $VMComplianceInfo = foreach ($VMCompliance in $VMCompliances) {
+                                                $compStatus = switch ($VMCompliance.Status) {
+                                                    'NotCompliant' { $LocalizedData.NotCompliant }
+                                                    'Incompatible' { $LocalizedData.Incompatible }
+                                                    'Unknown'      { $LocalizedData.Unknown }
+                                                    default        { $VMCompliance.Status }
+                                                }
+                                                [PSCustomObject]@{
+                                                    $LocalizedData.VUMBaselineName = $VMCompliance.Baseline.Name
+                                                    $LocalizedData.VUMStatus       = $compStatus
+                                                }
+                                            }
+                                            if ($Healthcheck.VM.VUMCompliance) {
+                                                $VMComplianceInfo | Where-Object { $_.$($LocalizedData.VUMStatus) -eq $LocalizedData.Unknown } | Set-Style -Style Warning -Property $LocalizedData.VUMStatus
+                                                $VMComplianceInfo | Where-Object { $_.$($LocalizedData.VUMStatus) -eq $LocalizedData.NotCompliant -or $_.$($LocalizedData.VUMStatus) -eq $LocalizedData.Incompatible } | Set-Style -Style Critical -Property $LocalizedData.VUMStatus
+                                            }
+                                            $TableParams = @{
+                                                Name         = ($LocalizedData.TableVUMCompliance -f $VM.Name)
+                                                ColumnWidths = 75, 25
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $VMComplianceInfo | Sort-Object $LocalizedData.VUMBaselineName | Table @TableParams
+                                        }
+                                    }
+                                    #endregion VM VUM Compliance
                                 }
                             }
                         }

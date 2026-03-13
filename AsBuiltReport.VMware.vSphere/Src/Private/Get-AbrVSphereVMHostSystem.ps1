@@ -99,25 +99,96 @@ function Get-AbrVSphereVMHostSystem {
                 }
                 #endregion ESXi Host Time Configuration
 
-                #region ESXi Host Syslog Configuration
-                $SyslogConfig = $VMHost | Get-VMHostSysLogServer
-                if ($SyslogConfig) {
-                    try {
-                        Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.Syslog {
-                            # TODO: Syslog Rotate & Size, Log Directory (Adv Settings)
-                            $SyslogConfig = $SyslogConfig | Select-Object @{L = $LocalizedData.SyslogHost; E = { $_.Host } }, @{L = $LocalizedData.SyslogPort; E = { $_.Port } }
+                #region ESXi Host VM Swap File Location
+                try {
+                    $VMHostSwapView = Get-View $VMHost -Property 'config.vmSwapPlacement', 'config.localSwapDatastore' -ErrorAction SilentlyContinue
+                    $SwapPlacement = $VMHostSwapView.Config.VmSwapPlacement
+                    if ($SwapPlacement) {
+                        Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.SwapFileLocation {
+                            $SwapDatastoreRef = $VMHostSwapView.Config.LocalSwapDatastore
+                            $SwapDatastoreName = if ($SwapDatastoreRef -and $SwapPlacement -eq 'hostLocal') {
+                                ($Datastores | Where-Object { $_.ExtensionData.MoRef.Value -eq $SwapDatastoreRef.Value }).Name
+                            } else {
+                                '--'
+                            }
+                            $SwapFileDetail = [PSCustomObject]@{
+                                $LocalizedData.SwapFilePlacement = switch ($SwapPlacement) {
+                                    'vmDirectory' { $LocalizedData.WithVM }
+                                    'hostLocal'   { $LocalizedData.HostLocal }
+                                    default       { $SwapPlacement }
+                                }
+                                $LocalizedData.SwapDatastore = $SwapDatastoreName
+                            }
                             $TableParams = @{
-                                Name = ($LocalizedData.TableSyslog -f $VMHost)
+                                Name         = ($LocalizedData.TableSwapFileLocation -f $VMHost)
                                 ColumnWidths = 50, 50
                             }
                             if ($Report.ShowTableCaptions) {
                                 $TableParams['Caption'] = "- $($TableParams.Name)"
                             }
-                            $SyslogConfig | Table @TableParams
+                            $SwapFileDetail | Table @TableParams
                         }
-                    } catch {
-                        Write-PScriboMessage -Message ($LocalizedData.SyslogError -f $VMHost.Name, $_.Exception.Message)
                     }
+                } catch {
+                    Write-PScriboMessage -Message ($LocalizedData.SwapFileLocationError -f $VMHost.Name, $_.Exception.Message)
+                }
+                #endregion ESXi Host VM Swap File Location
+
+                #region ESXi Host Certificate Information
+                try {
+                    $CertBytes = $VMHost.ExtensionData.Config.Certificate
+                    if ($CertBytes) {
+                        Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.HostCertificate {
+                            $Cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new([byte[]]$CertBytes)
+                            $ThumbprintBytes = $Cert.GetCertHash([System.Security.Cryptography.HashAlgorithmName]::SHA256)
+                            $HostCertDetail = [PSCustomObject]@{
+                                $LocalizedData.CertSubject    = $Cert.Subject
+                                $LocalizedData.CertIssuer     = $Cert.Issuer
+                                $LocalizedData.CertValidFrom  = $Cert.NotBefore.ToLocalTime().ToString()
+                                $LocalizedData.CertValidTo    = $Cert.NotAfter.ToLocalTime().ToString()
+                                $LocalizedData.CertThumbprint = [System.BitConverter]::ToString($ThumbprintBytes) -replace '-', ':'
+                            }
+                            $TableParams = @{
+                                Name         = ($LocalizedData.TableHostCertificate -f $VMHost)
+                                List         = $true
+                                ColumnWidths = 40, 60
+                            }
+                            if ($Report.ShowTableCaptions) {
+                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                            }
+                            $HostCertDetail | Table @TableParams
+                        }
+                    }
+                } catch {
+                    Write-PScriboMessage -Message ($LocalizedData.HostCertificateError -f $VMHost.Name, $_.Exception.Message)
+                }
+                #endregion ESXi Host Certificate Information
+
+                #region ESXi Host Syslog Configuration
+                try {
+                    Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.Syslog {
+                        $SyslogConfig = $VMHost | Get-VMHostSysLogServer
+                        $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
+                        $SyslogGlobalConfig = $esxcli.system.syslog.config.get.Invoke()
+                        $SyslogDetail = [PSCustomObject]@{
+                            $LocalizedData.SyslogHost    = if ($SyslogConfig) { ($SyslogConfig.Host | Sort-Object) -join ', ' } else { '--' }
+                            $LocalizedData.SyslogPort    = if ($SyslogConfig) { ($SyslogConfig.Port | Select-Object -Unique) -join ', ' } else { '--' }
+                            $LocalizedData.LogDir        = $SyslogGlobalConfig.LogDir
+                            $LocalizedData.LogRotations  = $SyslogGlobalConfig.DefaultRotation
+                            $LocalizedData.LogSize       = $SyslogGlobalConfig.DefaultSize
+                        }
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TableSyslog -f $VMHost)
+                            List         = $true
+                            ColumnWidths = 40, 60
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $SyslogDetail | Table @TableParams
+                    }
+                } catch {
+                    Write-PScriboMessage -Message ($LocalizedData.SyslogError -f $VMHost.Name, $_.Exception.Message)
                 }
                 #endregion ESXi Host Syslog Configuration
 
@@ -165,7 +236,7 @@ function Get-AbrVSphereVMHostSystem {
                 if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
                     if ($VumServer.Name) {
                         try {
-                            $VMHostCompliances = $VMHost | Get-Compliance
+                            $VMHostCompliances = $VMHost | Get-Compliance -ErrorAction SilentlyContinue
                         } catch {
                             Write-PScriboMessage -Message $LocalizedData.VUMComplianceNotAvailable
                         }

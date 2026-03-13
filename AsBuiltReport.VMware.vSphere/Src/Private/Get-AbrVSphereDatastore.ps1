@@ -68,8 +68,6 @@ function Get-AbrVSphereDatastore {
                         #region Datastore Detailed Information
                         if ($InfoLevel.Datastore -ge 3) {
                             foreach ($Datastore in $Datastores) {
-                                # TODO: Test Tags
-
                                 $DsUsedPercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) { 0 } else { [math]::Round((100 - (($Datastore.FreeSpaceGB) / ($Datastore.CapacityGB) * 100)), 2) }
                                 $DSFreePercent = if (0 -in @($Datastore.FreeSpaceGB, $Datastore.CapacityGB)) { 0 } else { [math]::Round(($Datastore.FreeSpaceGB / $Datastore.CapacityGB) * 100, 2) }
                                 $UsedCapacityGB = ($Datastore.CapacityGB) - ($Datastore.FreeSpaceGB)
@@ -79,7 +77,7 @@ function Get-AbrVSphereDatastore {
                                     $DatastoreDetail = [PSCustomObject]@{
                                         $LocalizedData.Datastore = $Datastore.Name
                                         $LocalizedData.ID = $Datastore.Id
-                                        $LocalizedData.Datacenter = $Datastore.Datacenter
+                                        $LocalizedData.Datacenter = $Datastore.Datacenter.Name
                                         $LocalizedData.Type = $Datastore.Type
                                         $LocalizedData.Version = if ($Datastore.FileSystemVersion) {
                                             $Datastore.FileSystemVersion
@@ -118,11 +116,9 @@ function Get-AbrVSphereDatastore {
                                         'InputObject' = $DatastoreDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    <#
-                                    if ($TagAssignments | Where-Object {$_.entity -eq $Datastore}) {
-                                        Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $Datastore}).Tag -join ',')
+                                    if ($TagAssignments | Where-Object { $_.entity -eq $Datastore }) {
+                                        Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $Datastore }).Tag -join ', ')
                                     }
-                                    #>
 
                                     #region Datastore Advanced Detailed Information
                                     if ($InfoLevel.Datastore -ge 4) {

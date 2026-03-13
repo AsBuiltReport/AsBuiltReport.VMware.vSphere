@@ -133,10 +133,12 @@ function Get-AbrVSphereCluster {
                                     $ClusterDetail | Table @TableParams
                                     #endregion Cluster Configuration
 
-                                    # Call sub-functions for HA, Proactive HA, and DRS
+                                    # Call sub-functions for HA, Proactive HA, DRS, VUM, and LCM
                                     Get-AbrVSphereClusterHA
                                     Get-AbrVSphereClusterProactiveHA
                                     Get-AbrVSphereClusterDRS
+                                    Get-AbrVSphereClusterVUM
+                                    Get-AbrVSphereClusterLCM
                                 }
                             }
                         }

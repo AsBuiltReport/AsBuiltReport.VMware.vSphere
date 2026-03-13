@@ -25,29 +25,50 @@ function Get-AbrVSphereVUM {
                 } catch {
                     Write-PScriboMessage -Message $LocalizedData.NotAvailable
                 }
-                if ($VUMBaselines) {
+
+                # Query software depots (vSphere 7.0+ REST API)
+                $OnlineDepots = $null
+                $OfflineDepots = $null
+                if ($vcApiUri) {
+                    try {
+                        $OnlineDepots = Invoke-RestMethod -Uri "$vcApiUri/esx/settings/depots/online" `
+                            -Method Get -Headers $vcApiHeaders -SkipCertificateCheck -ErrorAction Stop
+                    } catch {
+                        Write-PScriboMessage -IsWarning ($LocalizedData.DepotError -f $_.Exception.Message)
+                    }
+                    try {
+                        $OfflineDepots = Invoke-RestMethod -Uri "$vcApiUri/esx/settings/depots/offline" `
+                            -Method Get -Headers $vcApiHeaders -SkipCertificateCheck -ErrorAction Stop
+                    } catch {
+                        Write-PScriboMessage -IsWarning ($LocalizedData.DepotError -f $_.Exception.Message)
+                    }
+                }
+
+                if ($VUMBaselines -or $OnlineDepots -or $OfflineDepots) {
                     Section -Style Heading2 $LocalizedData.SectionHeading {
                         Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)
                         #region VUM Baseline Detailed Information
-                        Section -Style Heading3 $LocalizedData.Baselines {
-                            $VUMBaselineInfo = foreach ($VUMBaseline in $VUMBaselines) {
-                                [PSCustomObject]@{
-                                    $LocalizedData.BaselineName = $VUMBaseline.Name
-                                    $LocalizedData.Description = $VUMBaseline.Description
-                                    $LocalizedData.Type = $VUMBaseline.BaselineType
-                                    $LocalizedData.TargetType = $VUMBaseline.TargetType
-                                    $LocalizedData.LastUpdate = ($VUMBaseline.LastUpdateTime).ToLocalTime().ToString()
-                                    $LocalizedData.NumPatches = $VUMBaseline.CurrentPatches.Count
+                        if ($VUMBaselines) {
+                            Section -Style Heading3 $LocalizedData.Baselines {
+                                $VUMBaselineInfo = foreach ($VUMBaseline in $VUMBaselines) {
+                                    [PSCustomObject]@{
+                                        $LocalizedData.BaselineName = $VUMBaseline.Name
+                                        $LocalizedData.Description = $VUMBaseline.Description
+                                        $LocalizedData.Type = $VUMBaseline.BaselineType
+                                        $LocalizedData.TargetType = $VUMBaseline.TargetType
+                                        $LocalizedData.LastUpdate = ($VUMBaseline.LastUpdateTime).ToLocalTime().ToString()
+                                        $LocalizedData.NumPatches = $VUMBaseline.CurrentPatches.Count
+                                    }
                                 }
+                                $TableParams = @{
+                                    Name = ($LocalizedData.TableVUMBaselines -f $vCenterServerName)
+                                    ColumnWidths = 25, 25, 10, 10, 20, 10
+                                }
+                                if ($Report.ShowTableCaptions) {
+                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                }
+                                $VUMBaselineInfo | Sort-Object $LocalizedData.BaselineName | Table @TableParams
                             }
-                            $TableParams = @{
-                                Name = ($LocalizedData.TableVUMBaselines -f $vCenterServerName)
-                                ColumnWidths = 25, 25, 10, 10, 20, 10
-                            }
-                            if ($Report.ShowTableCaptions) {
-                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                            }
-                            $VUMBaselineInfo | Sort-Object $LocalizedData.BaselineName | Table @TableParams
                         }
                         #endregion VUM Baseline Detailed Information
 
@@ -80,6 +101,63 @@ function Get-AbrVSphereVUM {
                             }
                         }
                         #endregion VUM Comprehensive Information
+
+                        #region Software Depots
+                        if ($OnlineDepots -or $OfflineDepots) {
+                            BlankLine
+                            Section -Style Heading3 $LocalizedData.SoftwareDepots {
+                                if ($OnlineDepots) {
+                                    Section -Style Heading4 $LocalizedData.OnlineDepots {
+                                        $OnlineDepotInfo = foreach ($id in $OnlineDepots.PSObject.Properties.Name) {
+                                            $depot = $OnlineDepots.$id
+                                            # vSphere 7.x uses 'depot_url'; vSphere 8.x uses 'url'
+                                            $depotUrl = if ($depot.url) { $depot.url } `
+                                                elseif ($depot.depot_url) { $depot.depot_url } `
+                                                else { '--' }
+                                            [PSCustomObject]@{
+                                                $LocalizedData.Description    = $depot.description
+                                                $LocalizedData.DepotUrl       = $depotUrl
+                                                $LocalizedData.SystemDefined  = $depot.system_defined
+                                                $LocalizedData.DepotEnabled   = $depot.enabled
+                                            }
+                                        }
+                                        $TableParams = @{
+                                            Name         = ($LocalizedData.TableOnlineDepots -f $vCenterServerName)
+                                            ColumnWidths = 30, 40, 15, 15
+                                        }
+                                        if ($Report.ShowTableCaptions) {
+                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                        }
+                                        $OnlineDepotInfo | Sort-Object $LocalizedData.Description | Table @TableParams
+                                    }
+                                }
+                                if ($OfflineDepots) {
+                                    $OfflineDepotInfo = foreach ($id in $OfflineDepots.PSObject.Properties.Name) {
+                                        $depot = $OfflineDepots.$id
+                                        # Skip system-generated bundles (HA, WCP, etc.) which have no location
+                                        if (-not $depot.location) { continue }
+                                        [PSCustomObject]@{
+                                            $LocalizedData.Description   = $depot.description
+                                            $LocalizedData.DepotLocation = $depot.location
+                                        }
+                                    }
+                                    if ($OfflineDepotInfo) {
+                                        if ($OnlineDepots) { BlankLine }
+                                        Section -Style Heading4 $LocalizedData.OfflineDepots {
+                                            $TableParams = @{
+                                                Name         = ($LocalizedData.TableOfflineDepots -f $vCenterServerName)
+                                                ColumnWidths = 40, 60
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $OfflineDepotInfo | Sort-Object $LocalizedData.Description | Table @TableParams
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        #endregion Software Depots
                     }
                 }
             }

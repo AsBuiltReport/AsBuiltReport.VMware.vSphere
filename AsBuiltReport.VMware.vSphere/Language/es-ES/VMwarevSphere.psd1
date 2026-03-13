@@ -123,6 +123,7 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TableAlarm                   = {0} - {1}
     TableAlarms                  = Alarms - {0}
     TableAdvancedSystemSettings  = vCenter Advanced System Settings - {0}
+    RestApiSessionError          = Unable to establish vCenter REST API session. {0}
 '@
 
 # Get-AbrVSphereCluster
@@ -239,7 +240,10 @@ GetAbrVSphereClusterProactiveHA = ConvertFrom-StringData @'
     MaintenanceMode      = Modo de Mantenimiento
     QuarantineMode       = Modo de Cuarentena
     MixedMode            = Modo Mixto
-    TableProactiveHA     = Proactive HA - {0}
+    TableProactiveHA          = Proactive HA - {0}
+    Providers                 = Proveedores
+    HealthUpdateCount         = Actualizaciones de estado
+    TableProactiveHAProviders = Proveedores de HA proactiva - {0}
 '@
 
 # Get-AbrVSphereClusterDRS
@@ -286,22 +290,6 @@ GetAbrVSphereClusterDRS = ConvertFrom-StringData @'
     VMMonitoringMinUpTime       = Tiempo mínimo de actividad
     VMMonitoringMaxFailures     = Número máximo de fallos
     VMMonitoringMaxFailureWindow = Ventana máxima de fallos
-    UpdateManagerBaselines = Líneas base de Update Manager
-    Baseline               = Línea base
-    Description            = Descripción
-    Type                   = Tipo
-    TargetType             = Tipo de destino
-    LastUpdate             = Última actualización
-    NumPatches             = N.º de parches
-    UpdateManagerCompliance = Cumplimiento de Update Manager
-    Entity                 = Entidad
-    Status                 = Estado de cumplimiento
-    Version                = Versión
-    BaselineInfo           = Línea base
-    VUMPrivilegeMsgBaselines   = Privilegios de usuario insuficientes para informar sobre las líneas base del clúster. Asegúrese de que la cuenta de usuario tenga asignado el privilegio 'VMware Update Manager / VMware vSphere Lifecycle Manager > Gestionar parches y actualizaciones > Ver estado de cumplimiento'.
-    VUMPrivilegeMsgCompliance  = Privilegios de usuario insuficientes para informar sobre el cumplimiento del clúster. Asegúrese de que la cuenta de usuario tenga asignado el privilegio 'VMware Update Manager / VMware vSphere Lifecycle Manager > Gestionar parches y actualizaciones > Ver estado de cumplimiento'.
-    VUMBaselineNotAvailable    = La información de líneas base de VUM del clúster no está disponible actualmente con su versión de PowerShell.
-    VUMComplianceNotAvailable  = La información de cumplimiento de VUM del clúster no está disponible actualmente con su versión de PowerShell.
     Enabled               = Habilitado
     Disabled              = Deshabilitado
     Yes                   = Sí
@@ -310,9 +298,6 @@ GetAbrVSphereClusterDRS = ConvertFrom-StringData @'
     PartiallyAutomated    = Parcialmente automatizado
     Manual                = Manual
     Off                   = Desactivado
-    NotCompliant          = No conforme
-    Unknown               = Desconocido
-    Incompatible          = Incompatible
     DRS                         = vSphere DRS
     DPM                         = DPM
     Automated                   = Automated
@@ -371,9 +356,31 @@ GetAbrVSphereClusterDRS = ConvertFrom-StringData @'
     TableHAVMOverrides          = HA VM Overrides - {0}
     TableHAPDLAPD               = HA VM Overrides PDL/APD Settings - {0}
     TableHAVMMonitoring         = HA VM Overrides VM Monitoring - {0}
-    TableVUMBaselines           = Update Manager Baselines - {0}
-    TableVUMCompliance          = Update Manager Compliance - {0}
     TablePermissions            = Permissions - {0}
+'@
+
+# Get-AbrVSphereClusterVUM
+GetAbrVSphereClusterVUM = ConvertFrom-StringData @'
+    UpdateManagerBaselines     = Líneas base de Update Manager
+    Baseline                   = Línea base
+    Description                = Descripción
+    Type                       = Tipo
+    TargetType                 = Tipo de destino
+    LastUpdate                 = Última actualización
+    NumPatches                 = N.º de parches
+    UpdateManagerCompliance    = Cumplimiento de Update Manager
+    Entity                     = Entidad
+    Status                     = Estado de cumplimiento
+    BaselineInfo               = Línea base
+    VUMPrivilegeMsgBaselines   = Privilegios de usuario insuficientes para informar sobre las líneas base del clúster. Asegúrese de que la cuenta de usuario tenga asignado el privilegio 'VMware Update Manager / VMware vSphere Lifecycle Manager > Gestionar parches y actualizaciones > Ver estado de cumplimiento'.
+    VUMPrivilegeMsgCompliance  = Privilegios de usuario insuficientes para informar sobre el cumplimiento del clúster. Asegúrese de que la cuenta de usuario tenga asignado el privilegio 'VMware Update Manager / VMware vSphere Lifecycle Manager > Gestionar parches y actualizaciones > Ver estado de cumplimiento'.
+    VUMBaselineNotAvailable    = La información de líneas base de VUM del clúster no está disponible actualmente con su versión de PowerShell.
+    VUMComplianceNotAvailable  = La información de cumplimiento de VUM del clúster no está disponible actualmente con su versión de PowerShell.
+    NotCompliant               = No conforme
+    Unknown                    = Desconocido
+    Incompatible               = Incompatible
+    TableVUMBaselines          = Update Manager Baselines - {0}
+    TableVUMCompliance         = Update Manager Compliance - {0}
 '@
 
 # Get-AbrVSphereResourcePool
@@ -404,6 +411,7 @@ GetAbrVSphereResourcePool = ConvertFrom-StringData @'
     Unlimited              = Ilimitado
     TableResourcePoolSummary = Resource Pool Summary - {0}
     TableResourcePoolConfig  = Resource Pool Configuration - {0}
+    Tags                     = Etiquetas
 '@
 
 # Get-AbrVSphereVMHost
@@ -435,6 +443,7 @@ GetAbrVSphereVMHost = ConvertFrom-StringData @'
     Build              = Build
     Parent             = Parent
     TableHostSummary   = Host Summary - {0}
+    Tags               = Etiquetas
 '@
 
 # Get-AbrVSphereVMHostHardware
@@ -612,6 +621,24 @@ GetAbrVSphereVMHostSystem = ConvertFrom-StringData @'
     InsufficientPrivImageProfile  = Insufficient user privileges to report ESXi host image profiles. Please ensure the user account has the 'Host > Configuration > Change settings' privilege assigned.
     InsufficientPrivVUMBaseline   = Insufficient user privileges to report ESXi host baselines. Please ensure the user account has the 'VMware Update Manager / VMware vSphere Lifecycle Manager > Manage Patches and Upgrades > View Compliance Status' privilege assigned.
     InsufficientPrivVUMCompliance = Insufficient user privileges to report ESXi host compliance. Please ensure the user account has the 'VMware Update Manager / VMware vSphere Lifecycle Manager > Manage Patches and Upgrades > View Compliance Status' privilege assigned.
+    SwapFileLocation       = Ubicación del archivo de intercambio de VM
+    SwapFilePlacement      = Ubicación del archivo de intercambio de VM
+    SwapDatastore          = Almacén de datos de intercambio
+    WithVM                 = Con VM (Predeterminado)
+    HostLocal              = Local del host
+    TableSwapFileLocation  = Ubicación del archivo de intercambio de VM - {0}
+    SwapFileLocationError  = Error al recopilar la ubicación del archivo de intercambio de VM para {0}. {1}
+    HostCertificate        = Certificado del host
+    CertSubject            = Asunto
+    CertIssuer             = Emisor
+    CertValidFrom          = Válido desde
+    CertValidTo            = Válido hasta
+    CertThumbprint         = Huella digital SHA-256
+    TableHostCertificate   = Certificado del host - {0}
+    HostCertificateError   = Error al recopilar la información del certificado del host para {0}. {1}
+    LogDir                 = Directorio de registro
+    LogRotations           = Rotaciones de registro
+    LogSize                = Tamaño de registro (KB)
 '@
 
 # Get-AbrVSphereVMHostStorage
@@ -1010,6 +1037,28 @@ GetAbrVSphereNetwork = ConvertFrom-StringData @'
     TableVDSPortGroupTrafficShaping = Modelado de tráfico del grupo de puertos del conmutador distribuido - {0}
     TableVDSPortGroupTeaming       = Equipos y conmutación por error del grupo de puertos del conmutador distribuido - {0}
     TableVDSPrivateVLANs           = VLAN privadas del conmutador distribuido - {0}
+    VDSLACP                        = LACP del conmutador distribuido
+    LACPEnabled                    = LACP habilitado
+    LACPMode                       = Modo LACP
+    LACPActive                     = Activo
+    LACPPassive                    = Pasivo
+    VDSNetFlow                     = NetFlow del conmutador distribuido
+    CollectorIP                    = Dirección IP del colector
+    CollectorPort                  = Puerto del colector
+    ActiveFlowTimeout              = Tiempo de espera de flujo activo (s)
+    IdleFlowTimeout                = Tiempo de espera de flujo inactivo (s)
+    SamplingRate                   = Tasa de muestreo
+    InternalFlowsOnly              = Solo flujos internos
+    NIOCResourcePools              = Grupos de recursos de control de E/S de red
+    NIOCResourcePool               = Grupo de recursos
+    NIOCSharesLevel                = Nivel de participaciones
+    NIOCSharesValue                = Participaciones
+    NIOCLimitMbps                  = Límite (Mbps)
+    Unlimited                      = Ilimitado
+    TableVDSLACP                   = LACP del conmutador distribuido - {0}
+    TableVDSNetFlow                = NetFlow del conmutador distribuido - {0}
+    TableNIOCResourcePools         = Grupos de recursos de control de E/S de red - {0}
+    Tags                           = Etiquetas
 '@
 
 # Get-AbrVSpherevSAN
@@ -1137,6 +1186,10 @@ GetAbrVSpherevSAN = ConvertFrom-StringData @'
     DiskGroupError           = Error al recopilar información de grupos de discos vSAN para '{0}'. {1}
     iSCSITargetError         = Error al recopilar información de destinos iSCSI vSAN para '{0}'. {1}
     iSCSILUNError            = Error al recopilar información de LUN iSCSI vSAN para '{0}'. {1}
+    ServicesSection          = Servicios de vSAN
+    Service                  = Servicio
+    TableVSANServices        = Servicios de vSAN - {0}
+    ServicesError            = Error al recopilar información de servicios vSAN para '{0}'. {1}
 '@
 
 # Get-AbrVSphereDatastore
@@ -1189,6 +1242,7 @@ GetAbrVSphereDatastore = ConvertFrom-StringData @'
     TableDatastoreSummary = Resumen del almacén de datos - {0}
     TableDatastoreConfig  = Configuración del almacén de datos - {0}
     TableSCSILUN          = Información de LUN SCSI - {0}
+    Tags                  = Etiquetas
 '@
 
 # Get-AbrVSphereDSCluster
@@ -1230,6 +1284,26 @@ GetAbrVSphereDSCluster = ConvertFrom-StringData @'
     VirtualMachine           = Máquina virtual
     KeepVMDKsTogether        = Mantener VMDK juntos
     DefaultBehavior          = Predeterminado ({0})
+    RuleType             = Tipo
+    RuleAffinity         = Afinidad
+    RuleAntiAffinity     = Antiafinidad
+    TableSDRSRules       = Reglas SDRS - {0}
+    SpaceLoadBalanceConfig   = Configuración de equilibrio de carga de espacio
+    SpaceMinDiff             = Diferencia mínima de utilización de espacio (%)
+    SpaceThresholdMode       = Modo de umbral de espacio
+    UtilizationMode          = Umbral de utilización
+    FreeSpaceMode            = Umbral de espacio libre
+    UtilizationThreshold     = Umbral de utilización de espacio (%)
+    FreeSpaceThreshold       = Umbral de espacio libre (GB)
+    IOLoadBalanceConfig      = Configuración de equilibrio de carga de E/S
+    IOCongestionThreshold    = Umbral de congestión de E/S (ms)
+    IOReservationMode        = Modo de umbral de reserva
+    IOPSThresholdMode        = Recuento de operaciones de E/S
+    ReservationMbpsMode      = Reserva en Mbps
+    ReservationIopsMode      = Reserva en IOPS
+    TableSpaceLoadBalance    = Configuración de equilibrio de carga de espacio - {0}
+    TableIOLoadBalance       = Configuración de equilibrio de carga de E/S - {0}
+    Tags                     = Etiquetas
 '@
 
 # Get-AbrVSphereVM
@@ -1400,7 +1474,16 @@ GetAbrVSphereVM = ConvertFrom-StringData @'
     TableVMHardDiskConfig        = Configuración de disco duro - {0}
     TableVMHardDisk              = {0} - {1}
     TableVMGuestVolumes          = Volúmenes del invitado - {0}
-    TableVMSnapshots             = Instantáneas de máquinas virtuales - {0}
+    TableVMSnapshots                  = Instantáneas de máquinas virtuales - {0}
+    VUMCompliance                     = Cumplimiento de Update Manager de VM
+    VUMBaselineName                   = Línea base
+    VUMStatus                         = Estado
+    NotCompliant                      = No conforme
+    Incompatible                      = Incompatible
+    VUMComplianceError                = Unable to retrieve VUM compliance information for virtual machines.
+    InsufficientPrivVUMCompliance     = Insufficient privileges to collect VUM compliance information for virtual machines.
+    TableVUMCompliance                = Cumplimiento de línea base VUM - {0}
+    Tags                              = Etiquetas
 '@
 
 # Get-AbrVSphereVUM
@@ -1426,6 +1509,43 @@ GetAbrVSphereVUM = ConvertFrom-StringData @'
     PatchVendorID         = ID de fabricante
     TableVUMBaselines     = Resumen de líneas base de VMware Update Manager - {0}
     TableVUMPatches       = Información de parches de VMware Update Manager - {0}
+    SoftwareDepots        = Depósitos de software
+    OnlineDepots          = Depósitos en línea
+    OfflineDepots         = Depósitos sin conexión
+    DepotUrl              = URL
+    SystemDefined         = Definido por el sistema
+    DepotEnabled          = Habilitado
+    DepotLocation         = Ubicación
+    DepotError            = No se puede recuperar información de depósitos de software. {0}
+    TableOnlineDepots     = Depósitos de software en línea - {0}
+    TableOfflineDepots    = Depósitos de software sin conexión - {0}
+'@
+
+# Get-AbrVSphereClusterLCM
+GetAbrVSphereClusterLCM = ConvertFrom-StringData @'
+    Collecting               = Recopilando información del Lifecycle Manager.
+    ImageComposition         = Composición de imagen
+    BaseImage                = Imagen base
+    VendorAddOn              = Complemento del proveedor
+    None                     = Ninguno
+    Components               = Componentes
+    ComponentName            = Componente
+    ComponentVersion         = Versión
+    HardwareSupportManager   = Administrador de soporte de hardware
+    HsmName                  = Nombre
+    HsmVersion               = Versión
+    HsmPackages              = Paquetes de soporte de hardware
+    ImageCompliance          = Conformidad de imagen
+    Cluster                  = Clúster
+    VMHost                   = VMHost
+    ComplianceStatus         = Estado de conformidad
+    LcmError                 = No se puede recuperar información del Lifecycle Manager para el clúster {0}. {1}
+    ComplianceError          = No se puede recuperar información de conformidad para el clúster {0}. {1}
+    TableImageComposition    = Composición de imagen - {0}
+    TableComponents          = Componentes de imagen - {0}
+    TableHardwareSupportManager = Administrador de soporte de hardware - {0}
+    TableImageCompliance     = Conformidad de imagen - {0}
+    TableHostCompliance      = Conformidad de imagen del host - {0}
 '@
 
 }

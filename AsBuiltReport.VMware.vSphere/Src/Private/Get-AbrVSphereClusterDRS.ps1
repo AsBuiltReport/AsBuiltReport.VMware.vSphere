@@ -5,7 +5,7 @@
     Generates a PScriboDocument section detailing the vSphere DRS configuration
     for a given cluster, including DRS settings, Additional Options, Power Management,
     Advanced Options, DRS Cluster Groups, DRS VM/Host Rules, DRS Rules, VM Overrides,
-    Update Manager Baselines, Update Manager Compliance, and Permissions subsections.
+    and Permissions subsections.
 .NOTES
     Version:    2.0.0
     Author:     Tim Carman
@@ -14,7 +14,7 @@
 .INPUTS
     None. Uses variables from the parent scope:
     $Cluster, $ClusterDrsConfig, $ClusterConfigEx, $VMLookup, $InfoLevel, $Report,
-    $Healthcheck, $UserPrivileges, $VumServer, $vCenter, $VUMConnection, $reportTranslate
+    $Healthcheck, $vCenter, $reportTranslate
 .OUTPUTS
     None. Writes PScriboDocument content directly.
 #>
@@ -34,7 +34,7 @@ function Get-AbrVSphereClusterDRS {
 
                     #region vSphere DRS Cluster Specifications
                     $DrsCluster = [PSCustomObject]@{
-                        ($LocalizedData.DRS) = if ($Cluster.DrsEnabled) {
+                        $LocalizedData.DRS = if ($Cluster.DrsEnabled) {
                             $LocalizedData.Enabled
                         } else {
                             $LocalizedData.Disabled
@@ -88,15 +88,15 @@ function Get-AbrVSphereClusterDRS {
                     if ($DrsAdvancedSettings) {
                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.AdditionalOptions {
                             $DrsAdditionalOptions = [PSCustomObject] @{
-                                ($LocalizedData.VMDistribution) = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'TryBalanceVmsPerHost' }).Value) {
+                                $LocalizedData.VMDistribution = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'TryBalanceVmsPerHost' }).Value) {
                                     '1' { $LocalizedData.Enabled }
                                     $null { $LocalizedData.Disabled }
                                 }
-                                ($LocalizedData.MemoryMetricForLB) = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'PercentIdleMBInMemDemand' }).Value) {
+                                $LocalizedData.MemoryMetricForLB = Switch (($DrsAdvancedSettings | Where-Object { $_.name -eq 'PercentIdleMBInMemDemand' }).Value) {
                                     '100' { $LocalizedData.Enabled }
                                     $null { $LocalizedData.Disabled }
                                 }
-                                ($LocalizedData.CPUOverCommitment) = if (($DrsAdvancedSettings | Where-Object { $_.name -eq 'MaxVcpusPerCore' }).Value) {
+                                $LocalizedData.CPUOverCommitment = if (($DrsAdvancedSettings | Where-Object { $_.name -eq 'MaxVcpusPerCore' }).Value) {
                                     $LocalizedData.Enabled
                                 } else {
                                     $LocalizedData.Disabled
@@ -129,7 +129,7 @@ function Get-AbrVSphereClusterDRS {
                     if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.PowerManagement {
                             $DpmConfig = [PSCustomObject]@{
-                                ($LocalizedData.DPM) = if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
+                                $LocalizedData.DPM = if ($ClusterConfigEx.DpmConfigInfo.Enabled) {
                                     $LocalizedData.Enabled
                                 } else {
                                     $LocalizedData.Disabled
@@ -170,8 +170,8 @@ function Get-AbrVSphereClusterDRS {
                             $DrsAdvancedOptions = @()
                             foreach ($DrsAdvancedSetting in $DrsAdvancedSettings) {
                                 $DrsAdvancedOption = [PSCustomObject]@{
-                                    ($LocalizedData.Key) = $DrsAdvancedSetting.Name
-                                    ($LocalizedData.Value) = $DrsAdvancedSetting.Value
+                                    $LocalizedData.Key = $DrsAdvancedSetting.Name
+                                    $LocalizedData.Value = $DrsAdvancedSetting.Value
                                 }
                                 $DrsAdvancedOptions += $DrsAdvancedOption
                             }
@@ -194,13 +194,13 @@ function Get-AbrVSphereClusterDRS {
                         Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.DRSClusterGroups {
                             $DrsGroups = foreach ($DrsClusterGroup in $DrsClusterGroups) {
                                 [PSCustomObject]@{
-                                    ($LocalizedData.GroupName) = $DrsClusterGroup.Name
-                                    ($LocalizedData.GroupType) = Switch ($DrsClusterGroup.GroupType) {
+                                    $LocalizedData.GroupName = $DrsClusterGroup.Name
+                                    $LocalizedData.GroupType = Switch ($DrsClusterGroup.GroupType) {
                                         'VMGroup' { $LocalizedData.VMGroupType }
                                         'VMHostGroup' { $LocalizedData.VMHostGroupType }
                                         default { $DrsClusterGroup.GroupType }
                                     }
-                                    ($LocalizedData.GroupMembers) = if (($DrsClusterGroup.Member).Count -gt 0) {
+                                    $LocalizedData.GroupMembers = if (($DrsClusterGroup.Member).Count -gt 0) {
                                         ($DrsClusterGroup.Member | Sort-Object) -join ', '
                                     } else {
                                         $LocalizedData.None
@@ -224,21 +224,21 @@ function Get-AbrVSphereClusterDRS {
                             Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.DRSVMHostRules {
                                 $DrsVMHostRuleDetail = foreach ($DrsVMHostRule in $DrsVMHostRules) {
                                     [PSCustomObject]@{
-                                        ($LocalizedData.RuleName) = $DrsVMHostRule.Name
-                                        ($LocalizedData.RuleType) = Switch ($DrsVMHostRule.Type) {
+                                        $LocalizedData.RuleName = $DrsVMHostRule.Name
+                                        $LocalizedData.RuleType = Switch ($DrsVMHostRule.Type) {
                                             'MustRunOn' { $LocalizedData.MustRunOn }
                                             'ShouldRunOn' { $LocalizedData.ShouldRunOn }
                                             'MustNotRunOn' { $LocalizedData.MustNotRunOn }
                                             'ShouldNotRunOn' { $LocalizedData.ShouldNotRunOn }
                                             default { $DrsVMHostRule.Type }
                                         }
-                                        ($LocalizedData.RuleEnabled) = if ($DrsVMHostRule.Enabled) {
+                                        $LocalizedData.RuleEnabled = if ($DrsVMHostRule.Enabled) {
                                             $LocalizedData.Yes
                                         } else {
                                             $LocalizedData.No
                                         }
-                                        ($LocalizedData.VMGroup) = $DrsVMHostRule.VMGroup
-                                        ($LocalizedData.HostGroup) = $DrsVMHostRule.VMHostGroup
+                                        $LocalizedData.VMGroup = $DrsVMHostRule.VMGroup.Name
+                                        $LocalizedData.HostGroup = $DrsVMHostRule.VMHostGroup.Name
                                     }
                                 }
                                 if ($Healthcheck.Cluster.DrsVMHostRules) {
@@ -263,18 +263,18 @@ function Get-AbrVSphereClusterDRS {
                             Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.DRSRules {
                                 $DrsRuleDetail = foreach ($DrsRule in $DrsRules) {
                                     [PSCustomObject]@{
-                                        ($LocalizedData.RuleName) = $DrsRule.Name
-                                        ($LocalizedData.RuleType) = Switch ($DrsRule.Type) {
+                                        $LocalizedData.RuleName = $DrsRule.Name
+                                        $LocalizedData.RuleType = Switch ($DrsRule.Type) {
                                             'VMAffinity' { $LocalizedData.VMAffinity }
                                             'VMAntiAffinity' { $LocalizedData.VMAntiAffinity }
                                         }
-                                        ($LocalizedData.RuleEnabled) = if ($DrsRule.Enabled) {
+                                        $LocalizedData.RuleEnabled = if ($DrsRule.Enabled) {
                                             $LocalizedData.Yes
                                         } else {
                                             $LocalizedData.No
                                         }
-                                        ($LocalizedData.Mandatory) = $DrsRule.Mandatory
-                                        ($LocalizedData.RuleVMs) = ($DrsRule.VMIds | ForEach-Object { (Get-View -Id $_).name }) -join ', '
+                                        $LocalizedData.Mandatory = $DrsRule.Mandatory
+                                        $LocalizedData.RuleVMs = ($DrsRule.VMIds | ForEach-Object { (Get-View -Id $_).name }) -join ', '
                                     }
                                     if ($Healthcheck.Cluster.DrsRules) {
                                         $DrsRuleDetail | Where-Object { $_.$($LocalizedData.RuleEnabled) -eq $LocalizedData.No } | Set-Style -Style Warning -Property $LocalizedData.RuleEnabled
@@ -306,8 +306,8 @@ function Get-AbrVSphereClusterDRS {
                                 Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.DRS {
                                     $DrsVmOverrideDetails = foreach ($DrsVmOverride in $DrsVmOverrides) {
                                         [PSCustomObject]@{
-                                            ($LocalizedData.VirtualMachine) = $VMLookup."$($DrsVmOverride.Key.Type)-$($DrsVmOverride.Key.Value)"
-                                            ($LocalizedData.DRSAutomationLevel) = if ($DrsVmOverride.Enabled -eq $false) {
+                                            $LocalizedData.VirtualMachine = $VMLookup."$($DrsVmOverride.Key.Type)-$($DrsVmOverride.Key.Value)"
+                                            $LocalizedData.DRSAutomationLevel = if ($DrsVmOverride.Enabled -eq $false) {
                                                 $LocalizedData.Disabled
                                             } else {
                                                 Switch ($DrsVmOverride.Behavior) {
@@ -336,8 +336,8 @@ function Get-AbrVSphereClusterDRS {
                                 Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.SectionVSphereHA {
                                     $DasVmOverrideDetails = foreach ($DasVmOverride in $DasVmOverrides) {
                                         [PSCustomObject]@{
-                                            ($LocalizedData.VirtualMachine) = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
-                                            ($LocalizedData.HARestartPriority) = Switch ($DasVmOverride.DasSettings.RestartPriority) {
+                                            $LocalizedData.VirtualMachine = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
+                                            $LocalizedData.HARestartPriority = Switch ($DasVmOverride.DasSettings.RestartPriority) {
                                                 $null { '--' }
                                                 'lowest' { $LocalizedData.Lowest }
                                                 'low' { $LocalizedData.Low }
@@ -347,12 +347,12 @@ function Get-AbrVSphereClusterDRS {
                                                 'disabled' { $LocalizedData.Disabled }
                                                 'clusterRestartPriority' { $LocalizedData.ClusterDefault }
                                             }
-                                            ($LocalizedData.VMDependencyTimeout) = Switch ($DasVmOverride.DasSettings.RestartPriorityTimeout) {
+                                            $LocalizedData.VMDependencyTimeout = Switch ($DasVmOverride.DasSettings.RestartPriorityTimeout) {
                                                 $null { '--' }
                                                 '-1' { $LocalizedData.Disabled }
                                                 default { $LocalizedData.Seconds -f $DasVmOverride.DasSettings.RestartPriorityTimeout }
                                             }
-                                            ($LocalizedData.HAIsolationResponse) = Switch ($DasVmOverride.DasSettings.IsolationResponse) {
+                                            $LocalizedData.HAIsolationResponse = Switch ($DasVmOverride.DasSettings.IsolationResponse) {
                                                 $null { '--' }
                                                 'none' { $LocalizedData.Disabled }
                                                 'powerOff' { $LocalizedData.PowerOffAndRestart }
@@ -375,15 +375,15 @@ function Get-AbrVSphereClusterDRS {
                                         $DasVmOverridePdlApd = foreach ($DasVmOverride in $DasVmOverrides) {
                                             $DasVmComponentProtection = $DasVmOverride.DasSettings.VmComponentProtectionSettings
                                             [PSCustomObject]@{
-                                                ($LocalizedData.VirtualMachine) = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
-                                                ($LocalizedData.PDLFailureResponse) = Switch ($DasVmComponentProtection.VmStorageProtectionForPDL) {
+                                                $LocalizedData.VirtualMachine = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
+                                                $LocalizedData.PDLFailureResponse = Switch ($DasVmComponentProtection.VmStorageProtectionForPDL) {
                                                     $null { '--' }
                                                     'clusterDefault' { $LocalizedData.ClusterDefault }
                                                     'warning' { $LocalizedData.IssueEvents }
                                                     'restartAggressive' { $LocalizedData.PowerOffAndRestart }
                                                     'disabled' { $LocalizedData.Disabled }
                                                 }
-                                                ($LocalizedData.APDFailureResponse) = Switch ($DasVmComponentProtection.VmStorageProtectionForAPD) {
+                                                $LocalizedData.APDFailureResponse = Switch ($DasVmComponentProtection.VmStorageProtectionForAPD) {
                                                     $null { '--' }
                                                     'clusterDefault' { $LocalizedData.ClusterDefault }
                                                     'warning' { $LocalizedData.IssueEvents }
@@ -391,12 +391,12 @@ function Get-AbrVSphereClusterDRS {
                                                     'restartAggressive' { $LocalizedData.PowerOffRestartAggressive }
                                                     'disabled' { $LocalizedData.Disabled }
                                                 }
-                                                ($LocalizedData.VMFailoverDelay) = Switch ($DasVmComponentProtection.VmTerminateDelayForAPDSec) {
+                                                $LocalizedData.VMFailoverDelay = Switch ($DasVmComponentProtection.VmTerminateDelayForAPDSec) {
                                                     $null { '--' }
                                                     '-1' { $LocalizedData.Disabled }
                                                     default { $LocalizedData.Minutes -f (($DasVmComponentProtection.VmTerminateDelayForAPDSec)/60) }
                                                 }
-                                                ($LocalizedData.ResponseRecovery) = Switch ($DasVmComponentProtection.VmReactionOnAPDCleared) {
+                                                $LocalizedData.ResponseRecovery = Switch ($DasVmComponentProtection.VmReactionOnAPDCleared) {
                                                     $null { '--' }
                                                     'reset' { $LocalizedData.ResetVMs }
                                                     'disabled' { $LocalizedData.Disabled }
@@ -420,14 +420,14 @@ function Get-AbrVSphereClusterDRS {
                                         $DasVmOverrideVmMonitoring = foreach ($DasVmOverride in $DasVmOverrides) {
                                             $DasVmMonitoring = $DasVmOverride.DasSettings.VmToolsMonitoringSettings
                                             [PSCustomObject]@{
-                                                ($LocalizedData.VirtualMachine) = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
-                                                ($LocalizedData.VMMonitoring) = Switch ($DasVmMonitoring.VmMonitoring) {
+                                                $LocalizedData.VirtualMachine = $VMLookup."$($DasVmOverride.Key.Type)-$($DasVmOverride.Key.Value)"
+                                                $LocalizedData.VMMonitoring = Switch ($DasVmMonitoring.VmMonitoring) {
                                                     $null { '--' }
                                                     'vmMonitoringDisabled' { $LocalizedData.Disabled }
                                                     'vmMonitoringOnly' { $LocalizedData.VMMonitoringOnly }
                                                     'vmAndAppMonitoring' { $LocalizedData.VMAndAppMonitoring }
                                                 }
-                                                ($LocalizedData.VMMonitoringFailureInterval) = Switch ($DasVmMonitoring.FailureInterval) {
+                                                $LocalizedData.VMMonitoringFailureInterval = Switch ($DasVmMonitoring.FailureInterval) {
                                                     $null { '--' }
                                                     default {
                                                         if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
@@ -437,7 +437,7 @@ function Get-AbrVSphereClusterDRS {
                                                         }
                                                     }
                                                 }
-                                                ($LocalizedData.VMMonitoringMinUpTime) = Switch ($DasVmMonitoring.MinUptime) {
+                                                $LocalizedData.VMMonitoringMinUpTime = Switch ($DasVmMonitoring.MinUptime) {
                                                     $null { '--' }
                                                     default {
                                                         if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
@@ -447,7 +447,7 @@ function Get-AbrVSphereClusterDRS {
                                                         }
                                                     }
                                                 }
-                                                ($LocalizedData.VMMonitoringMaxFailures) = Switch ($DasVmMonitoring.MaxFailures) {
+                                                $LocalizedData.VMMonitoringMaxFailures = Switch ($DasVmMonitoring.MaxFailures) {
                                                     $null { '--' }
                                                     default {
                                                         if ($DasVmMonitoring.VmMonitoring -eq 'vmMonitoringDisabled') {
@@ -457,7 +457,7 @@ function Get-AbrVSphereClusterDRS {
                                                         }
                                                     }
                                                 }
-                                                ($LocalizedData.VMMonitoringMaxFailureWindow) = Switch ($DasVmMonitoring.MaxFailureWindow) {
+                                                $LocalizedData.VMMonitoringMaxFailureWindow = Switch ($DasVmMonitoring.MaxFailureWindow) {
                                                     $null { '--' }
                                                     '-1' { $LocalizedData.NoWindow }
                                                     default {
@@ -488,94 +488,6 @@ function Get-AbrVSphereClusterDRS {
                     }
                     #endregion Cluster VM Overrides
 
-                    #region Cluster VUM Baselines
-                    if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
-                        if ($VUMConnection) {
-                            Try {
-                                $ClusterPatchBaselines = $Cluster | Get-PatchBaseline
-                            } Catch {
-                                Write-PScriboMessage -Message $LocalizedData.VUMBaselineNotAvailable
-                            }
-                            if ($ClusterPatchBaselines) {
-                                Section -Style Heading4 $LocalizedData.UpdateManagerBaselines {
-                                    $ClusterBaselines = foreach ($ClusterBaseline in $ClusterPatchBaselines) {
-                                        [PSCustomObject]@{
-                                            ($LocalizedData.Baseline) = $ClusterBaseline.Name
-                                            ($LocalizedData.Description) = $ClusterBaseline.Description
-                                            ($LocalizedData.Type) = $ClusterBaseline.BaselineType
-                                            ($LocalizedData.TargetType) = $ClusterBaseline.TargetType
-                                            ($LocalizedData.LastUpdate) = ($ClusterBaseline.LastUpdateTime).ToLocalTime().ToString()
-                                            ($LocalizedData.NumPatches) = $ClusterBaseline.CurrentPatches.Count
-                                        }
-                                    }
-                                    $TableParams = @{
-                                        Name = ($LocalizedData.TableVUMBaselines -f $Cluster)
-                                        ColumnWidths = 25, 25, 10, 10, 20, 10
-                                    }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $ClusterBaselines | Sort-Object $LocalizedData.Baseline | Table @TableParams
-                                }
-                            }
-                            if ($Healthcheck.Cluster.VUMCompliance) {
-                                $ClusterComplianceInfo | Where-Object { $_.$($LocalizedData.Status) -eq $LocalizedData.Unknown } | Set-Style -Style Warning
-                                $ClusterComplianceInfo | Where-Object { $_.$($LocalizedData.Status) -eq $LocalizedData.NotCompliant -or $_.$($LocalizedData.Status) -eq $LocalizedData.Incompatible } | Set-Style -Style Critical
-                            }
-                            $TableParams = @{
-                                Name = ($LocalizedData.TableVUMCompliance -f $Cluster)
-                                ColumnWidths = 25, 50, 25
-                            }
-                            if ($Report.ShowTableCaptions) {
-                                $TableParams['Caption'] = "- $($TableParams.Name)"
-                            }
-                            $ClusterComplianceInfo | Sort-Object $LocalizedData.Entity, $LocalizedData.BaselineInfo | Table @TableParams
-                        }
-                    } else {
-                        Write-PScriboMessage -Message $LocalizedData.VUMPrivilegeMsgBaselines
-                    }
-                    #endregion Cluster VUM Baselines
-
-                    #region Cluster VUM Compliance (Advanced Detail Information)
-                    if ($UserPrivileges -contains 'VcIntegrity.Updates.com.vmware.vcIntegrity.ViewStatus') {
-                        if ($InfoLevel.Cluster -ge 4 -and $VumServer.Name) {
-                            Try {
-                                $ClusterCompliances = $Cluster | Get-Compliance
-                            } Catch {
-                                Write-PScriboMessage -Message $LocalizedData.VUMComplianceNotAvailable
-                            }
-                            if ($ClusterCompliances) {
-                                Section -Style Heading4 $LocalizedData.UpdateManagerCompliance {
-                                    $ClusterComplianceInfo = foreach ($ClusterCompliance in $ClusterCompliances) {
-                                        [PSCustomObject]@{
-                                            ($LocalizedData.Entity) = $ClusterCompliance.Entity
-                                            ($LocalizedData.BaselineInfo) = $ClusterCompliance.Baseline.Name
-                                            ($LocalizedData.Status) = Switch ($ClusterCompliance.Status) {
-                                                'NotCompliant' { $LocalizedData.NotCompliant }
-                                                default { $ClusterCompliance.Status }
-                                            }
-                                        }
-                                    }
-                                    if ($Healthcheck.Cluster.VUMCompliance) {
-                                        $ClusterComplianceInfo | Where-Object { $_.$($LocalizedData.Status) -eq $LocalizedData.Unknown } | Set-Style -Style Warning
-                                        $ClusterComplianceInfo | Where-Object { $_.$($LocalizedData.Status) -eq $LocalizedData.NotCompliant -or $_.$($LocalizedData.Status) -eq $LocalizedData.Incompatible } | Set-Style -Style Critical
-                                    }
-                                    $TableParams = @{
-                                        Name = ($LocalizedData.TableVUMCompliance -f $Cluster)
-                                        ColumnWidths = 25, 50, 25
-                                    }
-                                    if ($Report.ShowTableCaptions) {
-                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                    }
-                                    $ClusterComplianceInfo | Sort-Object $LocalizedData.Entity, $LocalizedData.BaselineInfo | Table @TableParams
-                                }
-                            }
-                        }
-                    } else {
-                        Write-PScriboMessage -Message $LocalizedData.VUMPrivilegeMsgCompliance
-                    }
-                    #endregion Cluster VUM Compliance (Advanced Detail Information)
-
                     #region Cluster Permissions
                     Section -Style NOTOCHeading4 -ExcludeFromTOC $LocalizedData.Permissions {
                         Paragraph ($LocalizedData.ParagraphPermissions -f $Cluster)
@@ -583,15 +495,15 @@ function Get-AbrVSphereClusterDRS {
                         $VIPermissions = $Cluster | Get-VIPermission
                         $ClusterVIPermissions = foreach ($VIPermission in $VIPermissions) {
                             [PSCustomObject]@{
-                                ($LocalizedData.UserGroup) = $VIPermission.Principal
-                                ($LocalizedData.IsGroup) = if ($VIPermission.IsGroup) {
+                                $LocalizedData.UserGroup = $VIPermission.Principal
+                                $LocalizedData.IsGroup = if ($VIPermission.IsGroup) {
                                     $LocalizedData.Yes
                                 } else {
                                     $LocalizedData.No
                                 }
-                                ($LocalizedData.Role) = $VIPermission.Role
-                                ($LocalizedData.DefinedIn) = $VIPermission.Entity
-                                ($LocalizedData.Propagate) = if ($VIPermission.Propagate) {
+                                $LocalizedData.Role = $VIPermission.Role
+                                $LocalizedData.DefinedIn = $VIPermission.Entity.Name
+                                $LocalizedData.Propagate = if ($VIPermission.Propagate) {
                                     $LocalizedData.Yes
                                 } else {
                                     $LocalizedData.No

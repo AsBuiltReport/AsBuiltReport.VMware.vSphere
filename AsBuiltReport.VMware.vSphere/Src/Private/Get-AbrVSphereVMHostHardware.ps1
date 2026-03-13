@@ -37,7 +37,7 @@ function Get-AbrVSphereVMHostHardware {
                         default { $TextInfo.ToTitleCase($VMHost.ConnectionState) }
                     }
                     $LocalizedData.ID = $VMHost.Id
-                    $LocalizedData.Parent = $VMHost.Parent
+                    $LocalizedData.Parent = $VMHost.Parent.Name
                     $LocalizedData.Manufacturer = $VMHost.Manufacturer
                     $LocalizedData.Model = $VMHost.Model
                     $LocalizedData.SerialNumber = if ($VMHost.ExtensionData.Hardware.SystemInfo.SerialNumber) {

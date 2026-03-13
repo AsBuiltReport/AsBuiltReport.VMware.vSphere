@@ -9,20 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix PCI Drivers & Firmware section not reporting on vSphere 8; `VMkernelName` is no longer populated in `esxcli hardware.pci.list` on ESXi 8.x so a PCI address to VMkernel name map is now built via the PowerCLI API as fallback. Also fixes per-device defaults not being reset between loop iterations ([#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111), [#127](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/127))
+- Fix PCI Drivers & Firmware section not reporting on vSphere 8; `VMkernelName` is no longer populated in `esxcli hardware.pci.list` on ESXi 8.x so a PCI address to VMkernel name map is now built via the PowerCLI API as fallback. Also fixes per-device defaults not being reset between loop iterations ([#105]([#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111)), [#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111), [#127](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/127))
 - Fix vCenter Server Certificate section reporting VMCA template defaults instead of the actual deployed TLS certificate; now reads the live certificate directly from port 443 ([#88](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/88))
 - Fix null disk group crash in OSA vSAN clusters where disk groups have not yet been claimed ([#113](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/113))
-- Fix `An item with the same key has already been added. Key: LinkedView` error when generating TEXT format reports ([#130](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/130))
+- ~~Fix `An item with the same key has already been added. Key: LinkedView` error when generating TEXT format reports; raw VMOMI/PowerCLI objects stored directly as PSCustomObject property values cause PScribo's serializer to encounter duplicate `LinkedView` members — all affected properties now store string primitives instead ([#130](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/130))~~ - Issues still evident. Still working on this fix.
 - Fix "Index operation failed; the array index evaluated to null" crash and `Global.Licenses` privilege errors when querying ESXi host/vCenter licensing on vCenter 8.0.2 ([#123](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/123))
 
 ### Added
-
-- Add TPM attestation state and host encryption settings to VMHost Security section; includes recovery key reporting (gated behind `ShowEncryptionKeys` option) and `TpmAttestation` healthcheck ([#101](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/101))
-- Add I/O Device Identifiers subsection to VMHost Hardware report, displaying VID/DID/SVID/SSID in lowercase hex for HCL validation ([#126](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/126))
 - Modular architecture: each report section is now a dedicated private function (`Get-AbrVSphere*`)
 - Internationalization (i18n) support via `Language/` `.psd1` files (`en-US`, `en-GB`, `es-ES`, `fr-FR`, `de-DE`)
 - Pester test suite (`AsBuiltReport.VMware.vSphere.Tests.ps1`, `LocalizationData.Tests.ps1`, `Invoke-Tests.ps1`)
 - GitHub Actions Pester workflow (`.github/workflows/Pester.yml`)
+- Add TPM attestation state and host encryption settings to VMHost Security section; includes recovery key reporting (gated behind `ShowEncryptionKeys` option) and `TpmAttestation` healthcheck ([#101](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/101))
+- Add I/O Device Identifiers subsection to VMHost Hardware report, displaying VID/DID/SVID/SSID in lowercase hex for HCL validation ([#126](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/126))
+- Add vSphere Lifecycle Manager (vLCM) cluster reporting: image composition (base image, vendor add-on), component list (InfoLevel 4+), hardware support manager, and image compliance with per-host breakdown (InfoLevel 4+); clusters in VUM baseline mode are silently skipped
+- Add Software Depots section to VMware Update Manager report; online depots show description, URL, system-defined flag, and enabled state; offline depots show description and location; system-generated bundles (HA, WCP) with no location are excluded from the offline table
+- Add VM Update Manager baseline compliance reporting per VM, with `VUMCompliance` healthcheck (Warning: Unknown, Critical: Not Compliant / Incompatible)
+- Add `LCMCompliance` healthcheck for cluster/host vLCM image compliance
+- Add SDRS rules reporting to Datastore Cluster section; shows rule name, enabled state, type (Affinity / Anti-Affinity), and member VMs
+- Add Space Load Balance Configuration and I/O Load Balance Configuration subsections to Datastore Cluster section
+- Add Distributed Switch LACP reporting (enabled state, mode) at InfoLevel 3+
+- Add Distributed Switch NetFlow reporting (collector IP/port, flow timeouts, sampling rate) at InfoLevel 3+
+- Add Network I/O Control resource pool reporting (shares level, shares, limit) at InfoLevel 4+ when NIOC is enabled
+- Add Proactive HA Providers subsection to Cluster Proactive HA section
+- Add VM Swap File Location subsection to VMHost System section; shows placement policy and local swap datastore
+- Add ESXi host certificate reporting to VMHost System section; shows subject, issuer, validity period, and SHA-256 thumbprint
+- Add syslog log directory, rotation count, and log size to VMHost Syslog section; section now always renders regardless of whether a remote syslog server is configured
+- Add vSAN Services section to vSAN cluster reporting (both OSA and ESA); shows enabled/disabled state of Performance Service, File Service, iSCSI Target Service, Deduplication, Encryption, Historical Health Service, and Health Check
+- Add tag reporting to Datastore, Datastore Cluster, Distributed Switch, Resource Pool, Virtual Machine, and VMHost sections
+- Extract Cluster VUM Baselines and Compliance into dedicated `Get-AbrVSphereClusterVUM` sub-function
 
 ### Changed
 

@@ -53,8 +53,6 @@ function Get-AbrVSphereNetwork {
 
                         #region Distributed Switch Detailed Information
                         if ($InfoLevel.Network -ge 3) {
-                            # TODO: LACP, NetFlow, NIOC
-                            # TODO: Test Tags
                             foreach ($VDS in ($VDSwitches)) {
                                 #region VDS Section
                                 Section -Style Heading3 $VDS {
@@ -85,15 +83,13 @@ function Get-AbrVSphereNetwork {
                                             default { $VDS.LinkDiscoveryProtocolOperation }
                                         }
                                     }
-                                    <#
                                     $MemberProps = @{
                                         'InputObject' = $VDSwitchDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-                                    if ($TagAssignments | Where-Object {$_.entity -eq $VDS}) {
-                                        Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $VDS}).Tag -join ',')
+                                    if ($TagAssignments | Where-Object { $_.entity -eq $VDS }) {
+                                        Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $VDS }).Tag -join ', ')
                                     }
-                                    #>
                                     #region Network Advanced Detail Information
                                     if ($InfoLevel.Network -ge 4) {
                                         $VDSwitchDetail | ForEach-Object {
@@ -208,8 +204,85 @@ function Get-AbrVSphereNetwork {
                                     }
                                     #endregion Distributed Switch Traffic Shaping
 
+                                    #region Distributed Switch LACP
+                                    $VDSLacpGroups = $VDS.ExtensionData.Config.LacpGroupConfig
+                                    if ($VDSLacpGroups) {
+                                        Section -Style Heading4 $LocalizedData.VDSLACP {
+                                            $LACPDetail = foreach ($LacpGroup in $VDSLacpGroups) {
+                                                [PSCustomObject]@{
+                                                    $LocalizedData.VDSwitch    = $VDS.Name
+                                                    $LocalizedData.LACPEnabled = $LocalizedData.Yes
+                                                    $LocalizedData.LACPMode    = switch ($LacpGroup.Mode) {
+                                                        'active'  { $LocalizedData.LACPActive }
+                                                        'passive' { $LocalizedData.LACPPassive }
+                                                        default   { $LacpGroup.Mode }
+                                                    }
+                                                }
+                                            }
+                                            $TableParams = @{
+                                                Name         = ($LocalizedData.TableVDSLACP -f $VDS)
+                                                ColumnWidths = 34, 33, 33
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $LACPDetail | Table @TableParams
+                                        }
+                                    }
+                                    #endregion Distributed Switch LACP
+
+                                    #region Distributed Switch NetFlow
+                                    $VDSNetFlow = $VDS.ExtensionData.Config.IpfixConfig
+                                    if ($VDSNetFlow -and $VDSNetFlow.CollectorIpAddress) {
+                                        Section -Style Heading4 $LocalizedData.VDSNetFlow {
+                                            $NetFlowDetail = [PSCustomObject]@{
+                                                $LocalizedData.VDSwitch          = $VDS.Name
+                                                $LocalizedData.CollectorIP       = $VDSNetFlow.CollectorIpAddress
+                                                $LocalizedData.CollectorPort     = $VDSNetFlow.CollectorPort
+                                                $LocalizedData.ActiveFlowTimeout = "$($VDSNetFlow.ActiveFlowTimeout) s"
+                                                $LocalizedData.IdleFlowTimeout   = "$($VDSNetFlow.IdleFlowTimeout) s"
+                                                $LocalizedData.SamplingRate      = $VDSNetFlow.SamplingRate
+                                                $LocalizedData.InternalFlowsOnly = if ($VDSNetFlow.InternalFlowsOnly) { $LocalizedData.Yes } else { $LocalizedData.No }
+                                            }
+                                            $TableParams = @{
+                                                Name         = ($LocalizedData.TableVDSNetFlow -f $VDS)
+                                                ColumnWidths = 22, 13, 13, 13, 13, 13, 13
+                                            }
+                                            if ($Report.ShowTableCaptions) {
+                                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                                            }
+                                            $NetFlowDetail | Table @TableParams
+                                        }
+                                    }
+                                    #endregion Distributed Switch NetFlow
+
+                                    #region Distributed Switch NIOC Resource Pools
+                                    if ($InfoLevel.Network -ge 4 -and $VDS.ExtensionData.Config.NetworkResourceManagementEnabled) {
+                                        $VDSNIOCPools = $VDS | Get-VDNetworkResourcePool | Sort-Object Name
+                                        if ($VDSNIOCPools) {
+                                            Section -Style Heading4 $LocalizedData.NIOCResourcePools {
+                                                $NIOCPoolDetails = foreach ($Pool in $VDSNIOCPools) {
+                                                    [PSCustomObject]@{
+                                                        $LocalizedData.NIOCResourcePool = $Pool.Name
+                                                        $LocalizedData.NIOCSharesLevel  = $Pool.SharesLevel
+                                                        $LocalizedData.NIOCSharesValue  = $Pool.NumShares
+                                                        $LocalizedData.NIOCLimitMbps    = if ($Pool.Limit -eq -1) { $LocalizedData.Unlimited } else { $Pool.Limit }
+                                                    }
+                                                }
+                                                $TableParams = @{
+                                                    Name         = ($LocalizedData.TableNIOCResourcePools -f $VDS)
+                                                    ColumnWidths = 35, 20, 20, 25
+                                                }
+                                                if ($Report.ShowTableCaptions) {
+                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                }
+                                                $NIOCPoolDetails | Table @TableParams
+                                            }
+                                        }
+                                    }
+                                    #endregion Distributed Switch NIOC Resource Pools
+
                                     #region Distributed Switch Port Groups
-                                    # TODO: Test Tags
                                     $VDSPortgroups = $VDS | Get-VDPortgroup
                                     if ($VDSPortgroups) {
                                         Section -Style Heading4 $LocalizedData.VDSPortGroups {

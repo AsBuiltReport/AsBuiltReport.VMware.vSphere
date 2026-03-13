@@ -27,13 +27,12 @@ function Get-AbrVSphereClusterProactiveHA {
             # Proactive HA is only available in vSphere 6.5 and above
             if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled -and $vCenter.Version -ge 6.5) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
-                # TODO: Proactive HA Providers
                 Section -Style Heading4 $LocalizedData.SectionHeading {
                     Paragraph ($LocalizedData.ParagraphSummary -f $Cluster)
                     #region Proactive HA Failures and Responses Section
                     Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.FailuresAndResponses {
                         $ProactiveHa = [PSCustomObject]@{
-                            ($LocalizedData.ProactiveHA) = if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
+                            $LocalizedData.ProactiveHA = if ($ClusterConfigEx.InfraUpdateHaConfig.Enabled) {
                                 $LocalizedData.Enabled
                             } else {
                                 $LocalizedData.Disabled
@@ -77,6 +76,36 @@ function Get-AbrVSphereClusterProactiveHA {
                         $ProactiveHa | Table @TableParams
                     }
                     #endregion Proactive HA Failures and Responses Section
+
+                    #region Proactive HA Providers Section
+                    $ClusterProviderIds = $ClusterConfigEx.InfraUpdateHaConfig.Providers
+                    if ($ClusterProviderIds) {
+                        Section -Style NOTOCHeading5 -ExcludeFromTOC $LocalizedData.Providers {
+                            $ProviderDetails = foreach ($ProviderId in $ClusterProviderIds) {
+                                $HealthUpdateCount = 0
+                                try {
+                                    $SvcContent = (Get-View -Id ServiceInstance -Server $vCenter -ErrorAction Stop).Content
+                                    if ($SvcContent.HealthUpdateManager) {
+                                        $HealthUpdateMgr = Get-View -Id $SvcContent.HealthUpdateManager -Server $vCenter -ErrorAction Stop
+                                        $HealthUpdateCount = ($HealthUpdateMgr.QueryHealthUpdateInfos($ProviderId)).Count
+                                    }
+                                } catch {}
+                                [PSCustomObject]@{
+                                    $LocalizedData.Provider          = $ProviderId
+                                    $LocalizedData.HealthUpdateCount = $HealthUpdateCount
+                                }
+                            }
+                            $TableParams = @{
+                                Name         = ($LocalizedData.TableProactiveHAProviders -f $Cluster)
+                                ColumnWidths = 70, 30
+                            }
+                            if ($Report.ShowTableCaptions) {
+                                $TableParams['Caption'] = "- $($TableParams.Name)"
+                            }
+                            $ProviderDetails | Sort-Object $LocalizedData.Provider | Table @TableParams
+                        }
+                    }
+                    #endregion Proactive HA Providers Section
                 }
             }
         } catch {

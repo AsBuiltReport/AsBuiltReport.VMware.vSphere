@@ -113,6 +113,23 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             }
             #endregion VMware Update Manager Server Name
 
+            #region vCenter REST API
+            $vcApiUri = $null
+            $vcApiHeaders = $null
+            if ([version]$vCenter.Version -ge [version]'7.0') {
+                $vcApiBaseUri = "https://$($vCenter.Name)/api"
+                try {
+                    $restToken = Invoke-RestMethod -Uri "$vcApiBaseUri/session" -Method Post -Credential $Credential -SkipCertificateCheck -ErrorAction Stop
+                    $vcApiUri = $vcApiBaseUri
+                    $vcApiHeaders = @{
+                        'vmware-api-session-id' = $restToken
+                    }
+                } catch {
+                    Write-PScriboMessage -IsWarning ($LocalizedData.RestApiSessionError -f $_.Exception.Message)
+                }
+            }
+            #endregion vCenter REST API
+
             #region VxRail Manager Server Name
             Write-PScriboMessage -Message $LocalizedData.CheckVxRail
             $VxRailMgr = $extMgr.ExtensionList | Where-Object { $_.Key -eq 'com.vmware.vxrail' } |

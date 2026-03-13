@@ -164,6 +164,32 @@ function Get-AbrVSpherevSAN {
                                             Write-PScriboMessage -Message ($LocalizedData.ESAError -f $VsanCluster.Name, $_.Exception.Message)
                                         }
 
+                                        #region vSAN Services
+                                        try {
+                                            Section -Style Heading4 $LocalizedData.ServicesSection {
+                                                $VsanServices = @(
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService;   $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService;          $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService;   $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication;        $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled)     { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption;           $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled)          { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HistoricalHealthService; $LocalizedData.Status = if ($VsanCluster.HistoricalHealthEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck;          $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                )
+                                                $TableParams = @{
+                                                    Name         = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
+                                                    ColumnWidths = 50, 50
+                                                }
+                                                if ($Report.ShowTableCaptions) {
+                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                }
+                                                $VsanServices | Table @TableParams
+                                            }
+                                        } catch {
+                                            Write-PScriboMessage -Message ($LocalizedData.ServicesError -f $VsanCluster.Name, $_.Exception.Message)
+                                        }
+                                        #endregion vSAN Services
+
                                         if ($VsanStoragePoolDisk) {
                                             Write-PScriboMessage -Message ($LocalizedData.CollectingDisks -f $VsanCluster.Name)
                                             try {
@@ -330,7 +356,32 @@ function Get-AbrVSpherevSAN {
                                             Write-PScriboMessage -Message ($LocalizedData.OSAError -f $VsanCluster.Name, $_.Exception.Message)
                                         }
 
-                                        # TODO: vSAN Services
+                                        #region vSAN Services
+                                        try {
+                                            Section -Style Heading4 $LocalizedData.ServicesSection {
+                                                $VsanServices = @(
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.PerformanceService;   $LocalizedData.Status = if ($VsanCluster.PerformanceServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.FileService;          $LocalizedData.Status = if ($VsanCluster.FileServiceEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.iSCSITargetService;   $LocalizedData.Status = if ($VsanCluster.IscsiTargetServiceEnabled)  { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Deduplication;        $LocalizedData.Status = if ($VsanCluster.SpaceEfficiencyEnabled)     { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.Encryption;           $LocalizedData.Status = if ($VsanCluster.EncryptionEnabled)          { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HistoricalHealthService; $LocalizedData.Status = if ($VsanCluster.HistoricalHealthEnabled) { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                    [PSCustomObject]@{ $LocalizedData.Service = $LocalizedData.HealthCheck;          $LocalizedData.Status = if ($VsanCluster.HealthCheckEnabled)         { $LocalizedData.Enabled } else { $LocalizedData.Disabled } }
+                                                )
+                                                $TableParams = @{
+                                                    Name         = ($LocalizedData.TableVSANServices -f $VsanCluster.Name)
+                                                    ColumnWidths = 50, 50
+                                                }
+                                                if ($Report.ShowTableCaptions) {
+                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                }
+                                                $VsanServices | Table @TableParams
+                                            }
+                                        } catch {
+                                            Write-PScriboMessage -Message ($LocalizedData.ServicesError -f $VsanCluster.Name, $_.Exception.Message)
+                                        }
+                                        #endregion vSAN Services
+
                                         if ($VsanDiskGroup) {
                                             Write-PScriboMessage -Message ($LocalizedData.CollectingDiskGroups -f $VsanCluster.Name)
                                             try {
@@ -339,7 +390,7 @@ function Get-AbrVSpherevSAN {
                                                         $Disks = $DiskGroup | Get-VsanDisk
                                                         [PSCustomObject]@{
                                                             $LocalizedData.DiskGroup = $DiskGroup.Uuid
-                                                            $LocalizedData.Host = $Diskgroup.VMHost
+                                                            $LocalizedData.Host = $Diskgroup.VMHost.Name
                                                             $LocalizedData.NumDisks = $Disks.Count
                                                             $LocalizedData.State = if ($DiskGroup.IsMounted) {
                                                                 $LocalizedData.Mounted
@@ -445,7 +496,7 @@ function Get-AbrVSpherevSAN {
                                                         $LocalizedData.Alias = $VsanIscsiTarget.Name
                                                         $LocalizedData.LUNsCount = $VsanIscsiTarget.NumLuns
                                                         $LocalizedData.NetworkInterface = $VsanIscsiTarget.NetworkInterface
-                                                        $LocalizedData.IOOwnerHost = $VsanIscsiTarget.IoOwnerVMHost
+                                                        $LocalizedData.IOOwnerHost = $VsanIscsiTarget.IoOwnerVMHost.Name
                                                         $LocalizedData.TCPPort = $VsanIscsiTarget.TcpPort
                                                         $LocalizedData.Health = $TextInfo.ToTitleCase($VsanIscsiTarget.VsanHealth)
                                                         $LocalizedData.StoragePolicy = if ($VsanIscsiTarget.StoragePolicy.Name) {

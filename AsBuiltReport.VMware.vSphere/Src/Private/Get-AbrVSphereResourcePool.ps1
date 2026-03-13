@@ -58,7 +58,6 @@ function Get-AbrVSphereResourcePool {
                         #endregion Resource Pool Advanced Summary
 
                         #region Resource Pool Detailed Information
-                        # TODO: Test Tags
                         if ($InfoLevel.ResourcePool -ge 3) {
                             foreach ($ResourcePool in $ResourcePools) {
                                 Section -Style Heading3 $ResourcePool.Name {
@@ -92,16 +91,13 @@ function Get-AbrVSphereResourcePool {
                                         }
                                         $LocalizedData.NumVMs = $ResourcePool.ExtensionData.VM.Count
                                     }
-                                    <#
                                     $MemberProps = @{
                                         'InputObject' = $ResourcePoolDetail
                                         'MemberType' = 'NoteProperty'
                                     }
-
-                                    if ($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}) {
-                                        Add-Member @MemberProps -Name 'Tags' -Value $(($TagAssignments | Where-Object {$_.entity -eq $ResourcePool}).Tag -join ',')
+                                    if ($TagAssignments | Where-Object { $_.entity -eq $ResourcePool }) {
+                                        Add-Member @MemberProps -Name $LocalizedData.Tags -Value $(($TagAssignments | Where-Object { $_.entity -eq $ResourcePool }).Tag -join ', ')
                                     }
-                                    #>
                                     #region Resource Pool Advanced Detail Information
                                     if ($InfoLevel.ResourcePool -ge 4) {
                                         $ResourcePoolDetail | ForEach-Object {
