@@ -5,9 +5,9 @@ jobs:
     name: Run PSScriptAnalyzer
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: lint
-      uses: devblackops/github-action-psscriptanalyzer@master
+      uses: alagoutte/github-action-psscriptanalyzer@master
       with:
         sendComment: true
         failOnErrors: true

@@ -90,7 +90,7 @@ body:
             I have read and followed the [bug reporting guidelines](https://www.asbuiltreport.com/dev-guide/contributing/#reporting-issues-and-bugs).
           required: true
         - label: >-
-            I have read [the documentation](https://www.asbuiltreport.com/user-guide/new-asbuiltconfig),
+            I have read [the documentation](https://www.asbuiltreport.com/user-guide/quickstart/),
             and referred to the [known issues](https://www.asbuiltreport.com/support/known-issues) before submitting this bug report.
           required: true
         - label: >-
