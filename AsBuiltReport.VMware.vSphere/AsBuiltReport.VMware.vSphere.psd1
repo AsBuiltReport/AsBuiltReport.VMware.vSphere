@@ -93,16 +93,16 @@
             Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'vCenter', 'Documentation', 'PScribo', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux'
 
             # A URL to the license for this module.
-            LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/main/LICENSE'
+            LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE'
 
             # A URL to the main website for this project.
             ProjectUri = 'https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere'
 
             # A URL to an icon representing this module.
-            IconUri = 'AsBuiltReport.png'
+            IconUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/AsBuiltReport.VMware.vSphere/AsBuiltReport.png'
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/main/CHANGELOG.md'
+            ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
 
             # Prerelease string of this module
             Prerelease = 'beta1'
