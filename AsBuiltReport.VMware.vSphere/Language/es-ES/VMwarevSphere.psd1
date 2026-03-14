@@ -18,6 +18,8 @@ InvokeAsBuiltReportVMwarevSphere = ConvertFrom-StringData @'
     CollectingTags     = Recopilando información de etiquetas.
     TagError           = Error al recopilar información de etiquetas.
     CollectingAdvSettings = Recopilando configuración avanzada de {0}.
+    CollectingClusters    = Recopilando información de clústeres.
+    ClusterNotFound       = El clúster '{0}' especificado en Filter.Cluster no se encontró y se omitirá.
 '@
 
 # Get-AbrVSpherevCenter

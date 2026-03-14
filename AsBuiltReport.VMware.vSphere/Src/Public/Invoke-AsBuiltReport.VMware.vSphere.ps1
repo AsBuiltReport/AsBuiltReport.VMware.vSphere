@@ -30,6 +30,7 @@ function Invoke-AsBuiltReport.VMware.vSphere {
     $Report = $ReportConfig.Report
     $InfoLevel = $ReportConfig.InfoLevel
     $Options = $ReportConfig.Options
+    $Filter = $ReportConfig.Filter
     $LocalizedData = $reportTranslate.InvokeAsBuiltReportVMwarevSphere
 
     # Used to set values to TitleCase where required
@@ -56,29 +57,71 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                 Write-PScriboMessage -Message $LocalizedData.UnablePrivileges
             }
 
-            # Create a lookup hashtable to quickly link VM MoRefs to Names
-            # Exclude VMware Site Recovery Manager placeholder VMs
-            Write-PScriboMessage -Message $LocalizedData.VMHashtable
-            $VMs = Get-VM -Server $vCenter | Where-Object {
-                $_.ExtensionData.Config.ManagedBy.ExtensionKey -notlike 'com.vmware.vcDr*'
-            } | Sort-Object Name
-            $VMLookup = @{ }
-            foreach ($VM in $VMs) {
-                $VMLookup.($VM.Id) = $VM.Name
+            #region Cluster Collection
+            Write-PScriboMessage -Message $LocalizedData.CollectingClusters
+            $Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
+            $ClusterFilterActive = $false
+            if ($Filter.Cluster -and $Filter.Cluster -notcontains '*') {
+                $ClusterFilterActive = $true
+                # Build a datacenter name lookup only when at least one filter entry is datacenter-qualified (e.g. "DC1/ClusterA")
+                $ClusterDCLookup = @{}
+                if ($Filter.Cluster | Where-Object { $_ -like '*/*' }) {
+                    foreach ($Cluster in $Clusters) {
+                        $ClusterDCLookup[$Cluster.Id] = ($Cluster | Get-Datacenter -Server $vCenter).Name
+                    }
+                }
+                $FilteredClusters = [System.Collections.Generic.List[object]]::new()
+                foreach ($ClusterEntry in $Filter.Cluster) {
+                    if ($ClusterEntry -like '*/*') {
+                        $DCName, $CName = $ClusterEntry -split '/', 2
+                        $Match = $Clusters | Where-Object { $_.Name -eq $CName -and $ClusterDCLookup[$_.Id] -eq $DCName }
+                    } else {
+                        $Match = $Clusters | Where-Object { $_.Name -eq $ClusterEntry }
+                    }
+                    if ($Match) { $FilteredClusters.AddRange([object[]]@($Match)) }
+                    else { Write-PScriboMessage -IsWarning ($LocalizedData.ClusterNotFound -f $ClusterEntry) }
+                }
+                $Clusters = $FilteredClusters | Sort-Object Name
             }
+            #endregion Cluster Collection
 
             # Create a lookup hashtable to link Host MoRefs to Names
             # Exclude VMware HCX hosts and ESX/ESXi versions prior to vSphere 5.0 from VMHost lookup
             Write-PScriboMessage -Message $LocalizedData.VMHostHashtable
-            $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5 } | Sort-Object Name
+            if ($ClusterFilterActive) {
+                $VMHosts = $Clusters | Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5 } | Sort-Object Name
+            } else {
+                $VMHosts = Get-VMHost -Server $vCenter | Where-Object { $_.Model -notlike "*VMware Mobility Platform" -and $_.Version -gt 5 } | Sort-Object Name
+            }
             $VMHostLookup = @{ }
             foreach ($VMHost in $VMHosts) {
                 $VMHostLookup.($VMHost.Id) = $VMHost.Name
             }
 
+            # Create a lookup hashtable to quickly link VM MoRefs to Names
+            # Exclude VMware Site Recovery Manager placeholder VMs
+            Write-PScriboMessage -Message $LocalizedData.VMHashtable
+            if ($ClusterFilterActive) {
+                $VMs = $VMHosts | Get-VM | Where-Object {
+                    $_.ExtensionData.Config.ManagedBy.ExtensionKey -notlike 'com.vmware.vcDr*'
+                } | Sort-Object Name
+            } else {
+                $VMs = Get-VM -Server $vCenter | Where-Object {
+                    $_.ExtensionData.Config.ManagedBy.ExtensionKey -notlike 'com.vmware.vcDr*'
+                } | Sort-Object Name
+            }
+            $VMLookup = @{ }
+            foreach ($VM in $VMs) {
+                $VMLookup.($VM.Id) = $VM.Name
+            }
+
             # Create a lookup hashtable to link Datastore MoRefs to Names
             Write-PScriboMessage -Message $LocalizedData.DatastoreHashtable
-            $Datastores = Get-Datastore -Server $vCenter | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+            if ($ClusterFilterActive) {
+                $Datastores = $VMHosts | Get-Datastore | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name -Unique
+            } else {
+                $Datastores = Get-Datastore -Server $vCenter | Where-Object { ($_.State -eq 'Available') -and ($_.CapacityGB -gt 0) } | Sort-Object Name
+            }
             $DatastoreLookup = @{ }
             foreach ($Datastore in $Datastores) {
                 $DatastoreLookup.($Datastore.Id) = $Datastore.Name
@@ -99,6 +142,22 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             foreach ($EvcMode in $SupportedEvcModes) {
                 $EvcModeLookup.($EvcMode.Key) = $EvcMode.Label
             }
+
+            #region ResourcePool Collection
+            $ResourcePools = $Clusters | Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
+            #endregion ResourcePool Collection
+
+            #region vSAN Collection
+            $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter |
+                Where-Object { $_.vsanenabled -eq $true -and $_.Name -in $Clusters.Name } |
+                Sort-Object Name
+            #endregion vSAN Collection
+
+            #region DSCluster Collection
+            $DSClusters = Get-DatastoreCluster -Server $vCenter | Where-Object {
+                ($_ | Get-Datastore) | Where-Object { $_.Id -in $Datastores.Id }
+            } | Sort-Object Name
+            #endregion DSCluster Collection
 
             $si = Get-View ServiceInstance -Server $vCenter
             $extMgr = Get-View -Id $si.Content.ExtensionManager -Server $vCenter

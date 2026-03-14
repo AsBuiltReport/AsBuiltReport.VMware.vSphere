@@ -17,6 +17,9 @@
                     "ShowAlarms":  true,
                     "ShowTags":  true
                 },
+    "Filter":  {
+                   "Cluster":  ["*"]
+               },
     "InfoLevel":  {
                       "_comment_":  "0 = Disabled, 1 = Enabled / Summary, 2 = Adv Summary, 3 = Detailed, 4 = Adv Detailed, 5 = Comprehensive",
                       "vCenter":  3,
