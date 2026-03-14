@@ -73,7 +73,7 @@ jobs:
     if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
-      - uses: zentered/bluesky-post-action@v0.2.0
+      - uses: zentered/bluesky-post-action@v0.4.0
         with:
           post: "[New Release] ${{ github.event.repository.name }} ${{ github.event.release.tag_name }}! Check out what's new! ${{ github.event.release.html_url }} #VMware #vSphere #AsBuiltReport #vExpert"
         env:
@@ -84,7 +84,7 @@ jobs:
     if: ${{ github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
-      - uses: zentered/bluesky-post-action@v0.2.0
+      - uses: zentered/bluesky-post-action@v0.4.0
         with:
           post: "[Pre-release] ${{ github.event.repository.name }} ${{ github.event.release.tag_name }} is now available for testing! Install with -AllowPrerelease ${{ github.event.release.html_url }} #VMware #vSphere #AsBuiltReport #vExpert"
         env:
