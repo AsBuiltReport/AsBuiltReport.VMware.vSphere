@@ -79,7 +79,6 @@ function Get-AbrVSphereVUM {
                             Write-PScriboMessage -Message $LocalizedData.PatchNotAvailable
                         }
                         if ($VUMPatches -and $InfoLevel.VUM -ge 5) {
-                            BlankLine
                             Section -Style Heading3 $LocalizedData.Patches {
                                 $VUMPatchInfo = foreach ($VUMPatch in $VUMPatches) {
                                     [PSCustomObject]@{
@@ -104,7 +103,6 @@ function Get-AbrVSphereVUM {
 
                         #region Software Depots
                         if ($OnlineDepots -or $OfflineDepots) {
-                            BlankLine
                             Section -Style Heading3 $LocalizedData.SoftwareDepots {
                                 if ($OnlineDepots) {
                                     Section -Style Heading4 $LocalizedData.OnlineDepots {
