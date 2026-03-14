@@ -9,36 +9,71 @@ on:
     branches:
       - master
       - dev
+  workflow_dispatch:
 
 jobs:
-  pester-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  test:
+    name: Pester Tests - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
-      - name: Set PSRepository to Trusted for PowerShell Gallery
+    defaults:
+      run:
         shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PowerShell Gallery
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
 
-      - name: Install required modules
-        shell: pwsh
+      - name: Install Pester
         run: |
-          Install-Module -Name AsBuiltReport.Core -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
-          Install-Module -Name PScribo -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
           Install-Module -Name Pester -MinimumVersion 5.0.0 -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
-          Install-Module -Name PSScriptAnalyzer -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
 
-      - name: Run Pester tests
-        shell: pwsh
+      - name: Install PScribo
         run: |
-          .\Tests\Invoke-Tests.ps1 -OutputFormat JUnitXml
+          Install-Module -Name PScribo -MinimumVersion 0.11.1 -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
 
-      - name: Publish test results
-        uses: dorny/test-reporter@v1
+      - name: Install PSScriptAnalyzer
+        run: |
+          Install-Module -Name PSScriptAnalyzer -MinimumVersion 1.0.0 -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
+
+      - name: Install AsBuiltReport.Core
+        run: |
+          Install-Module -Name AsBuiltReport.Core -MinimumVersion 1.6.2 -Repository PSGallery -Force -AllowClobber -Scope CurrentUser
+
+      - name: Run Pester Tests
+        run: |
+          $CodeCoverageParam = @{}
+          $OutputFormatParam = @{ OutputFormat = 'NUnitXml' }
+
+          # Only enable code coverage for Windows
+          if ('${{ matrix.os }}' -eq 'windows-latest') {
+            $CodeCoverageParam = @{ CodeCoverage = $true }
+          }
+
+          .\Tests\Invoke-Tests.ps1 @CodeCoverageParam @OutputFormatParam
+
+      - name: Upload test results
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: Pester Tests
+          name: test-results-${{ matrix.os }}
           path: Tests/testResults.xml
-          reporter: java-junit
-          fail-on-error: true
+          retention-days: 30
+
+      - name: Upload code coverage to Codecov
+        if: matrix.os == 'windows-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./Tests/coverage.xml
+          flags: unit
+          name: codecov-${{ matrix.os }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
