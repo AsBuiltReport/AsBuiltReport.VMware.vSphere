@@ -40,5 +40,5 @@ jobs:
         with:
           name: Pester Tests
           path: Tests/testResults.xml
-          reporter: java-junit
+          reporter: dotnet-nunit
           fail-on-error: true
