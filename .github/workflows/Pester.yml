@@ -32,7 +32,7 @@ jobs:
       - name: Run Pester tests
         shell: pwsh
         run: |
-          .\Tests\Invoke-Tests.ps1 -OutputFormat NUnitXml
+          .\Tests\Invoke-Tests.ps1 -OutputFormat JUnitXml
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
@@ -40,5 +40,5 @@ jobs:
         with:
           name: Pester Tests
           path: Tests/testResults.xml
-          reporter: dotnet-nunit
+          reporter: java-junit
           fail-on-error: true
