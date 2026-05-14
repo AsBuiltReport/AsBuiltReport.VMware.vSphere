@@ -21,18 +21,6 @@ function Get-AbrVSphereNetwork {
             if ($InfoLevel.Network -ge 1) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
                 # Create Distributed Switch Section if they exist
-                # When a cluster filter is active, limit VDS list to those with member hosts in $VMHosts
-                $AllVDSwitches = Get-VDSwitch -Server $vCenter | Sort-Object Name
-                if ($ClusterFilterActive) {
-                    $VMHostMoRefs = $VMHosts | ForEach-Object { "$($_.ExtensionData.MoRef.Type)-$($_.ExtensionData.MoRef.Value)" }
-                    $VDSwitches = $AllVDSwitches | Where-Object {
-                        $VDSHostMoRefs = $_.ExtensionData.Summary.HostMember |
-                            ForEach-Object { "$($_.Type)-$($_.Value)" }
-                        ($VDSHostMoRefs | Where-Object { $_ -in $VMHostMoRefs }).Count -gt 0
-                    }
-                } else {
-                    $VDSwitches = $AllVDSwitches
-                }
                 if ($VDSwitches) {
                     Section -Style Heading2 $LocalizedData.SectionHeading {
                         Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)

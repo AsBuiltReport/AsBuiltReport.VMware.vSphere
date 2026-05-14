@@ -159,6 +159,20 @@ function Invoke-AsBuiltReport.VMware.vSphere {
             } | Sort-Object Name
             #endregion DSCluster Collection
 
+            #region VDSwitch Collection
+            $AllVDSwitches = Get-VDSwitch -Server $vCenter | Sort-Object Name
+            if ($ClusterFilterActive) {
+                $VMHostMoRefs = $VMHosts | ForEach-Object { "$($_.ExtensionData.MoRef.Type)-$($_.ExtensionData.MoRef.Value)" }
+                $VDSwitches = $AllVDSwitches | Where-Object {
+                    $VDSHostMoRefs = $_.ExtensionData.Summary.HostMember |
+                        ForEach-Object { "$($_.Type)-$($_.Value)" }
+                    ($VDSHostMoRefs | Where-Object { $_ -in $VMHostMoRefs }).Count -gt 0
+                }
+            } else {
+                $VDSwitches = $AllVDSwitches
+            }
+            #endregion VDSwitch Collection
+
             $si = Get-View ServiceInstance -Server $vCenter
             $extMgr = Get-View -Id $si.Content.ExtensionManager -Server $vCenter
 

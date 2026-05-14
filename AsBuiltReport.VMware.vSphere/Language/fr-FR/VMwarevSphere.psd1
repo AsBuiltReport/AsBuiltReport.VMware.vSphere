@@ -200,6 +200,12 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TablevCenterResourceSummary  = Résumé des Ressources - {0}
     TablevCenterVMSummary        = Résumé des Machines Virtuelles - {0}
     TablevCenterHostSummary      = Résumé des Hôtes - {0}
+    Infrastructure               = Infrastructure
+    Datacenters                  = Centres de données
+    Clusters                     = Clusters
+    Networks                     = Réseaux
+    Datastores                   = Magasins de données
+    TablevCenterInfrastructureSummary = Résumé de l'Infrastructure - {0}
 '@
 
 # Get-AbrVSphereCluster

@@ -5,14 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [[2.0.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v2.0.0)] - Unreleased
+## [[2.0.0](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/releases/tag/v2.0.0)] - 2026-05-14
 
 ### Fixed
 
 - Fix PCI Drivers & Firmware section not reporting on vSphere 8; `VMkernelName` is no longer populated in `esxcli hardware.pci.list` on ESXi 8.x so a PCI address to VMkernel name map is now built via the PowerCLI API as fallback. Also fixes per-device defaults not being reset between loop iterations ([#105]([#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111)), [#111](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/111), [#127](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/127))
 - Fix vCenter Server Certificate section reporting VMCA template defaults instead of the actual deployed TLS certificate; now reads the live certificate directly from port 443 ([#88](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/88))
 - Fix null disk group crash in OSA vSAN clusters where disk groups have not yet been claimed ([#113](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/113))
-- ~~Fix `An item with the same key has already been added. Key: LinkedView` error when generating TEXT format reports; raw VMOMI/PowerCLI objects stored directly as PSCustomObject property values cause PScribo's serializer to encounter duplicate `LinkedView` members — all affected properties now store string primitives instead ([#130](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/130))~~ - Issues still evident. Still working on this fix.
 - Fix "Index operation failed; the array index evaluated to null" crash and `Global.Licenses` privilege errors when querying ESXi host/vCenter licensing on vCenter 8.0.2 ([#123](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/123))
 
 ### Added
@@ -43,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Content Libraries section to vCenter Server report (InfoLevel 3+); summary table shows library name, type, backing datastore, item count, and description; InfoLevel 4+ adds per-library detail (including subscription URL, automatic and on-demand sync settings for subscribed libraries) and a flat items table showing name, content type, size, description, creation time, and last modified; includes `ContentLibrary` healthcheck (Warning: automatic synchronisation disabled)
 - Add `ShowRoles` and `ShowAlarms` options to suppress vCenter Server Roles and Alarm Definitions sections; both default to `true`; useful for reducing report size in large environments ([#122](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/122))
 - Add `ShowTags` option to gate all tag reporting across the report (vCenter Tags, Categories, Assignments, VMHost, VM, Datastore, Datastore Cluster, Resource Pool, Distributed Switch); defaults to `true`
-- Add vCenter Server resource and inventory summary tables at InfoLevel 1+; resource table shows CPU (GHz), Memory (GB/TB), and Storage (GB/TB/PB) with free/used/total columns (auto-scaled to most relevant unit); separate Virtual Machine table shows Powered On/Off/Suspended/Total counts; separate Host table shows Connected/Disconnected/Maintenance/Total counts ([#30](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/30))
+- Add vCenter Server resource and inventory summary tables at InfoLevel 1+; resource table shows CPU (GHz), Memory (GB/TB), and Storage (GB/TB/PB) with free/used/total columns (auto-scaled to most relevant unit); Infrastructure table shows Datacenter, Cluster, Distributed Switch, and Datastore counts (Cluster, Distributed Switch, and Datastore counts are cluster-filter-aware when `Filter.Cluster` is active); separate Virtual Machine table shows Powered On/Off/Suspended/Total counts; separate Host table shows Connected/Disconnected/Maintenance/Total counts ([#30](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/30))
 - Add `Filter.Cluster` configuration option to scope report output to one or more named clusters; all related resources (VMHosts, VMs, Datastores, Datastore Clusters, Resource Pools, vSAN, Distributed Switches) are automatically filtered to the specified clusters; entries support plain cluster name (matched across all datacenters) or datacenter-qualified `"Datacenter/Cluster"` format to disambiguate clusters with the same name in different datacenters; use `["*"]` (default) to report all clusters ([#96](https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/issues/96))
 
 ### Changed
