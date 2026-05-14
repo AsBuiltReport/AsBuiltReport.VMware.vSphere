@@ -20,7 +20,6 @@ function Get-AbrVSphereDSCluster {
         try {
             if ($InfoLevel.DSCluster -ge 1) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
-                $DSClusters = Get-DatastoreCluster -Server $vCenter
                 if ($DSClusters) {
                     #region Datastore Clusters Section
                     Section -Style Heading2 $LocalizedData.SectionHeading {

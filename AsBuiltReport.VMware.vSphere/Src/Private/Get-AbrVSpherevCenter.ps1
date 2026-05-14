@@ -104,25 +104,22 @@ function Get-AbrVSpherevCenter {
                         $vCenterResourceSummary | Table @TableParams
                         } # end Section ResourceSummary
 
-                        Section -Style Heading3 $LocalizedData.VirtualMachines {
-                        $vmPoweredOn  = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
-                        $vmPoweredOff = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
-                        $vmSuspended  = ($VMs | Where-Object { $_.PowerState -eq 'Suspended' }).Count
-                        $vCenterVMSummary = [PSCustomObject]@{
-                            $LocalizedData.PoweredOn  = $vmPoweredOn
-                            $LocalizedData.PoweredOff = $vmPoweredOff
-                            $LocalizedData.Suspended  = $vmSuspended
-                            $LocalizedData.Total      = $vmPoweredOn + $vmPoweredOff + $vmSuspended
+                        Section -Style Heading3 $LocalizedData.Infrastructure {
+                        $vCenterInfrastructureSummary = [PSCustomObject]@{
+                            $LocalizedData.Datacenters = (Get-Datacenter -Server $vCenter).Count
+                            $LocalizedData.Clusters    = $Clusters.Count
+                            $LocalizedData.Networks    = $VDSwitches.Count
+                            $LocalizedData.Datastores  = $Datastores.Count
                         }
                         $TableParams = @{
-                            Name         = ($LocalizedData.TablevCenterVMSummary -f $vCenterServerName)
+                            Name         = ($LocalizedData.TablevCenterInfrastructureSummary -f $vCenterServerName)
                             ColumnWidths = 25, 25, 25, 25
                         }
                         if ($Report.ShowTableCaptions) {
                             $TableParams['Caption'] = "- $($TableParams.Name)"
                         }
-                        $vCenterVMSummary | Table @TableParams
-                        } # end Section VirtualMachines
+                        $vCenterInfrastructureSummary | Table @TableParams
+                        } # end Section Infrastructure
 
                         Section -Style Heading3 $LocalizedData.Hosts {
                         $hostsConnected    = ($VMHosts | Where-Object { $_.ConnectionState -eq 'Connected' }).Count
@@ -143,6 +140,26 @@ function Get-AbrVSpherevCenter {
                         }
                         $vCenterHostSummary | Table @TableParams
                         } # end Section Hosts
+
+                        Section -Style Heading3 $LocalizedData.VirtualMachines {
+                        $vmPoweredOn  = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOn' }).Count
+                        $vmPoweredOff = ($VMs | Where-Object { $_.PowerState -eq 'PoweredOff' }).Count
+                        $vmSuspended  = ($VMs | Where-Object { $_.PowerState -eq 'Suspended' }).Count
+                        $vCenterVMSummary = [PSCustomObject]@{
+                            $LocalizedData.PoweredOn  = $vmPoweredOn
+                            $LocalizedData.PoweredOff = $vmPoweredOff
+                            $LocalizedData.Suspended  = $vmSuspended
+                            $LocalizedData.Total      = $vmPoweredOn + $vmPoweredOff + $vmSuspended
+                        }
+                        $TableParams = @{
+                            Name         = ($LocalizedData.TablevCenterVMSummary -f $vCenterServerName)
+                            ColumnWidths = 25, 25, 25, 25
+                        }
+                        if ($Report.ShowTableCaptions) {
+                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                        }
+                        $vCenterVMSummary | Table @TableParams
+                        } # end Section VirtualMachines
                         #endregion Resource Summary
                     }
                     #endregion vCenter Server Summary & Advanced Summary

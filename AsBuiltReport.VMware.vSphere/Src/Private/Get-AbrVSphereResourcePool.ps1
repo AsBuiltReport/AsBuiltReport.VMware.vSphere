@@ -19,7 +19,6 @@ function Get-AbrVSphereResourcePool {
     process {
         try {
             if ($InfoLevel.ResourcePool -ge 1) {
-                $ResourcePools = Get-ResourcePool -Server $vCenter | Sort-Object Parent, Name
                 if ($ResourcePools) {
                     Write-PScriboMessage -Message $LocalizedData.Collecting
                     #region Resource Pools Section

@@ -18,6 +18,8 @@ InvokeAsBuiltReportVMwarevSphere = ConvertFrom-StringData @'
     CollectingTags     = Tag-Informationen werden gesammelt.
     TagError           = Fehler beim Sammeln von Tag-Informationen.
     CollectingAdvSettings = Erweiterte Einstellungen von {0} werden gesammelt.
+    CollectingClusters    = Cluster-Informationen werden gesammelt.
+    ClusterNotFound       = Der in Filter.Cluster angegebene Cluster '{0}' wurde nicht gefunden und wird übersprungen.
 '@
 
 # Get-AbrVSpherevCenter
@@ -198,6 +200,12 @@ GetAbrVSpherevCenter = ConvertFrom-StringData @'
     TablevCenterResourceSummary  = Ressourcenübersicht - {0}
     TablevCenterVMSummary        = Übersicht Virtuelle Maschinen - {0}
     TablevCenterHostSummary      = Host-Übersicht - {0}
+    Infrastructure               = Infrastruktur
+    Datacenters                  = Rechenzentren
+    Clusters                     = Cluster
+    Networks                     = Netzwerke
+    Datastores                   = Datenspeicher
+    TablevCenterInfrastructureSummary = Infrastruktur-Übersicht - {0}
 '@
 
 # Get-AbrVSphereCluster

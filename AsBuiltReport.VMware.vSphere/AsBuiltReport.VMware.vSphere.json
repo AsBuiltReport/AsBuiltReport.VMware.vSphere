@@ -1,100 +1,103 @@
 ﻿{
-    "Report":  {
-                   "Name":  "VMware vSphere As Built Report",
-                   "Version":  "1.0",
-                   "Status":  "Released",
-                   "Language":  "en-US",
-                   "ShowCoverPageImage":  true,
-                   "ShowTableOfContents":  true,
-                   "ShowHeaderFooter":  true,
-                   "ShowTableCaptions":  true
-               },
-    "Options":  {
-                    "ShowLicenseKeys":  false,
-                    "ShowEncryptionKeys":  false,
-                    "ShowVMSnapshots":  true,
-                    "ShowRoles":  true,
-                    "ShowAlarms":  true,
-                    "ShowTags":  true
-                },
-    "InfoLevel":  {
-                      "_comment_":  "0 = Disabled, 1 = Enabled / Summary, 2 = Adv Summary, 3 = Detailed, 4 = Adv Detailed, 5 = Comprehensive",
-                      "vCenter":  3,
-                      "Cluster":  3,
-                      "ResourcePool":  3,
-                      "VMHost":  3,
-                      "Network":  3,
-                      "vSAN":  3,
-                      "Datastore":  3,
-                      "DSCluster":  3,
-                      "VM":  2,
-                      "VUM":  3
-                  },
-    "HealthCheck":  {
-                        "vCenter":  {
-                                        "Mail":  true,
-                                        "Licensing":  true,
-                                        "Alarms":  true,
-                                        "Backup":  true,
-                                        "Certificate":  true,
-                                        "ContentLibrary":  true
-                                    },
-                        "Cluster":  {
-                                        "HAEnabled":  true,
-                                        "HAAdmissionControl":  true,
-                                        "HostFailureResponse":  true,
-                                        "HostMonitoring":  true,
-                                        "DatastoreOnPDL":  true,
-                                        "DatastoreOnAPD":  true,
-                                        "APDTimeOut":  true,
-                                        "vmMonitoring":  true,
-                                        "DRSEnabled":  true,
-                                        "DRSAutomationLevelFullyAuto":  true,
-                                        "PredictiveDRS":  false,
-                                        "DRSVMHostRules":  true,
-                                        "DRSRules":  true,
-                                        "vSANEnabled":  false,
-                                        "EVCEnabled":  true,
-                                        "VUMCompliance":  true,
-                                        "LCMCompliance":  true
-                                    },
-                        "VMHost":  {
-                                       "ConnectionState":  true,
-                                       "HyperThreading":  true,
-                                       "ScratchLocation":  true,
-                                       "IPv6":  true,
-                                       "UpTimeDays":  true,
-                                       "Licensing":  true,
-                                       "SSH":  true,
-                                       "ESXiShell":  true,
-                                       "NTP":  true,
-                                       "StorageAdapter":  true,
-                                       "NetworkAdapter":  true,
-                                       "LockdownMode":  true,
-                                       "VUMCompliance":  true,
-                                       "TpmAttestation":  true
-                                   },
-                        "vSAN":  {
-                                     "CapacityUtilization":  true
-                                 },
-                        "Datastore":  {
-                                          "CapacityUtilization":  true
-                                      },
-                        "DSCluster":  {
-                                          "CapacityUtilization":  true,
-                                          "SDRSAutomationLevelFullyAuto":  true
-                                      },
-                        "VM":  {
-                                   "PowerState":  true,
-                                   "ConnectionState":  true,
-                                   "CpuHotAdd":  true,
-                                   "CpuHotRemove":  true,
-                                   "MemoryHotAdd":  true,
-                                   "ChangeBlockTracking":  true,
-                                   "SpbmPolicyCompliance":  true,
-                                   "VMToolsStatus":  true,
-                                   "VMSnapshots":  true,
-                                   "VUMCompliance":  true
-                               }
-                    }
+  "Report": {
+    "Name": "VMware vSphere As Built Report",
+    "Version": "1.0",
+    "Status": "Released",
+    "Language": "en-US",
+    "ShowCoverPageImage": true,
+    "ShowTableOfContents": true,
+    "ShowHeaderFooter": true,
+    "ShowTableCaptions": true
+  },
+  "Options": {
+    "ShowLicenseKeys": false,
+    "ShowEncryptionKeys": false,
+    "ShowVMSnapshots": true,
+    "ShowRoles": true,
+    "ShowAlarms": true,
+    "ShowTags": true
+  },
+  "Filter": {
+    "Cluster": ["*"]
+  },
+  "InfoLevel": {
+    "_comment_": "0 = Disabled, 1 = Enabled / Summary, 2 = Adv Summary, 3 = Detailed, 4 = Adv Detailed, 5 = Comprehensive",
+    "vCenter": 3,
+    "Cluster": 3,
+    "ResourcePool": 3,
+    "VMHost": 3,
+    "Network": 3,
+    "vSAN": 3,
+    "Datastore": 3,
+    "DSCluster": 3,
+    "VM": 2,
+    "VUM": 3
+  },
+  "HealthCheck": {
+    "vCenter": {
+      "Mail": true,
+      "Licensing": true,
+      "Alarms": true,
+      "Backup": true,
+      "Certificate": true,
+      "ContentLibrary": true
+    },
+    "Cluster": {
+      "HAEnabled": true,
+      "HAAdmissionControl": true,
+      "HostFailureResponse": true,
+      "HostMonitoring": true,
+      "DatastoreOnPDL": true,
+      "DatastoreOnAPD": true,
+      "APDTimeOut": true,
+      "vmMonitoring": true,
+      "DRSEnabled": true,
+      "DRSAutomationLevelFullyAuto": true,
+      "PredictiveDRS": false,
+      "DRSVMHostRules": true,
+      "DRSRules": true,
+      "vSANEnabled": false,
+      "EVCEnabled": true,
+      "VUMCompliance": true,
+      "LCMCompliance": true
+    },
+    "VMHost": {
+      "ConnectionState": true,
+      "HyperThreading": true,
+      "ScratchLocation": true,
+      "IPv6": true,
+      "UpTimeDays": true,
+      "Licensing": true,
+      "SSH": true,
+      "ESXiShell": true,
+      "NTP": true,
+      "StorageAdapter": true,
+      "NetworkAdapter": true,
+      "LockdownMode": true,
+      "VUMCompliance": true,
+      "TpmAttestation": true
+    },
+    "vSAN": {
+      "CapacityUtilization": true
+    },
+    "Datastore": {
+      "CapacityUtilization": true
+    },
+    "DSCluster": {
+      "CapacityUtilization": true,
+      "SDRSAutomationLevelFullyAuto": true
+    },
+    "VM": {
+      "PowerState": true,
+      "ConnectionState": true,
+      "CpuHotAdd": true,
+      "CpuHotRemove": true,
+      "MemoryHotAdd": true,
+      "ChangeBlockTracking": true,
+      "SpbmPolicyCompliance": true,
+      "VMToolsStatus": true,
+      "VMSnapshots": true,
+      "VUMCompliance": true
+    }
+  }
 }

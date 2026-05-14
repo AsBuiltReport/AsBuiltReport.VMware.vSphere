@@ -20,7 +20,6 @@ function Get-AbrVSpherevSAN {
         try {
             if (($InfoLevel.vSAN -ge 1) -and ($vCenter.Version -gt 6)) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
-                $VsanClusters = Get-VsanClusterConfiguration -Server $vCenter | Where-Object { $_.vsanenabled -eq $true } | Sort-Object Name
                 if ($VsanClusters) {
                     Section -Style Heading2 $LocalizedData.SectionHeading {
                         Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)
@@ -67,7 +66,8 @@ function Get-AbrVSpherevSAN {
                         #region vSAN Cluster Detailed Information
                         if ($InfoLevel.vSAN -ge 3) {
                             foreach ($VsanCluster in $VsanClusters) {
-                                $VsanSpaceUsage = Get-VsanSpaceUsage -Cluster $VsanCluster.Name
+                                $VsanClusterObj = $Clusters | Where-Object { $_.Name -eq $VsanCluster.Name }
+                                $VsanSpaceUsage = Get-VsanSpaceUsage -Cluster $VsanClusterObj
                                 $VsanUsedCapacity = $VsanSpaceUsage.CapacityGB - $VsanSpaceUsage.FreeSpaceGB
 
                                 # Calculate percentages

@@ -25,7 +25,6 @@ function Get-AbrVSphereCluster {
     process {
         try {
             if ($InfoLevel.Cluster -ge 1) {
-                $Clusters = Get-Cluster -Server $vCenter | Sort-Object Name
                 if ($Clusters) {
                     Write-PScriboMessage -Message $LocalizedData.Collecting
                     Section -Style Heading2 $LocalizedData.SectionHeading {

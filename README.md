@@ -201,6 +201,13 @@ The **Options** schema allows certain options within the report to be toggled on
 | ShowAlarms         | true / false | true    | Toggle to enable/disable reporting of vCenter Server alarm definitions. Disable to reduce report size in environments with many alarm definitions                                            |
 | ShowTags           | true / false | true    | Toggle to enable/disable tag reporting across all sections (vCenter Tags/Categories/Assignments, VMHost, VM, Datastore, Datastore Cluster, Resource Pool, Distributed Switch)               |
 
+### Filter
+The **Filter** schema allows the report to be scoped to specific resources rather than reporting on the entire vCenter inventory.
+
+| Sub-Schema | Setting      | Default | Description                                                                                                                                                                                  |
+|------------|--------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Cluster    | `["*"]` / `["ClusterA", "ClusterB"]` / `["DC1/ClusterA"]` | `["*"]` | Limit report output to one or more clusters. All related resources (VMHosts, VMs, Datastores, Datastore Clusters, Resource Pools, vSAN, Distributed Switches) are automatically scoped to the specified clusters. Use `["*"]` to report all clusters (default). Entries can be a plain cluster name (matched across all datacenters) or datacenter-qualified using `"Datacenter/Cluster"` format to disambiguate clusters with the same name in different datacenters. |
+
 <!-- ********** Add/Remove the number of InfoLevels as required ********** -->
 ### InfoLevel
 The **InfoLevel** schema allows configuration of each section of the report at a granular level. The following sections can be set.

@@ -21,7 +21,6 @@ function Get-AbrVSphereNetwork {
             if ($InfoLevel.Network -ge 1) {
                 Write-PScriboMessage -Message $LocalizedData.Collecting
                 # Create Distributed Switch Section if they exist
-                $VDSwitches = Get-VDSwitch -Server $vCenter | Sort-Object Name
                 if ($VDSwitches) {
                     Section -Style Heading2 $LocalizedData.SectionHeading {
                         Paragraph ($LocalizedData.ParagraphSummary -f $vCenterServerName)
