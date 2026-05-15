@@ -42,12 +42,15 @@ function Get-License {
     $ServiceInstance = Get-View ServiceInstance -Server $vCenter
     $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager -Server $vCenter
     $LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager -Server $vCenter
+    if (-not $LicenseManagerAssign) { return }
     if ($VMHost) {
         $VMHostId = $VMHost.Extensiondata.Config.Host.Value
         $VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)
         $VMHostLicense = $VMHostAssignedLicense.AssignedLicense
         $VMHostLicenseExpiration = ($VMHostLicense.Properties | Where-Object { $_.Key -eq 'expirationDate' } | Select-Object Value).Value
-        if ($VMHostLicense.LicenseKey -and $Options.ShowLicenseKeys) {
+        if ([string]::IsNullOrEmpty($VMHostLicense.LicenseKey)) {
+            $VMHostLicenseKey = 'N/A'
+        } elseif ($Options.ShowLicenseKeys) {
             $VMHostLicenseKey = $VMHostLicense.LicenseKey
         } else {
             $keyParts = $VMHostLicense.LicenseKey -split '-'
@@ -69,10 +72,12 @@ function Get-License {
         }
     }
     if ($vCenter) {
-        $vCenterAssignedLicense = $LicenseManagerAssign.GetType().GetMethod("QueryAssignedLicenses").Invoke($LicenseManagerAssign, @($_.MoRef.Value)) | Where-Object { $_.EntityID -eq $vCenter.InstanceUuid }
+        $vCenterAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($null) | Where-Object { $_.EntityId -eq $vCenter.InstanceUuid }
         $vCenterLicense = $vCenterAssignedLicense.AssignedLicense
         $vCenterLicenseExpiration = ($vCenterLicense.Properties | Where-Object { $_.Key -eq 'expirationDate' } | Select-Object Value).Value
-        if ($vCenterLicense.LicenseKey -and $Options.ShowLicenseKeys) {
+        if ([string]::IsNullOrEmpty($vCenterLicense.LicenseKey)) {
+            $vCenterLicenseKey = 'N/A'
+        } elseif ($Options.ShowLicenseKeys) {
             $vCenterLicenseKey = $vCenterLicense.LicenseKey
         } else {
             $keyParts = $vCenterLicense.LicenseKey -split '-'

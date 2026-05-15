@@ -12,10 +12,10 @@
     RootModule = 'AsBuiltReport.VMware.vSphere.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.3.6'
+    ModuleVersion = '2.0.0'
 
     # Supported PSEditions
-    # CompatiblePSEditions = 'Desktop'
+    CompatiblePSEditions = @('Core')
 
     # ID used to uniquely identify this module
     GUID = 'e1cbf1ce-cf01-4b6e-9cc2-56323da3c351'
@@ -27,22 +27,16 @@
     # CompanyName = ''
 
     # Copyright statement for this module
-    Copyright = '(c) 2025 Tim Carman. All rights reserved.'
+    Copyright = '(c) 2026 Tim Carman. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'A PowerShell module to generate an as built report on the configuration of VMware vSphere.'
 
-    # Minimum version of the Windows PowerShell engine required by this module
-    # PowerShellVersion = '5.1'
+    # Minimum version of the PowerShell engine required by this module
+    PowerShellVersion = '7.4'
 
-    # Name of the Windows PowerShell host required by this module
+    # Name of the PowerShell host required by this module
     # PowerShellHostName = ''
-
-    # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    # DotNetFrameworkVersion = '4.5'
-
-    # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    # CLRVersion = ''
 
     # Processor architecture (None, X86, Amd64) required by this module
     # ProcessorArchitecture = ''
@@ -51,7 +45,7 @@
     RequiredModules = @(
         @{
             ModuleName = 'AsBuiltReport.Core';
-            ModuleVersion = '1.4.3'
+            ModuleVersion = '1.6.2'
         }
     )
 
@@ -96,7 +90,7 @@
 
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'vCenter', 'Documentation', 'PScribo', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux'
+            Tags = 'AsBuiltReport', 'Report', 'VMware', 'vSphere', 'vCenter', 'Documentation', 'PScribo', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux'
 
             # A URL to the license for this module.
             LicenseUri = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE'
@@ -105,7 +99,7 @@
             ProjectUri = 'https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere'
 
             # A URL to an icon representing this module.
-            IconUri = ' https://github.com/AsBuiltReport.png'
+            IconUri = 'AsBuiltReport.png'
 
             # ReleaseNotes of this module
             ReleaseNotes = 'https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/CHANGELOG.md'
