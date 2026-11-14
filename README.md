@@ -26,17 +26,11 @@
     <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/actions/workflows/Pester.yml" alt="Pester Tests">
         <img src="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/workflows/Pester%20Tests/badge.svg" /></a>
 </p>
-<p align="center">
-    <a href="https://twitter.com/AsBuiltReport" alt="Twitter">
-            <img src="https://img.shields.io/twitter/follow/AsBuiltReport.svg?style=social"/></a>
-</p>
 
 <p align="center">
     <a href='https://ko-fi.com/B0B7DDGZ7' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://ko-fi.com/img/githubbutton_sm.svg' border='0' alt='Want to keep alive this project? Support me on Ko-fi' /></a>
 </p>
 <!-- ********** DO NOT EDIT THESE LINKS ********** -->
-
-# VMware vSphere As Built Report
 
 VMware vSphere As Built Report is a PowerShell module which works in conjunction with [AsBuiltReport.Core](https://github.com/AsBuiltReport/AsBuiltReport.Core).
 
