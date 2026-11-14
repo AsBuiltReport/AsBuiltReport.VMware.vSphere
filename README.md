@@ -1,15 +1,15 @@
 <!-- ********** DO NOT EDIT THESE LINKS ********** -->
 <p align="center">
-    <a href="https://www.asbuiltreport.com/" alt="AsBuiltReport"></a>
-            <img src='https://github.com/AsBuiltReport.png' width="8%" height="8%" /></a>
+    <a href="https://www.asbuiltreport.com/">
+        <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/repo-banners/AsBuiltReport.VMware.vSphere.png" alt="AsBuiltReport.VMware.vSphere" width="880"></a>
 </p>
 <p align="center">
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PowerShell Gallery Version">
-        <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg?color=1F5FD0" /></a>
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Gallery Downloads">
-        <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg?color=012456" /></a>
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Platform">
-        <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg?color=FFD02B" /></a>
 </p>
 <p align="center">
     <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/commit-activity" alt="GitHub Last Commit">
@@ -17,7 +17,7 @@
     <a href="https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE" alt="GitHub License">
         <img src="https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg" /></a>
     <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/contributors" alt="GitHub Contributors">
-        <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg"/></a>
+        <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg?color=012456"/></a>
 </p>
 <p align="center">
     <a href="https://codecov.io/gh/AsBuiltReport/AsBuiltReport.VMware.vSphere" >
@@ -50,24 +50,24 @@ The VMware vSphere As Built Report module is used to generate as built documenta
 Please refer to the AsBuiltReport [website](https://www.asbuiltreport.com) for more detailed information about this project.
 
 <!--
-## :books: Sample Reports
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/sample-reports.svg" alt="" width="24" height="24" align="top"> Sample Reports
 ### Sample Report 1 - Default Style
 Sample vSphere As Built report with health checks, using default report style.
 
 Sample VMware vSphere As Built report HTML file: [Sample VMware vSphere As Built Report.html](https://htmlpreview.github.io/?https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/dev/Samples/Sample%20VMware%20vSphere%20As%20Built%20Report.html)
 -->
 
-# :beginner: Getting Started
+# <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/getting-started.svg" alt="" width="28" height="28" align="top"> Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
-## :floppy_disk: Supported Versions
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/supported-versions.svg" alt="" width="24" height="24" align="top"> Supported Versions
 The VMware vSphere As Built Report supports the following vSphere versions;
 - vSphere 8.0
 
 > [!IMPORTANT]
 > Ongoing VMware product and licensing restrictions, combined with limited access to development environments and resources, prevent further development and support of this report module beyond VMware vSphere 8.0.
 
-## :no_entry_sign: Unsupported Versions
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/unsupported-versions.svg" alt="" width="24" height="24" align="top"> Unsupported Versions
 The following VMware vSphere versions are no longer being tested and/or supported;
 - vSphere 5.5
 - vSphere 6.0
@@ -83,7 +83,7 @@ This report is compatible with the following PowerShell versions;
 |:----------------------:|:--------------------:|
 |   :x:   | :white_check_mark: |
 
-## 🌐 Language Support
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/language-support.svg" alt="" width="24" height="24" align="top"> Language Support
 <!-- ********** Update supported languages ********** -->
 The VMware vSphere As Built Report supports the following languages;
 
@@ -95,7 +95,7 @@ The VMware vSphere As Built Report supports the following languages;
 | German | de-DE |
 | Spanish | es-ES |
 
-## :wrench: System Requirements
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/system-requirements.svg" alt="" width="24" height="24" align="top"> System Requirements
 <!-- ********** Update system requirements ********** -->
 PowerShell 7.4 or higher, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
 
@@ -107,7 +107,7 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 - [VCF PowerCLI Module](https://www.powershellgallery.com/packages/VCF.PowerCLI/) version 9.0 or higher
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
-### :closed_lock_with_key: Required Privileges
+### <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/required-privileges.svg" alt="" width="20" height="20" align="top"> Required Privileges
 <!-- ********** Define required privileges ********** -->
 <!-- ********** Try to follow best practices to define least privileges ********** -->
 
@@ -128,7 +128,7 @@ For a complete report, the following role assigned privileges are required;
 > [!NOTE]
 > The vSphere Lifecycle Manager (vLCM) image composition, compliance, and Software Depot sections use the vCenter REST API. The credentials supplied to `New-AsBuiltReport` are used to authenticate automatically — no additional configuration is required.
 
-## :package: Module Installation
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/module-installation.svg" alt="" width="24" height="24" align="top"> Module Installation
 
 ### PowerShell
 <!-- ********** Add installation for any additional PowerShell module(s) ********** -->
@@ -157,7 +157,7 @@ If you are unable to use the PowerShell Gallery, you can still install the modul
 
 _Note: You are not limited to installing the module to those example paths, you can add a new entry to the environment variable PSModulePath if you want to use another path._
 
-## :pencil2: Configuration
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/configuration.svg" alt="" width="24" height="24" align="top"> Configuration
 The vSphere As Built Report utilises a JSON file to allow configuration of report information, options, detail and healthchecks.
 
 > [!IMPORTANT]
@@ -246,95 +246,95 @@ The **vCenter** schema is used to configure health checks for vCenter Server.
 
 | Sub-Schema | Setting      | Default | Description                                         | Highlight                                                                                 |
 |------------|--------------|---------|-----------------------------------------------------|-------------------------------------------------------------------------------------------|
-| Mail        | true / false | true    | Highlights mail settings which are not configured                                                                                                 | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Not Configured                                                                                                                                        |
-| Licensing   | true / false | true    | Highlights product evaluation licenses                                                                                                            | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Product evaluation license in use                                                                                                                      |
-| Alarms      | true / false | true    | Highlights vCenter Server alarms which are disabled                                                                                               | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Alarm disabled                                                                                                                                         |
-| Certificate | true / false | true    | Highlights vCenter Server certificates which are expired or approaching expiry                                                                    | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Expired / Expiring<br> ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Expiring Soon                                                            |
-| Backup         | true / false | true    | Highlights vCenter Server backup schedules which are deactivated and backup jobs which have failed (requires vSphere 7.0 or later REST API access) | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Backup schedule deactivated<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Backup job failed                                               |
-| ContentLibrary | true / false | true    | Highlights subscribed content libraries with automatic synchronisation disabled                                                                    | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Automatic synchronisation disabled                                                                                                                     |
+| Mail        | true / false | true    | Highlights mail settings which are not configured                                                                                                 | ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) Not Configured                                                                                                                                        |
+| Licensing   | true / false | true    | Highlights product evaluation licenses                                                                                                            | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Product evaluation license in use                                                                                                                      |
+| Alarms      | true / false | true    | Highlights vCenter Server alarms which are disabled                                                                                               | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Alarm disabled                                                                                                                                         |
+| Certificate | true / false | true    | Highlights vCenter Server certificates which are expired or approaching expiry                                                                    | ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) Expired / Expiring<br> ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Expiring Soon                                                            |
+| Backup         | true / false | true    | Highlights vCenter Server backup schedules which are deactivated and backup jobs which have failed (requires vSphere 7.0 or later REST API access) | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Backup schedule deactivated<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) Backup job failed                                               |
+| ContentLibrary | true / false | true    | Highlights subscribed content libraries with automatic synchronisation disabled                                                                    | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Automatic synchronisation disabled                                                                                                                     |
 
 #### Cluster
 The **Cluster** schema is used to configure health checks for vSphere Clusters.
 
 | Sub-Schema                  | Setting      | Default | Description                                                                                | Highlight                                                                                                                                   |
 |-----------------------------|--------------|---------|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| HAEnabled                   | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA enabled                           | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA disabled                                                                 |
-| HAAdmissionControl          | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA Admission Control enabled         | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA Admission Control disabled                                               |
-| HostFailureResponse         | true / false | true    | Highlights vSphere Clusters which have vSphere HA Failure Response set to disabled         | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA Host Failure Response disabled                                           |
-| HostMonitoring              | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA Host Monitoring enabled           | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA Host Monitoring disabled                                                 |
-| DatastoreOnPDL              | true / false | true    | Highlights vSphere Clusters which do not have Datastore on PDL enabled                     | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA Datastore on PDL disabled                                                |
-| DatastoreOnAPD              | true / false | true    | Highlights vSphere Clusters which do not have Datastore on APD enabled                     | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere HA Datastore on APD disabled                                                |
-| APDTimeOut                  | true / false | true    | Highlights vSphere Clusters which do not have APDTimeOut enabled                           | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) APDTimeOut disabled                                                                 |
-| vmMonitoring                | true / false | true    | Highlights vSphere Clusters which do not have VM Monitoring enabled                        | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Monitoring disabled                                                              |
-| DRSEnabled                  | true / false | true    | Highlights vSphere Clusters which do not have vSphere DRS enabled                          | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere DRS disabled                                                                |
-| DRSAutomationLevelFullyAuto | true / false | true    | Checks the vSphere DRS Automation Level is set to 'Fully Automated'                        | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere DRS Automation Level not set to 'Fully Automated'                           |
-| PredictiveDRS               | true / false | false   | Highlights vSphere Clusters which do not have Predictive DRS enabled                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Predictive DRS disabled                                                             |
-| DRSVMHostRules              | true / false | true    | Highlights DRS VMHost rules which are disabled                                             | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) DRS VMHost rule disabled                                                            |
-| DRSRules                    | true / false | true    | Highlights DRS rules which are disabled                                                    | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) DRS rule disabled                                                                   |
-| vSANEnabled                 | true / false | true    | Highlights vSphere Clusters which do not have Virtual SAN enabled                          | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Virtual SAN disabled                                                                |
-| EVCEnabled                  | true / false | true    | Highlights vSphere Clusters which do not have Enhanced vMotion Compatibility (EVC) enabled | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) vSphere EVC disabled                                                                |
-| VUMCompliance               | true / false | true    | Highlights vSphere Clusters which do not comply with VMware Update Manager baselines       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Not Compliant |
-| LCMCompliance               | true / false | true    | Highlights clusters and hosts where the vLCM image compliance status is not Compliant     | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Non-compliant                                                                      |
+| HAEnabled                   | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA enabled                           | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA disabled                                                                 |
+| HAAdmissionControl          | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA Admission Control enabled         | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA Admission Control disabled                                               |
+| HostFailureResponse         | true / false | true    | Highlights vSphere Clusters which have vSphere HA Failure Response set to disabled         | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA Host Failure Response disabled                                           |
+| HostMonitoring              | true / false | true    | Highlights vSphere Clusters which do not have vSphere HA Host Monitoring enabled           | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA Host Monitoring disabled                                                 |
+| DatastoreOnPDL              | true / false | true    | Highlights vSphere Clusters which do not have Datastore on PDL enabled                     | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA Datastore on PDL disabled                                                |
+| DatastoreOnAPD              | true / false | true    | Highlights vSphere Clusters which do not have Datastore on APD enabled                     | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere HA Datastore on APD disabled                                                |
+| APDTimeOut                  | true / false | true    | Highlights vSphere Clusters which do not have APDTimeOut enabled                           | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) APDTimeOut disabled                                                                 |
+| vmMonitoring                | true / false | true    | Highlights vSphere Clusters which do not have VM Monitoring enabled                        | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) VM Monitoring disabled                                                              |
+| DRSEnabled                  | true / false | true    | Highlights vSphere Clusters which do not have vSphere DRS enabled                          | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere DRS disabled                                                                |
+| DRSAutomationLevelFullyAuto | true / false | true    | Checks the vSphere DRS Automation Level is set to 'Fully Automated'                        | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere DRS Automation Level not set to 'Fully Automated'                           |
+| PredictiveDRS               | true / false | false   | Highlights vSphere Clusters which do not have Predictive DRS enabled                       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Predictive DRS disabled                                                             |
+| DRSVMHostRules              | true / false | true    | Highlights DRS VMHost rules which are disabled                                             | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) DRS VMHost rule disabled                                                            |
+| DRSRules                    | true / false | true    | Highlights DRS rules which are disabled                                                    | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) DRS rule disabled                                                                   |
+| vSANEnabled                 | true / false | true    | Highlights vSphere Clusters which do not have Virtual SAN enabled                          | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Virtual SAN disabled                                                                |
+| EVCEnabled                  | true / false | true    | Highlights vSphere Clusters which do not have Enhanced vMotion Compatibility (EVC) enabled | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) vSphere EVC disabled                                                                |
+| VUMCompliance               | true / false | true    | Highlights vSphere Clusters which do not comply with VMware Update Manager baselines       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Unknown<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Not Compliant |
+| LCMCompliance               | true / false | true    | Highlights clusters and hosts where the vLCM image compliance status is not Compliant     | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Non-compliant                                                                      |
 
 #### VMHost
 The **VMHost** schema is used to configure health checks for VMHosts.
 
 | Sub-Schema      | Setting      | Default | Description                                                                                                              | Highlight                                                                                                                                                                                     |
 |-----------------|--------------|---------|--------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ConnectionState | true / false | true    | Highlights VMHosts which are in maintenance mode or disconnected                                                         | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Maintenance<br>  ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Disconnected                                               |
-| HyperThreading  | true / false | true    | Highlights VMHosts which have HyperThreading disabled                                                                    | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) HyperThreading disabled<br>                                                                                                           |
-| ScratchLocation | true / false | true    | Highlights VMHosts which are configured with the default scratch location                                                | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Scratch location is /tmp/scratch                                                                                                      |
-| IPv6            | true / false | true    | Highlights VMHosts which do not have IPv6 enabled                                                                        | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) IPv6 disabled                                                                                                                         |
-| UpTimeDays      | true / false | true    | Highlights VMHosts with uptime days greater than 9 months                                                                | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) 9 - 12 months<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  >12 months                                                |
-| Licensing       | true / false | true    | Highlights VMHosts which are using production evaluation licenses                                                        | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Product evaluation license in use                                                                                                     |
-| SSH             | true / false | true    | Highlights if the SSH service is enabled                                                                                 | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) TSM / TSM-SSH service enabled                                                                                                         |
-| ESXiShell       | true / false | true    | Highlights if the ESXi Shell service is enabled                                                                          | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) TSM / TSM-EsxiShell service enabled                                                                                                   |
-| NTP             | true / false | true    | Highlights if the NTP service has stopped or is disabled on a VMHost                                                     | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  NTP service stopped / disabled                                                                                                      |
-| StorageAdapter  | true / false | true    | Highlights storage adapters which are not 'Online'                                                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Storage adapter status is 'Unknown'<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Storage adapter status is 'Offline' |
-| NetworkAdapter  | true / false | true    | Highlights physical network adapters which are not 'Connected'<br> Highlights physical network adapters which are 'Down' | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Network adapter is 'Disconnected'<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Network adapter is 'Down'           |
-| LockdownMode    | true / false | true    | Highlights VMHosts which do not have Lockdown mode enabled                                                               | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Lockdown Mode disabled<br>                                                                                                            |
-| VUMCompliance   | true / false | true    | Highlights VMHosts which are not compliant with VMware Update Manager software packages                                  | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7)  Incompatible                                                    |
-| TpmAttestation  | true / false | true    | Highlights VMHosts where a TPM is present but attestation status is not 'attested'                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) TPM attestation status is not attested                                                                                              |
+| ConnectionState | true / false | true    | Highlights VMHosts which are in maintenance mode or disconnected                                                         | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Maintenance<br>  ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Disconnected                                               |
+| HyperThreading  | true / false | true    | Highlights VMHosts which have HyperThreading disabled                                                                    | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) HyperThreading disabled<br>                                                                                                           |
+| ScratchLocation | true / false | true    | Highlights VMHosts which are configured with the default scratch location                                                | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Scratch location is /tmp/scratch                                                                                                      |
+| IPv6            | true / false | true    | Highlights VMHosts which do not have IPv6 enabled                                                                        | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) IPv6 disabled                                                                                                                         |
+| UpTimeDays      | true / false | true    | Highlights VMHosts with uptime days greater than 9 months                                                                | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) 9 - 12 months<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  >12 months                                                |
+| Licensing       | true / false | true    | Highlights VMHosts which are using production evaluation licenses                                                        | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Product evaluation license in use                                                                                                     |
+| SSH             | true / false | true    | Highlights if the SSH service is enabled                                                                                 | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) TSM / TSM-SSH service enabled                                                                                                         |
+| ESXiShell       | true / false | true    | Highlights if the ESXi Shell service is enabled                                                                          | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) TSM / TSM-EsxiShell service enabled                                                                                                   |
+| NTP             | true / false | true    | Highlights if the NTP service has stopped or is disabled on a VMHost                                                     | ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  NTP service stopped / disabled                                                                                                      |
+| StorageAdapter  | true / false | true    | Highlights storage adapters which are not 'Online'                                                                       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Storage adapter status is 'Unknown'<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Storage adapter status is 'Offline' |
+| NetworkAdapter  | true / false | true    | Highlights physical network adapters which are not 'Connected'<br> Highlights physical network adapters which are 'Down' | ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Network adapter is 'Disconnected'<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Network adapter is 'Down'           |
+| LockdownMode    | true / false | true    | Highlights VMHosts which do not have Lockdown mode enabled                                                               | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Lockdown Mode disabled<br>                                                                                                            |
+| VUMCompliance   | true / false | true    | Highlights VMHosts which are not compliant with VMware Update Manager software packages                                  | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Unknown<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg)  Incompatible                                                    |
+| TpmAttestation  | true / false | true    | Highlights VMHosts where a TPM is present but attestation status is not 'attested'                                       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) TPM attestation status is not attested                                                                                              |
 
 #### vSAN
 The **vSAN** schema is used to configure health checks for vSAN.
 
 | Sub-Schema          | Setting      | Default | Description                                                      | Highlight                                                                                                                                            |
 |---------------------|--------------|---------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CapacityUtilization | true / false | true    | Highlights vSAN clusters with storage capacity utilization over 75% | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) 75 - 90% utilized<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) >90% utilized |
+| CapacityUtilization | true / false | true    | Highlights vSAN clusters with storage capacity utilization over 75% | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) 75 - 90% utilized<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) >90% utilized |
 
 #### Datastore
 The **Datastore** schema is used to configure health checks for Datastores.
 
 | Sub-Schema          | Setting      | Default | Description                                                      | Highlight                                                                                                                                            |
 |---------------------|--------------|---------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CapacityUtilization | true / false | true    | Highlights datastores with storage capacity utilization over 75% | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) 75 - 90% utilized<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) >90% utilized |
+| CapacityUtilization | true / false | true    | Highlights datastores with storage capacity utilization over 75% | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) 75 - 90% utilized<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) >90% utilized |
 
 #### DSCluster
 The **DSCluster** schema is used to configure health checks for Datastore Clusters.
 
 | Sub-Schema                   | Setting      | Default | Description                                                                               | Highlight                                                                                                                                            |
 |------------------------------|--------------|---------|-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CapacityUtilization          | true / false | true    | Highlights datastore clusters with storage capacity utilization over 75%                  | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) 75 - 90% utilized<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) >90% utilized |
-| SDRSAutomationLevelFullyAuto | true / false | true    | Highlights if the Datastore Cluster SDRS Automation Level is not set to 'Fully Automated' | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Storage DRS Automation Level not set to 'Fully Automated'                                    |
+| CapacityUtilization          | true / false | true    | Highlights datastore clusters with storage capacity utilization over 75%                  | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) 75 - 90% utilized<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) >90% utilized |
+| SDRSAutomationLevelFullyAuto | true / false | true    | Highlights if the Datastore Cluster SDRS Automation Level is not set to 'Fully Automated' | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Storage DRS Automation Level not set to 'Fully Automated'                                    |
 
 #### VM
 The **VM** schema is used to configure health checks for virtual machines.
 
 | Sub-Schema           | Setting      | Default | Description                                                                                          | Highlight                                                                                                                                                                                                         |
 |----------------------|--------------|---------|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| PowerState           | true / false | true    | Highlights VMs which are powered off                                                                 | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM is powered off                                                                                                                                         |
-| ConnectionState      | true / false | true    | Highlights VMs which are orphaned or inaccessible                                                    | ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM is orphaned or inaccessible                                                                                                                           |
-| CpuHotAdd            | true / false | true    | Highlights virtual machines which have CPU Hot Add enabled                                           | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) CPU Hot Add enabled                                                                                                                                       |
-| CpuHotRemove         | true / false | true    | Highlights virtual machines which have CPU Hot Remove enabled                                        | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) CPU Hot Remove enabled                                                                                                                                    |
-| MemoryHotAdd         | true / false | true    | Highlights VMs which have Memory Hot Add enabled                                                     | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Memory Hot Add enabled                                                                                                                                    |
-| ChangeBlockTracking  | true / false | true    | Highlights VMs which do not have Change Block Tracking enabled                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Change Block Tracking disabled                                                                                                                            |
-| SpbmPolicyCompliance | true / false | true    | Highlights VMs which do not comply with storage based policies                                       | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM storage based policy compliance is unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM does not comply with storage based policies |
-| VMToolsStatus        | true / false | true    | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Tools not installed, out of date or not running                                                                                                        |
-| VMSnapshots          | true / false | true    | Highlights Virtual Machines which have snapshots older than 7 days                                   | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Snapshot age >= 7 days<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM Snapshot age >= 14 days                                         |
-| VUMCompliance        | true / false | true    | Highlights VMs which do not comply with VMware Update Manager baselines                              | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Not Compliant / Incompatible                                                         |
+| PowerState           | true / false | true    | Highlights VMs which are powered off                                                                 | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) VM is powered off                                                                                                                                         |
+| ConnectionState      | true / false | true    | Highlights VMs which are orphaned or inaccessible                                                    | ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) VM is orphaned or inaccessible                                                                                                                           |
+| CpuHotAdd            | true / false | true    | Highlights virtual machines which have CPU Hot Add enabled                                           | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) CPU Hot Add enabled                                                                                                                                       |
+| CpuHotRemove         | true / false | true    | Highlights virtual machines which have CPU Hot Remove enabled                                        | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) CPU Hot Remove enabled                                                                                                                                    |
+| MemoryHotAdd         | true / false | true    | Highlights VMs which have Memory Hot Add enabled                                                     | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Memory Hot Add enabled                                                                                                                                    |
+| ChangeBlockTracking  | true / false | true    | Highlights VMs which do not have Change Block Tracking enabled                                       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Change Block Tracking disabled                                                                                                                            |
+| SpbmPolicyCompliance | true / false | true    | Highlights VMs which do not comply with storage based policies                                       | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) VM storage based policy compliance is unknown<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) VM does not comply with storage based policies |
+| VMToolsStatus        | true / false | true    | Highlights Virtual Machines which do not have VM Tools installed, are out of date or are not running | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) VM Tools not installed, out of date or not running                                                                                                        |
+| VMSnapshots          | true / false | true    | Highlights Virtual Machines which have snapshots older than 7 days                                   | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) VM Snapshot age >= 7 days<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) VM Snapshot age >= 14 days                                         |
+| VUMCompliance        | true / false | true    | Highlights VMs which do not comply with VMware Update Manager baselines                              | ![Warning](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FFF4C7.svg) Unknown<br> ![Critical](https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/highlight-swatches/FEDDD7.svg) Not Compliant / Incompatible                                                         |
 
-## :computer: Examples
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/examples.svg" alt="" width="24" height="24" align="top"> Examples
 <!-- ********** Add some examples. Use other AsBuiltReport modules as a guide. ********** -->
 
 ```powershell
