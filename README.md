@@ -1,15 +1,15 @@
 <!-- ********** DO NOT EDIT THESE LINKS ********** -->
 <p align="center">
-    <a href="https://www.asbuiltreport.com/" alt="AsBuiltReport"></a>
-            <img src='https://github.com/AsBuiltReport.png' width="8%" height="8%" /></a>
+    <a href="https://www.asbuiltreport.com/">
+        <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/repo-banners/AsBuiltReport.VMware.vSphere.png" alt="AsBuiltReport.VMware.vSphere" width="880"></a>
 </p>
 <p align="center">
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PowerShell Gallery Version">
-        <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/v/AsBuiltReport.VMware.vSphere.svg?color=1F5FD0" /></a>
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Gallery Downloads">
-        <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/dt/AsBuiltReport.VMware.vSphere.svg?color=012456" /></a>
     <a href="https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/" alt="PS Platform">
-        <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg" /></a>
+        <img src="https://img.shields.io/powershellgallery/p/AsBuiltReport.VMware.vSphere.svg?color=FFD02B" /></a>
 </p>
 <p align="center">
     <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/commit-activity" alt="GitHub Last Commit">
@@ -17,7 +17,7 @@
     <a href="https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/master/LICENSE" alt="GitHub License">
         <img src="https://img.shields.io/github/license/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg" /></a>
     <a href="https://github.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/graphs/contributors" alt="GitHub Contributors">
-        <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg"/></a>
+        <img src="https://img.shields.io/github/contributors/AsBuiltReport/AsBuiltReport.VMware.vSphere.svg?color=012456"/></a>
 </p>
 <p align="center">
     <a href="https://codecov.io/gh/AsBuiltReport/AsBuiltReport.VMware.vSphere" >
@@ -50,24 +50,24 @@ The VMware vSphere As Built Report module is used to generate as built documenta
 Please refer to the AsBuiltReport [website](https://www.asbuiltreport.com) for more detailed information about this project.
 
 <!--
-## :books: Sample Reports
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/sample-reports.svg" alt="" width="24" height="24" align="top"> Sample Reports
 ### Sample Report 1 - Default Style
 Sample vSphere As Built report with health checks, using default report style.
 
 Sample VMware vSphere As Built report HTML file: [Sample VMware vSphere As Built Report.html](https://htmlpreview.github.io/?https://raw.githubusercontent.com/AsBuiltReport/AsBuiltReport.VMware.vSphere/dev/Samples/Sample%20VMware%20vSphere%20As%20Built%20Report.html)
 -->
 
-# :beginner: Getting Started
+# <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/getting-started.svg" alt="" width="28" height="28" align="top"> Getting Started
 Below are the instructions on how to install, configure and generate a VMware vSphere As Built report.
 
-## :floppy_disk: Supported Versions
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/supported-versions.svg" alt="" width="24" height="24" align="top"> Supported Versions
 The VMware vSphere As Built Report supports the following vSphere versions;
 - vSphere 8.0
 
 > [!IMPORTANT]
 > Ongoing VMware product and licensing restrictions, combined with limited access to development environments and resources, prevent further development and support of this report module beyond VMware vSphere 8.0.
 
-## :no_entry_sign: Unsupported Versions
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/unsupported-versions.svg" alt="" width="24" height="24" align="top"> Unsupported Versions
 The following VMware vSphere versions are no longer being tested and/or supported;
 - vSphere 5.5
 - vSphere 6.0
@@ -83,7 +83,7 @@ This report is compatible with the following PowerShell versions;
 |:----------------------:|:--------------------:|
 |   :x:   | :white_check_mark: |
 
-## 🌐 Language Support
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/language-support.svg" alt="" width="24" height="24" align="top"> Language Support
 <!-- ********** Update supported languages ********** -->
 The VMware vSphere As Built Report supports the following languages;
 
@@ -95,7 +95,7 @@ The VMware vSphere As Built Report supports the following languages;
 | German | de-DE |
 | Spanish | es-ES |
 
-## :wrench: System Requirements
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/system-requirements.svg" alt="" width="24" height="24" align="top"> System Requirements
 <!-- ********** Update system requirements ********** -->
 PowerShell 7.4 or higher, and the following PowerShell modules are required for generating a VMware vSphere As Built report.
 
@@ -107,7 +107,7 @@ Each of these modules can be easily downloaded and installed via the PowerShell 
 - [VCF PowerCLI Module](https://www.powershellgallery.com/packages/VCF.PowerCLI/) version 9.0 or higher
 - [AsBuiltReport.VMware.vSphere Module](https://www.powershellgallery.com/packages/AsBuiltReport.VMware.vSphere/)
 
-### :closed_lock_with_key: Required Privileges
+### <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/required-privileges.svg" alt="" width="20" height="20" align="top"> Required Privileges
 <!-- ********** Define required privileges ********** -->
 <!-- ********** Try to follow best practices to define least privileges ********** -->
 
@@ -128,7 +128,7 @@ For a complete report, the following role assigned privileges are required;
 > [!NOTE]
 > The vSphere Lifecycle Manager (vLCM) image composition, compliance, and Software Depot sections use the vCenter REST API. The credentials supplied to `New-AsBuiltReport` are used to authenticate automatically — no additional configuration is required.
 
-## :package: Module Installation
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/module-installation.svg" alt="" width="24" height="24" align="top"> Module Installation
 
 ### PowerShell
 <!-- ********** Add installation for any additional PowerShell module(s) ********** -->
@@ -157,7 +157,7 @@ If you are unable to use the PowerShell Gallery, you can still install the modul
 
 _Note: You are not limited to installing the module to those example paths, you can add a new entry to the environment variable PSModulePath if you want to use another path._
 
-## :pencil2: Configuration
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/configuration.svg" alt="" width="24" height="24" align="top"> Configuration
 The vSphere As Built Report utilises a JSON file to allow configuration of report information, options, detail and healthchecks.
 
 > [!IMPORTANT]
@@ -334,7 +334,7 @@ The **VM** schema is used to configure health checks for virtual machines.
 | VMSnapshots          | true / false | true    | Highlights Virtual Machines which have snapshots older than 7 days                                   | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) VM Snapshot age >= 7 days<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) VM Snapshot age >= 14 days                                         |
 | VUMCompliance        | true / false | true    | Highlights VMs which do not comply with VMware Update Manager baselines                              | ![Warning](https://placehold.co/15x15/FFF4C7/FFF4C7) Unknown<br> ![Critical](https://placehold.co/15x15/FEDDD7/FEDDD7) Not Compliant / Incompatible                                                         |
 
-## :computer: Examples
+## <img src="https://raw.githubusercontent.com/AsBuiltReport/.github/main/assets/section-icons/examples.svg" alt="" width="24" height="24" align="top"> Examples
 <!-- ********** Add some examples. Use other AsBuiltReport modules as a guide. ********** -->
 
 ```powershell
